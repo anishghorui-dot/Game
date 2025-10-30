@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ANISH Runner - Endless Adventure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Arial Black', sans-serif;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 400px;
+            height: 700px;
+            border: 5px solid #333;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 100%);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        #ui div {
+            margin: 5px 0;
+            font-weight: bold;
+        }
+
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: #fff;
+        }
+
+        h1 {
+            font-size: 60px;
+            color: #FFD700;
+            text-shadow: 4px 4px 8px rgba(0,0,0,0.8);
+            margin-bottom: 20px;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 24px;
+            background: linear-gradient(180deg, #4CAF50 0%, #45a049 100%);
+            border: 3px solid #fff;
+            color: #fff;
+            cursor: pointer;
+            font-family: 'Arial Black', sans-serif;
+            border-radius: 10px;
+            margin: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .controls {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #FFD700;
+        }
+
+        /* Touch Controls */
+        #touchControls {
+            display: none;
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            justify-content: space-around;
+            padding: 0 20px;
+            z-index: 50;
+        }
+
+        .touch-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 3px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: all 0.2s;
+        }
+
+        .touch-btn:active {
+            transform: scale(0.9);
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        @media (max-width: 768px), (pointer: coarse) {
+            #touchControls {
+                display: flex !important;
+            }
+            
+            #gameContainer {
+                width: 100vw;
+                height: 100vh;
+                border: none;
+            }
+        }
+
+        #signature {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            color: #FFD700;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="400" height="700"></canvas>
+        
+        <div id="ui">
+            <div>SCORE: <span id="score">0</span></div>
+            <div>COINS: <span id="coins">0</span></div>
+        </div>
+
+        <div id="signature">BY ANISH</div>
+
+        <div id="startScreen">
+            <h1>ANISH RUNNER</h1>
+            <p style="font-size: 24px; color: #FFD700; margin: 20px;">🏃 Subway Surfer Style! 🏃</p>
+            <p style="font-size: 18px; margin: 10px;">Swipe or use Arrow Keys</p>
+            <div class="controls">
+                <div>⬅️ ➡️ - Switch Lanes</div>
+                <div>⬆️ - Jump</div>
+                <div>⬇️ - Slide</div>
+            </div>
+            <button id="startBtn">START GAME</button>
+            <p style="font-size: 16px; color: #4CAF50; margin-top: 20px;">✨ Created by ANISH ✨</p>
+        </div>
+
+        <div id="gameOverScreen" class="hidden">
+            <h1>GAME OVER</h1>
+            <p id="finalScore" style="font-size: 32px; margin: 20px; color: #FFD700;"></p>
+            <p id="finalCoins" style="font-size: 24px; margin: 10px; color: #FFD700;"></p>
+            <button id="restartBtn">PLAY AGAIN</button>
+        </div>
+
+        <!-- Touch Controls for Mobile -->
+        <div id="touchControls">
+            <div class="touch-btn" id="leftBtn">⬅️</div>
+            <div class="touch-btn" id="jumpBtn">⬆️</div>
+            <div class="touch-btn" id="slideBtn">⬇️</div>
+            <div class="touch-btn" id="rightBtn">➡️</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game variables
+        let gameRunning = false;
+        let score = 0;
+        let coins = 0;
+        let gameSpeed = 5;
+        let frameCount = 0;
+
+        // Player
+        const player = {
+            lane: 1, // 0=left, 1=center, 2=right
+            x: 0,
+            y: 500,
+            width: 50,
+            height: 70,
+            velocityY: 0,
+            jumping: false,
+            sliding: false,
+            slideTimer: 0
+        };
+
+        // Lane positions
+        const lanes = [90, 175, 260];
+        player.x = lanes[player.lane];
+
+        // Arrays
+        let obstacles = [];
+        let coinItems = [];
+        let groundLines = [];
+
+        // Input
+        const keys = {};
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            
+            if (!gameRunning) return;
+            
+            if (e.key === 'ArrowLeft' && player.lane > 0 && !player.sliding) {
+                player.lane--;
+                playSound('swipe');
+            }
+            if (e.key === 'ArrowRight' && player.lane < 2 && !player.sliding) {
+                player.lane++;
+                playSound('swipe');
+            }
+            if (e.key === 'ArrowUp' && !player.jumping && !player.sliding) {
+                jump();
+            }
+            if (e.key === 'ArrowDown' && !player.jumping && !player.sliding) {
+                slide();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Touch controls
+        canvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (!gameRunning) return;
+            
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                // Horizontal swipe
+                if (deltaX > 30 && player.lane < 2 && !player.sliding) {
+                    player.lane++;
+                    playSound('swipe');
+                } else if (deltaX < -30 && player.lane > 0 && !player.sliding) {
+                    player.lane--;
+                    playSound('swipe');
+                }
+            } else {
+                // Vertical swipe
+                if (deltaY < -30 && !player.jumping && !player.sliding) {
+                    jump();
+                } else if (deltaY > 30 && !player.jumping && !player.sliding) {
+                    slide();
+                }
+            }
+        });
+
+        // Touch button controls
+        document.getElementById('leftBtn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning && player.lane > 0 && !player.sliding) {
+                player.lane--;
+                playSound('swipe');
+            }
+        });
+
+        document.getElementById('rightBtn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning && player.lane < 2 && !player.sliding) {
+                player.lane++;
+                playSound('swipe');
+            }
+        });
+
+        document.getElementById('jumpBtn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning && !player.jumping && !player.sliding) {
+                jump();
+            }
+        });
+
+        document.getElementById('slideBtn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning && !player.jumping && !player.sliding) {
+                slide();
+            }
+        });
+
+        // Game functions
+        function jump() {
+            if (!player.jumping) {
+                player.jumping = true;
+                player.velocityY = -15;
+                playSound('jump');
+            }
+        }
+
+        function slide() {
+            player.sliding = true;
+            player.slideTimer = 30; // Slide for 0.5 seconds at 60fps
+            playSound('slide');
+        }
+
+        function spawnObstacle() {
+            const lane = Math.floor(Math.random() * 3);
+            const types = ['box', 'barrier', 'cone'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            
+            obstacles.push({
+                x: lanes[lane],
+                y: -100,
+                width: 50,
+                height: type === 'barrier' ? 100 : 60,
+                type: type,
+                lane: lane
+            });
+        }
+
+        function spawnCoin() {
+            const lane = Math.floor(Math.random() * 3);
+            const pattern = Math.random();
+            
+            // Sometimes spawn coin trails
+            if (pattern < 0.3) {
+                // Single coin
+                coinItems.push({
+                    x: lanes[lane],
+                    y: -50,
+                    width: 30,
+                    height: 30,
+                    collected: false
+                });
+            } else {
+                // Coin trail (3-5 coins in a row)
+                const count = Math.floor(Math.random() * 3) + 3;
+                for (let i = 0; i < count; i++) {
+                    coinItems.push({
+                        x: lanes[lane],
+                        y: -50 - (i * 80),
+                        width: 30,
+                        height: 30,
+                        collected: false
+                    });
+                }
+            }
+        }
+
+        function updatePlayer() {
+            // Smooth lane transition
+            const targetX = lanes[player.lane];
+            player.x += (targetX - player.x) * 0.3;
+
+            // Jumping physics
+            if (player.jumping) {
+                player.velocityY += 0.8; // Gravity
+                player.y += player.velocityY;
+
+                if (player.y >= 500) {
+                    player.y = 500;
+                    player.jumping = false;
+                    player.velocityY = 0;
+                }
+            }
+
+            // Sliding
+            if (player.sliding) {
+                player.slideTimer--;
+                if (player.slideTimer <= 0) {
+                    player.sliding = false;
+                }
+            }
+        }
+
+        function updateObstacles() {
+            obstacles = obstacles.filter(obs => {
+                obs.y += gameSpeed;
+
+                // Check collision
+                const playerHeight = player.sliding ? player.height / 2 : player.height;
+                const playerY = player.sliding ? player.y + player.height / 2 : player.y;
+
+                if (obs.lane === player.lane &&
+                    player.x < obs.x + obs.width - 10 &&
+                    player.x + player.width > obs.x + 10 &&
+                    playerY < obs.y + obs.height &&
+                    playerY + playerHeight > obs.y) {
+                    
+                    // Collision! Game Over
+                    if (obs.type === 'barrier' && player.jumping && player.y < obs.y + 50) {
+                        // Can jump over low barrier
+                    } else {
+                        gameOver();
+                        return false;
+                    }
+                }
+
+                return obs.y < canvas.height + 100;
+            });
+        }
+
+        function updateCoins() {
+            coinItems = coinItems.filter(coin => {
+                if (coin.collected) return false;
+
+                coin.y += gameSpeed;
+
+                // Check collection
+                if (player.lane === Math.floor((coin.x - 65) / 85) &&
+                    player.x < coin.x + coin.width &&
+                    player.x + player.width > coin.x &&
+                    player.y < coin.y + coin.height &&
+                    player.y + player.height > coin.y) {
+                    
+                    coins++;
+                    score += 10;
+                    playSound('coin');
+                    return false;
+                }
+
+                return coin.y < canvas.height + 100;
+            });
+        }
+
+        function updateGround() {
+            // Create moving ground lines for speed effect
+            if (frameCount % 20 === 0) {
+                groundLines.push({ y: 0 });
+            }
+
+            groundLines = groundLines.filter(line => {
+                line.y += gameSpeed;
+                return line.y < canvas.height;
+            });
+        }
+
+        function update() {
+            if (!gameRunning) return;
+
+            frameCount++;
+            score++;
+
+            updatePlayer();
+            updateObstacles();
+            updateCoins();
+            updateGround();
+
+            // Spawn obstacles
+            if (frameCount % 60 === 0) {
+                spawnObstacle();
+            }
+
+            // Spawn coins
+            if (frameCount % 40 === 0) {
+                spawnCoin();
+            }
+
+            // Increase difficulty
+            if (frameCount % 300 === 0) {
+                gameSpeed += 0.5;
+            }
+
+            // Update UI
+            document.getElementById('score').textContent = score;
+            document.getElementById('coins').textContent = coins;
+        }
+
+        function drawPlayer() {
+            ctx.save();
+            
+            const playerHeight = player.sliding ? player.height / 2 : player.height;
+            const playerY = player.sliding ? player.y + player.height / 2 : player.y;
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(player.x + 5, 565, player.width - 10, 10);
+
+            // Body (ANISH themed - green with gradient)
+            const gradient = ctx.createLinearGradient(player.x, playerY, player.x, playerY + playerHeight);
+            gradient.addColorStop(0, '#4CAF50');
+            gradient.addColorStop(1, '#45a049');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(player.x, playerY, player.width, playerHeight);
+
+            // Outline
+            ctx.strokeStyle = '#2E7D32';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(player.x, playerY, player.width, playerHeight);
+
+            // Face
+            if (!player.sliding) {
+                ctx.fillStyle = '#FFF';
+                ctx.fillRect(player.x + 15, playerY + 15, 8, 8);
+                ctx.fillRect(player.x + 27, playerY + 15, 8, 8);
+                
+                // Smile
+                ctx.strokeStyle = '#FFF';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(player.x + 25, playerY + 35, 10, 0, Math.PI);
+                ctx.stroke();
+            }
+
+            // "A" letter on chest
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('A', player.x + 25, playerY + (playerHeight * 0.7));
+
+            ctx.restore();
+        }
+
+        function drawObstacles() {
+            obstacles.forEach(obs => {
+                ctx.save();
+
+                if (obs.type === 'box') {
+                    // Brown box
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    ctx.strokeStyle = '#5C2E0C';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+                    
+                    // Box details
+                    ctx.strokeStyle = '#A0522D';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x, obs.y);
+                    ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+                    ctx.moveTo(obs.x + obs.width, obs.y);
+                    ctx.lineTo(obs.x, obs.y + obs.height);
+                    ctx.stroke();
+                } else if (obs.type === 'barrier') {
+                    // Red barrier
+                    ctx.fillStyle = '#F44336';
+                    ctx.fillRect(obs.x + 10, obs.y, 30, obs.height);
+                    ctx.fillStyle = '#FFF';
+                    // Diagonal stripes
+                    for (let i = 0; i < obs.height; i += 20) {
+                        ctx.fillRect(obs.x + 10, obs.y + i, 30, 10);
+                    }
+                } else {
+                    // Orange cone
+                    ctx.fillStyle = '#FF9800';
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + 25, obs.y);
+                    ctx.lineTo(obs.x, obs.y + obs.height);
+                    ctx.lineTo(obs.x + 50, obs.y + obs.height);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // White stripes on cone
+                    ctx.fillStyle = '#FFF';
+                    ctx.fillRect(obs.x + 10, obs.y + 20, 30, 8);
+                    ctx.fillRect(obs.x + 5, obs.y + 40, 40, 8);
+                }
+
+                ctx.restore();
+            });
+        }
+
+        function drawCoins() {
+            coinItems.forEach(coin => {
+                if (coin.collected) return;
+
+                ctx.save();
+                
+                // Rotating coin effect
+                const rotation = (frameCount * 0.1) % (Math.PI * 2);
+                const scale = Math.abs(Math.cos(rotation));
+                
+                ctx.translate(coin.x + coin.width / 2, coin.y + coin.height / 2);
+                ctx.scale(scale, 1);
+                
+                // Gold coin
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(0, 0, 15, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Shine
+                ctx.fillStyle = '#FFF';
+                ctx.beginPath();
+                ctx.arc(-5, -5, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // "A" on coin
+                ctx.fillStyle = '#FFA500';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('A', 0, 0);
+
+                ctx.restore();
+            });
+        }
+
+        function drawBackground() {
+            // Sky gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(1, '#E0F6FF');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Road
+            ctx.fillStyle = '#555';
+            ctx.fillRect(50, 0, 300, canvas.height);
+
+            // Lane lines
+            groundLines.forEach(line => {
+                ctx.strokeStyle = '#FFF';
+                ctx.lineWidth = 4;
+                ctx.setLineDash([20, 20]);
+                ctx.beginPath();
+                ctx.moveTo(140, line.y);
+                ctx.lineTo(140, line.y + 40);
+                ctx.moveTo(225, line.y);
+                ctx.lineTo(225, line.y + 40);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            });
+
+            // Sidewalks
+            ctx.fillStyle = '#999';
+            ctx.fillRect(0, 0, 50, canvas.height);
+            ctx.fillRect(350, 0, 50, canvas.height);
+
+            // Ground line
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, 570);
+            ctx.lineTo(canvas.width, 570);
+            ctx.stroke();
+        }
+
+        function draw() {
+            drawBackground();
+            drawObstacles();
+            drawCoins();
+            drawPlayer();
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            update();
+            draw();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            gameRunning = true;
+            score = 0;
+            coins = 0;
+            gameSpeed = 5;
+            frameCount = 0;
+            player.lane = 1;
+            player.x = lanes[1];
+            player.y = 500;
+            player.jumping = false;
+            player.sliding = false;
+            obstacles = [];
+            coinItems = [];
+            groundLines = [];
+            gameLoop();
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('finalScore').textContent = `Score: ${score}`;
+            document.getElementById('finalCoins').textContent = `Coins: 🪙 ${coins}`;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+            playSound('gameover');
+        }
+
+        function restartGame() {
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            startGame();
+        }
+
+        // Simple sound effects
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            switch(type) {
+                case 'jump':
+                    oscillator.frequency.value = 400;
+                    oscillator.type = 'sine';
+                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.2);
+                    break;
+                    
+                case 'slide':
+                    oscillator.frequency.value = 200;
+                    oscillator.type = 'sawtooth';
+                    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.3);
+                    break;
+                    
+                case 'coin':
+                    oscillator.frequency.value = 800;
+                    oscillator.type = 'sine';
+                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                    oscillator.stop(audioCtx.currentTime + 0.1);
+                    break;
+                    
+                case 'swipe':
+                    oscillator.frequency.value = 600;
+                    oscillator.type = 'triangle';
+                    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.1);
+                    break;
+                    
+                case 'gameover':
+                    oscillator.frequency.value = 400;
+                    oscillator.type = 'square';
+                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.5);
+                    oscillator.stop(audioCtx.currentTime + 0.5);
+                    break;
+            }
+        }
+
+        // Event listeners
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', restartGame);
+
+        // Initial draw
+        drawBackground();
+    </script>
+</body>
+</html>
