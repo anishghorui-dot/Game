@@ -552,8 +552,10 @@
         let coins = 0;
         let distance = 0;
         let gameSpeed = 5;
+        let baseGameSpeed = 5;
         let frameCount = 0;
         let scoreMultiplier = 1;
+        let difficultyLevel = 1;
 
         // Player
         const player = {
@@ -686,13 +688,28 @@
 
         function spawnObstacle() {
             const lane = Math.floor(Math.random() * 3);
-            const types = ['box', 'barrier', 'cone'];
+            
+            // Enemy types based on difficulty level
+            let types = ['box', 'barrier', 'cone'];
+            
+            // Add new enemy types as difficulty increases
+            if (difficultyLevel >= 2) {
+                types.push('spike', 'bouncer'); // Level 2+: Spiky obstacles and bouncers
+            }
+            if (difficultyLevel >= 3) {
+                types.push('zigzag', 'chaser'); // Level 3+: Zigzag movers and chasers
+            }
+            if (difficultyLevel >= 4) {
+                types.push('splitter', 'teleporter'); // Level 4+: Obstacles that split or teleport
+            }
+            
             const type = types[Math.floor(Math.random() * types.length)];
             
-            // 30% chance to create a moving obstacle
-            const isMoving = Math.random() < 0.3;
-            const moveDirection = Math.random() < 0.5 ? -1 : 1; // -1 = left, 1 = right
-            const moveSpeed = isMoving ? (0.5 + Math.random() * 1.5) : 0; // Random speed between 0.5-2
+            // Increase moving obstacle chance with difficulty (30% + 10% per level, max 70%)
+            const movingChance = Math.min(0.7, 0.3 + (difficultyLevel - 1) * 0.1);
+            const isMoving = Math.random() < movingChance;
+            const moveDirection = Math.random() < 0.5 ? -1 : 1;
+            const moveSpeed = isMoving ? (0.5 + Math.random() * 1.5 + difficultyLevel * 0.3) : 0;
             
             obstacles.push({
                 x: lanes[lane],
@@ -704,7 +721,13 @@
                 isMoving: isMoving,
                 moveDirection: moveDirection,
                 moveSpeed: moveSpeed,
-                targetLane: lane
+                targetLane: lane,
+                // Special properties for new enemy types
+                bounceTimer: 0,
+                zigzagTimer: 0,
+                chaserActive: type === 'chaser',
+                hasSplit: false,
+                teleportTimer: type === 'teleporter' ? 180 : 0 // 3 seconds
             });
         }
 
@@ -751,6 +774,37 @@
                 lane: lane,
                 collected: false
             });
+        }
+        
+        function dropPowerUpFromEnemy(x, y) {
+            // 20% chance to drop a power-up when enemy is destroyed
+            if (Math.random() < 0.2) {
+                const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                
+                powerUps.push({
+                    x: x,
+                    y: y,
+                    width: 40,
+                    height: 40,
+                    type: type,
+                    lane: Math.floor((x - lanes[0]) / (lanes[1] - lanes[0])), // Calculate lane from x position
+                    collected: false,
+                    dropped: true // Mark as dropped from enemy
+                });
+                
+                // Visual effect for drop
+                for (let i = 0; i < 15; i++) {
+                    particles.push({
+                        x: x + 25,
+                        y: y + 20,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: (Math.random() - 0.5) * 4,
+                        color: '#FFD700',
+                        life: 25
+                    });
+                }
+            }
         }
 
         function useAttackPowerUp() {
@@ -1171,11 +1225,89 @@
                     }
                 }
                 
+                // Special enemy behaviors
+                if (obs.type === 'bouncer') {
+                    // Bounces up and down
+                    obs.bounceTimer++;
+                    obs.y += Math.sin(obs.bounceTimer * 0.1) * 2;
+                }
+                
+                if (obs.type === 'zigzag') {
+                    // Moves in zigzag pattern
+                    obs.zigzagTimer++;
+                    obs.x += Math.sin(obs.zigzagTimer * 0.15) * 3;
+                    // Update lane
+                    if (obs.x < lanes[1] - 40) obs.lane = 0;
+                    else if (obs.x > lanes[1] + 40) obs.lane = 2;
+                    else obs.lane = 1;
+                }
+                
+                if (obs.type === 'chaser' && obs.chaserActive) {
+                    // Moves towards player's lane
+                    const targetX = lanes[player.lane];
+                    if (Math.abs(obs.x - targetX) > 5) {
+                        obs.x += (targetX - obs.x) * 0.05;
+                        // Update lane
+                        if (obs.x < lanes[1] - 40) obs.lane = 0;
+                        else if (obs.x > lanes[1] + 40) obs.lane = 2;
+                        else obs.lane = 1;
+                    }
+                }
+                
+                if (obs.type === 'splitter' && !obs.hasSplit && obs.y > 200 && obs.y < 250) {
+                    // Splits into two obstacles
+                    obs.hasSplit = true;
+                    obstacles.push({
+                        x: obs.x - 60,
+                        y: obs.y,
+                        width: 40,
+                        height: 50,
+                        type: 'box',
+                        lane: obs.lane,
+                        isMoving: true,
+                        moveDirection: -1,
+                        moveSpeed: 2,
+                        targetLane: obs.lane
+                    });
+                    obstacles.push({
+                        x: obs.x + 60,
+                        y: obs.y,
+                        width: 40,
+                        height: 50,
+                        type: 'box',
+                        lane: obs.lane,
+                        isMoving: true,
+                        moveDirection: 1,
+                        moveSpeed: 2,
+                        targetLane: obs.lane
+                    });
+                }
+                
+                if (obs.type === 'teleporter' && obs.teleportTimer > 0) {
+                    obs.teleportTimer--;
+                    // Flash effect before teleport
+                    if (obs.teleportTimer < 30 && obs.teleportTimer % 6 < 3) {
+                        obs.alpha = 0.3;
+                    } else {
+                        obs.alpha = 1;
+                    }
+                    
+                    if (obs.teleportTimer === 0) {
+                        // Teleport to random lane
+                        const newLane = Math.floor(Math.random() * 3);
+                        obs.x = lanes[newLane];
+                        obs.lane = newLane;
+                        obs.teleportTimer = 180; // Teleport again in 3 seconds
+                        createParticle(obs.x + 25, obs.y + 30, '#FF00FF');
+                    }
+                }
+                
                 // Laser continuously destroys obstacles in its lane (follows player)
                 if (laserActive && obs.lane === player.lane) {
                     createParticle(obs.x + 25, obs.y + 30, '#00FFFF');
                     score += 100;
                     playSound('destroy');
+                    dropPowerUpFromEnemy(obs.x, obs.y); // Drop power-up from destroyed enemy
                     return false;
                 }
 
@@ -1193,6 +1325,7 @@
                         createParticle(obs.x + 25, obs.y + 30, '#FFD700');
                         score += 50;
                         playSound('destroy');
+                        dropPowerUpFromEnemy(obs.x, obs.y); // Drop power-up from destroyed enemy
                         return false;
                     } else if (hasShield) {
                         // Shield absorbs hit
@@ -1322,6 +1455,7 @@
                         proj.y + proj.height > obs.y) {
                         
                         createParticle(obs.x + 25, obs.y + 30, '#FF4500');
+                        dropPowerUpFromEnemy(obs.x, obs.y); // Drop power-up from destroyed enemy
                         obstacles.splice(index, 1);
                         score += 100;
                         proj.hit = true;
@@ -1350,6 +1484,18 @@
             frameCount++;
             score += scoreMultiplier;
             distance = Math.floor(score / 10);
+            
+            // Progressive difficulty every 500 distance
+            const newDifficultyLevel = Math.floor(distance / 500) + 1;
+            if (newDifficultyLevel > difficultyLevel) {
+                difficultyLevel = newDifficultyLevel;
+                // Gradually increase base speed (max 12)
+                baseGameSpeed = Math.min(12, 5 + (difficultyLevel - 1) * 0.7);
+                if (!speedBoostActive) {
+                    gameSpeed = baseGameSpeed;
+                }
+                showMultiplier(`🔥 LEVEL ${difficultyLevel}! FASTER!`);
+            }
 
             updatePlayer();
             updateObstacles();
@@ -1391,8 +1537,9 @@
             // Update attack button visual
             updateAttackButton();
 
-            // Spawn obstacles
-            if (frameCount % 60 === 0) {
+            // Spawn obstacles (more frequent with difficulty)
+            const obstacleSpawnRate = Math.max(30, 60 - (difficultyLevel - 1) * 5); // 60, 55, 50, 45... down to 30
+            if (frameCount % obstacleSpawnRate === 0) {
                 spawnObstacle();
             }
 
@@ -1401,8 +1548,9 @@
                 spawnCoin();
             }
 
-            // Spawn power-ups
-            if (frameCount % 180 === 0) { // Every 3 seconds
+            // Spawn power-ups (slightly more frequent at higher levels)
+            const powerUpSpawnRate = Math.max(120, 180 - (difficultyLevel - 1) * 10); // 180, 170, 160... down to 120
+            if (frameCount % powerUpSpawnRate === 0) {
                 spawnPowerUp();
             }
 
@@ -1616,6 +1764,11 @@
             obstacles.forEach(obs => {
                 ctx.save();
                 
+                // Set opacity for teleporter
+                if (obs.alpha !== undefined) {
+                    ctx.globalAlpha = obs.alpha;
+                }
+                
                 // Moving obstacle indicator (arrows)
                 if (obs.isMoving) {
                     const arrowColor = '#FFFF00';
@@ -1662,7 +1815,7 @@
                     for (let i = 0; i < obs.height; i += 20) {
                         ctx.fillRect(obs.x + 10, obs.y + i, 30, 10);
                     }
-                } else {
+                } else if (obs.type === 'cone') {
                     // Orange cone
                     ctx.fillStyle = obs.isMoving ? '#FFB347' : '#FF9800';
                     ctx.beginPath();
@@ -1676,6 +1829,91 @@
                     ctx.fillStyle = '#FFF';
                     ctx.fillRect(obs.x + 10, obs.y + 20, 30, 8);
                     ctx.fillRect(obs.x + 5, obs.y + 40, 40, 8);
+                } else if (obs.type === 'spike') {
+                    // Purple spiky obstacle
+                    ctx.fillStyle = '#8B00FF';
+                    ctx.shadowColor = '#8B00FF';
+                    ctx.shadowBlur = 15;
+                    // Draw spikes
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x + i * 17, obs.y + obs.height);
+                        ctx.lineTo(obs.x + 8 + i * 17, obs.y);
+                        ctx.lineTo(obs.x + 17 + i * 17, obs.y + obs.height);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                } else if (obs.type === 'bouncer') {
+                    // Green bouncing obstacle
+                    ctx.fillStyle = '#00FF00';
+                    ctx.shadowColor = '#00FF00';
+                    ctx.shadowBlur = 20;
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 25, obs.y + 30, 30, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#FFF';
+                    ctx.font = 'bold 20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('!', obs.x + 25, obs.y + 38);
+                } else if (obs.type === 'zigzag') {
+                    // Blue zigzag obstacle
+                    ctx.fillStyle = '#00BFFF';
+                    ctx.shadowColor = '#00BFFF';
+                    ctx.shadowBlur = 15;
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x, obs.y + obs.height / 2);
+                    ctx.lineTo(obs.x + 15, obs.y);
+                    ctx.lineTo(obs.x + 35, obs.y + obs.height);
+                    ctx.lineTo(obs.x + 50, obs.y + obs.height / 2);
+                    ctx.lineTo(obs.x + 35, obs.y);
+                    ctx.lineTo(obs.x + 15, obs.y + obs.height);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (obs.type === 'chaser') {
+                    // Red chaser with eyes
+                    ctx.fillStyle = '#FF1744';
+                    ctx.shadowColor = '#FF1744';
+                    ctx.shadowBlur = 20;
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    // Eyes
+                    ctx.fillStyle = '#FFF';
+                    ctx.fillRect(obs.x + 10, obs.y + 15, 10, 10);
+                    ctx.fillRect(obs.x + 30, obs.y + 15, 10, 10);
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(obs.x + 15, obs.y + 18, 4, 4);
+                    ctx.fillRect(obs.x + 35, obs.y + 18, 4, 4);
+                } else if (obs.type === 'splitter') {
+                    // Yellow splitter
+                    ctx.fillStyle = obs.hasSplit ? '#888' : '#FFD700';
+                    ctx.shadowColor = '#FFD700';
+                    ctx.shadowBlur = 15;
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    if (!obs.hasSplit) {
+                        ctx.strokeStyle = '#000';
+                        ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x + 25, obs.y);
+                        ctx.lineTo(obs.x + 25, obs.y + obs.height);
+                        ctx.stroke();
+                    }
+                } else if (obs.type === 'teleporter') {
+                    // Purple teleporter
+                    ctx.fillStyle = '#FF00FF';
+                    ctx.shadowColor = '#FF00FF';
+                    ctx.shadowBlur = 25;
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 25, obs.y + 30, 25, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Teleport symbol
+                    ctx.strokeStyle = '#FFF';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 25, obs.y + 30, 15, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.fillStyle = '#FFF';
+                    ctx.font = 'bold 16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('T', obs.x + 25, obs.y + 36);
                 }
 
                 ctx.restore();
@@ -1994,6 +2232,8 @@
             coins = 0;
             distance = 0;
             gameSpeed = 5;
+            baseGameSpeed = 5;
+            difficultyLevel = 1;
             frameCount = 0;
             scoreMultiplier = 1;
             player.lane = 1;
