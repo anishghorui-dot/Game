@@ -408,26 +408,38 @@
         // Player
         const player = {
             x: 100, y: 400,
-            width: 30, height: 40,
+            width: 40, height: 50,
             vx: 0, vy: 0,
             speed: 6,
-            jumpPower: 14,
+            jumpPower: 15,
             health: 100,
             maxHealth: 100,
             onGround: false,
             facing: 1,
+            canShoot: true,
             shootCooldown: 0,
             dashCooldown: 0,
-            specialCooldown: 0,
-            invincible: 0,
-            shield: 0,
-            rapidFire: 0,
-            flying: 0,
-            invisible: 0,
-            oneShotActive: 0,
-            laserActive: 0,
-            doublePoints: 0,
-            speedBoost: 0
+            isDashing: false,
+            specialAttackCooldown: 0,
+            specialAttackCharge: 0,
+            maxSpecialCharge: 100,
+            // Power-up states
+            isFlying: false,
+            flyingDuration: 0,
+            isInvisible: false,
+            invisibleDuration: 0,
+            hasShield: false,
+            shieldDuration: 0,
+            hasRapidFire: false,
+            rapidFireDuration: 0,
+            hasOneShot: false,
+            oneShotDuration: 0,
+            hasLaser: false,
+            laserDuration: 0,
+            hasDoublePoints: false,
+            doublePointsDuration: 0,
+            hasSpeedBoost: false,
+            speedBoostDuration: 0
         };
 
         // Arrays
@@ -446,6 +458,9 @@
         // Combo system
         let combo = 0;
         let comboTimer = 0;
+        let screenShake = 0;
+        let nameGlowTimer = 0;
+        let bonusTextTimer = 0;
 
         // Platforms
         const platforms = [
@@ -554,17 +569,24 @@
 
         // Game functions
         function jump() {
-            if (player.onGround || player.flying > 0) {
+            if (player.onGround || player.isFlying) {
                 player.vy = -player.jumpPower;
                 player.onGround = false;
+                createParticles(player.x + player.width / 2, player.y + player.height, 0, 1, 0, 8);
             }
         }
 
         function shoot() {
             if (player.shootCooldown > 0) return;
             
-            const damage = player.oneShotActive > 0 ? 999 : 1;
-            const cooldown = player.rapidFire > 0 ? 5 : 15;
+            // If laser is active, it auto-shoots in updatePlayer
+            if (player.hasLaser) {
+                playSound('shoot');
+                player.shootCooldown = 30;
+                return;
+            }
+            
+            const bulletDamage = player.hasOneShot ? 999 : 1;
             
             // Horizontal shot
             bullets.push({
@@ -572,53 +594,67 @@
                 y: player.y + player.height / 2 - 2,
                 vx: 12 * player.facing,
                 vy: 0,
-                width: 12,
-                height: 4,
-                damage: damage
+                width: 15,
+                height: 5,
+                damage: bulletDamage,
+                oneshot: player.hasOneShot
             });
             
             // Vertical shot
             bullets.push({
-                x: player.x + player.width / 2 - 2,
+                x: player.x + player.width / 2 - 2.5,
                 y: player.y,
                 vx: 0,
                 vy: -12,
-                width: 4,
-                height: 12,
-                damage: damage
+                width: 5,
+                height: 15,
+                damage: bulletDamage,
+                oneshot: player.hasOneShot
             });
             
-            player.shootCooldown = cooldown;
+            player.shootCooldown = player.hasRapidFire ? 5 : 15;
             playSound('shoot');
+            createParticles(player.x + player.width / 2, player.y + player.height / 2, 
+                          player.hasOneShot ? 1 : 1, player.hasOneShot ? 0 : 1, 0, 5);
         }
 
         function specialAttack() {
-            if (player.specialCooldown > 0) return;
+            if (player.specialAttackCharge < player.maxSpecialCharge) return;
+            if (player.specialAttackCooldown > 0) return;
             
-            // 360-degree wave
-            for (let i = 0; i < 16; i++) {
-                const angle = (Math.PI * 2 / 16) * i;
+            playSound('powerup');
+            player.specialAttackCharge = 0;
+            player.specialAttackCooldown = 180;
+            
+            // Create 360-degree energy wave
+            for (let i = 0; i < 360; i += 15) {
+                const angle = (i * Math.PI) / 180;
                 bullets.push({
                     x: player.x + player.width / 2,
                     y: player.y + player.height / 2,
                     vx: Math.cos(angle) * 10,
                     vy: Math.sin(angle) * 10,
-                    width: 8,
-                    height: 8,
-                    damage: 1,
+                    width: 12,
+                    height: 12,
+                    damage: 3,
                     special: true
                 });
             }
             
-            player.specialCooldown = 180;
-            playSound('powerup');
+            createParticles(player.x + player.width / 2, player.y + player.height / 2, 0, 1, 0, 50);
         }
 
         function dash() {
             if (player.dashCooldown > 0) return;
-            player.vx = player.facing * 20;
+            player.isDashing = true;
+            player.vx = 20 * player.facing;
             player.dashCooldown = 60;
-            player.invincible = 15;
+            
+            setTimeout(() => {
+                player.isDashing = false;
+            }, 200);
+            
+            createParticles(player.x + player.width / 2, player.y + player.height / 2, 0, 1, 1, 15);
         }
 
         function spawnEnemy() {
@@ -729,21 +765,49 @@
             // Cooldowns
             if (player.shootCooldown > 0) player.shootCooldown--;
             if (player.dashCooldown > 0) player.dashCooldown--;
-            if (player.specialCooldown > 0) player.specialCooldown--;
-            if (player.invincible > 0) player.invincible--;
+            if (player.specialAttackCooldown > 0) player.specialAttackCooldown--;
             
             // Power-up timers
-            if (player.shield > 0) player.shield--;
-            if (player.rapidFire > 0) player.rapidFire--;
-            if (player.flying > 0) player.flying--;
-            if (player.invisible > 0) player.invisible--;
-            if (player.oneShotActive > 0) player.oneShotActive--;
-            if (player.laserActive > 0) player.laserActive--;
-            if (player.doublePoints > 0) player.doublePoints--;
-            if (player.speedBoost > 0) player.speedBoost--;
+            if (player.shieldDuration > 0) {
+                player.shieldDuration--;
+                if (player.shieldDuration === 0) player.hasShield = false;
+            }
+            if (player.rapidFireDuration > 0) {
+                player.rapidFireDuration--;
+                if (player.rapidFireDuration === 0) player.hasRapidFire = false;
+            }
+            if (player.flyingDuration > 0) {
+                player.flyingDuration--;
+                if (player.flyingDuration === 0) player.isFlying = false;
+            }
+            if (player.invisibleDuration > 0) {
+                player.invisibleDuration--;
+                if (player.invisibleDuration === 0) player.isInvisible = false;
+            }
+            if (player.oneShotDuration > 0) {
+                player.oneShotDuration--;
+                if (player.oneShotDuration === 0) player.hasOneShot = false;
+            }
+            if (player.laserDuration > 0) {
+                player.laserDuration--;
+                if (player.laserDuration === 0) player.hasLaser = false;
+            }
+            if (player.doublePointsDuration > 0) {
+                player.doublePointsDuration--;
+                if (player.doublePointsDuration === 0) player.hasDoublePoints = false;
+            }
+            if (player.speedBoostDuration > 0) {
+                player.speedBoostDuration--;
+                if (player.speedBoostDuration === 0) player.hasSpeedBoost = false;
+            }
+            
+            // Charge special attack
+            if (player.specialAttackCharge < player.maxSpecialCharge) {
+                player.specialAttackCharge += 0.5;
+            }
             
             // Movement
-            const moveSpeed = player.speedBoost > 0 ? player.speed * 1.5 : player.speed;
+            const moveSpeed = player.hasSpeedBoost ? player.speed * 1.5 : player.speed;
             
             if (keys['a'] || keys['arrowleft'] || touchInput.left) {
                 player.vx = -moveSpeed;
@@ -751,12 +815,37 @@
             } else if (keys['d'] || keys['arrowright'] || touchInput.right) {
                 player.vx = moveSpeed;
                 player.facing = 1;
-            } else {
+            } else if (!player.isDashing) {
                 player.vx *= 0.8;
             }
             
+            // Dash trails
+            if (player.isDashing) {
+                createParticles(player.x + player.width / 2, player.y + player.height / 2, 0, 1, 1, 3);
+            }
+            
+            // Flying trails
+            if (player.isFlying) {
+                const rainbowColors = [
+                    {r: 1, g: 0, b: 0},
+                    {r: 1, g: 0.5, b: 0},
+                    {r: 1, g: 1, b: 0},
+                    {r: 0, g: 1, b: 0},
+                    {r: 0, g: 0, b: 1},
+                    {r: 0.5, g: 0, b: 1}
+                ];
+                const color = rainbowColors[frameCount % rainbowColors.length];
+                createParticles(player.x + player.width / 2, player.y + player.height, color.r, color.g, color.b, 2);
+            }
+            
+            // Invisible particles
+            if (player.isInvisible && frameCount % 5 === 0) {
+                createParticles(player.x + Math.random() * player.width, 
+                              player.y + Math.random() * player.height, 0.5, 0.5, 0.5, 1);
+            }
+            
             // Gravity
-            if (player.flying > 0) {
+            if (player.isFlying) {
                 if (keys['w'] || keys['arrowup'] || touchInput.up) {
                     player.vy = -player.speed;
                 } else if (keys['s'] || keys['arrowdown']) {
@@ -795,19 +884,25 @@
                 player.health = 0;
             }
             
-            // Laser shooting
-            if (player.laserActive > 0 && frameCount % 5 === 0) {
+            // Laser shooting (auto-shoot cross pattern)
+            if (player.hasLaser && frameCount % 5 === 0) {
                 lasers.push({
-                    x: player.x + player.width / 2,
-                    y: player.y + player.height / 2,
-                    dir: 'horizontal',
-                    life: 10
+                    x: 0,
+                    y: player.y + player.height / 2 - 2,
+                    width: canvas.width,
+                    height: 4,
+                    facing: 1,
+                    life: 10,
+                    damage: 2
                 });
                 lasers.push({
-                    x: player.x + player.width / 2,
-                    y: player.y + player.height / 2,
-                    dir: 'vertical',
-                    life: 10
+                    x: player.x + player.width / 2 - 2,
+                    y: 0,
+                    width: 4,
+                    height: canvas.height,
+                    facing: 0,
+                    life: 10,
+                    damage: 2
                 });
             }
         }
@@ -838,13 +933,20 @@
                             const points = (enemy.type === 'tank' ? 50 : 
                                           enemy.type === 'bomber' ? 40 : 
                                           enemy.type === 'speeder' ? 30 : 20);
-                            score += points * (player.doublePoints > 0 ? 2 : 1);
+                            score += points * (player.hasDoublePoints ? 2 : 1);
                             combo++;
                             comboTimer = 120;
                             
                             enemies.splice(i, 1);
                             spawnPowerup(enemy.x, enemy.y);
                             playSound('hit');
+                            screenShake = 3;
+                            
+                            // Charge special attack
+                            player.specialAttackCharge = Math.min(
+                                player.specialAttackCharge + 5, 
+                                player.maxSpecialCharge
+                            );
                         }
                         
                         return false;
@@ -860,20 +962,26 @@
                 laser.life--;
                 
                 // Check enemy collision
-                enemies.forEach(enemy => {
+                enemies.forEach((enemy, i) => {
                     let hit = false;
-                    if (laser.dir === 'horizontal') {
+                    if (laser.facing === 1) { // Horizontal
                         hit = Math.abs(laser.y - (enemy.y + enemy.height / 2)) < 5 &&
                               enemy.x < canvas.width && enemy.x > 0;
-                    } else {
+                    } else { // Vertical
                         hit = Math.abs(laser.x - (enemy.x + enemy.width / 2)) < 5 &&
                               enemy.y < canvas.height && enemy.y > 0;
                     }
                     
                     if (hit) {
-                        enemy.health -= 0.5;
+                        enemy.health -= laser.damage * 0.5;
                         if (enemy.health <= 0) {
-                            score += 30 * (player.doublePoints > 0 ? 2 : 1);
+                            score += 30 * (player.hasDoublePoints ? 2 : 1);
+                            combo++;
+                            comboTimer = 120;
+                            createParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2,
+                                          enemy.color.r, enemy.color.g, enemy.color.b, 10);
+                            enemies.splice(i, 1);
+                            spawnPowerup(enemy.x, enemy.y);
                         }
                     }
                 });
@@ -908,19 +1016,20 @@
                 if (enemy.shootCooldown > 0) enemy.shootCooldown--;
                 
                 // Check player collision
-                if (!player.invincible && !player.invisible &&
+                if (!player.isDashing && !player.isInvisible &&
                     player.x + player.width > enemy.x &&
                     player.x < enemy.x + enemy.width &&
                     player.y + player.height > enemy.y &&
                     player.y < enemy.y + enemy.height) {
                     
-                    if (player.shield > 0) {
-                        player.shield = 0;
+                    if (player.hasShield) {
+                        player.hasShield = false;
+                        player.shieldDuration = 0;
+                        createParticles(player.x, player.y, 0, 1, 1, 20);
                     } else {
                         player.health -= 10;
-                        player.invincible = 60;
+                        createParticles(player.x, player.y, 1, 0, 0, 10);
                     }
-                    createParticles(player.x, player.y, 1, 0, 0, 10);
                 }
                 
                 if (enemy.health <= 0 || enemy.x < -100) {
@@ -937,17 +1046,19 @@
                 bullet.y += bullet.vy;
                 
                 // Check player collision
-                if (!player.invincible && !player.invisible &&
+                if (!player.isDashing && !player.isInvisible &&
                     player.x + player.width > bullet.x &&
                     player.x < bullet.x + bullet.width &&
                     player.y + player.height > bullet.y &&
                     player.y < bullet.y + bullet.height) {
                     
-                    if (player.shield > 0) {
-                        player.shield = 0;
+                    if (player.hasShield) {
+                        player.hasShield = false;
+                        player.shieldDuration = 0;
+                        createParticles(player.x, player.y, 0, 1, 1, 20);
                     } else {
                         player.health -= bullet.bomb ? 20 : 10;
-                        player.invincible = 60;
+                        createParticles(player.x, player.y, 1, 0, 0, 10);
                     }
                     return false;
                 }
@@ -992,25 +1103,32 @@
                             player.health = player.maxHealth;
                             break;
                         case 'flying':
-                            player.flying = 600;
+                            player.isFlying = true;
+                            player.flyingDuration = 600;
                             break;
                         case 'invisible':
-                            player.invisible = 600;
+                            player.isInvisible = true;
+                            player.invisibleDuration = 600;
                             break;
                         case 'shield':
-                            player.shield = 600;
+                            player.hasShield = true;
+                            player.shieldDuration = 600;
                             break;
                         case 'rapidfire':
-                            player.rapidFire = 600;
+                            player.hasRapidFire = true;
+                            player.rapidFireDuration = 600;
                             break;
                         case 'oneshot':
-                            player.oneShotActive = 600;
+                            player.hasOneShot = true;
+                            player.oneShotDuration = 600;
                             break;
                         case 'laser':
-                            player.laserActive = 600;
+                            player.hasLaser = true;
+                            player.laserDuration = 600;
                             break;
                         case 'doublepoints':
-                            player.doublePoints = 600;
+                            player.hasDoublePoints = true;
+                            player.doublePointsDuration = 600;
                             break;
                         case 'score':
                             score += 100;
@@ -1044,6 +1162,8 @@
                         if (collectedLetters.length === 5) {
                             score += 500;
                             playSound('powerup');
+                            bonusTextTimer = 120;
+                            nameGlowTimer = 120;
                         }
                     }
                     return false;
@@ -1075,6 +1195,13 @@
             } else {
                 combo = 0;
             }
+            
+            // Update screen shake
+            if (screenShake > 0) screenShake--;
+            
+            // Update name glow
+            if (nameGlowTimer > 0) nameGlowTimer--;
+            if (bonusTextTimer > 0) bonusTextTimer--;
             
             updatePlayer();
             updateBullets();
@@ -1132,24 +1259,20 @@
             
             // Draw lasers
             lasers.forEach(laser => {
-                if (laser.dir === 'horizontal') {
-                    drawRect(0, laser.y - 2, canvas.width, 4, 0, 1, 1, 0.6);
-                } else {
-                    drawRect(laser.x - 2, 0, 4, canvas.height, 0, 1, 1, 0.6);
-                }
+                drawRect(laser.x, laser.y, laser.width, laser.height, 0, 1, 1, 0.7);
             });
             
             // Draw player
-            if (!player.invisible || frameCount % 10 < 5) {
+            if (!player.isInvisible || frameCount % 10 < 5) {
                 let playerColor = { r: 0, g: 1, b: 1 };
-                if (player.invincible > 0) playerColor = { r: 1, g: 1, b: 0 };
-                if (player.flying > 0) playerColor = { r: 1, g: 0, b: 1 };
+                if (player.isDashing) playerColor = { r: 1, g: 1, b: 0 };
+                if (player.isFlying) playerColor = { r: 1, g: 0, b: 1 };
                 
                 drawRect(player.x, player.y, player.width, player.height, 
                         playerColor.r, playerColor.g, playerColor.b, 1);
                 
                 // Shield effect
-                if (player.shield > 0) {
+                if (player.hasShield) {
                     drawRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10, 
                             0, 1, 1, 0.3);
                 }
@@ -1158,9 +1281,10 @@
             // Draw bullets
             bullets.forEach(bullet => {
                 let color = bullet.special ? { r: 0, g: 1, b: 0 } :
-                           bullet.damage >= 999 ? { r: 1, g: 0, b: 0 } :
+                           bullet.oneshot ? { r: 1, g: 0, b: 0 } :
                            { r: 1, g: 1, b: 0 };
-                drawRect(bullet.x, bullet.y, bullet.width, bullet.height, 
+                const size = bullet.oneshot ? 1.5 : 1;
+                drawRect(bullet.x, bullet.y, bullet.width * size, bullet.height * size, 
                         color.r, color.g, color.b, 1);
             });
             
@@ -1224,15 +1348,25 @@
             player.facing = 1;
             player.shootCooldown = 0;
             player.dashCooldown = 0;
-            player.specialCooldown = 0;
-            player.invincible = 0;
-            player.shield = 0;
-            player.rapidFire = 0;
-            player.flying = 0;
-            player.invisible = 0;
-            player.oneShotActive = 0;
-            player.laserActive = 0;
-            player.doublePoints = 0;
+            player.isDashing = false;
+            player.specialAttackCooldown = 0;
+            player.specialAttackCharge = 0;
+            player.isFlying = false;
+            player.flyingDuration = 0;
+            player.isInvisible = false;
+            player.invisibleDuration = 0;
+            player.hasShield = false;
+            player.shieldDuration = 0;
+            player.hasRapidFire = false;
+            player.rapidFireDuration = 0;
+            player.hasOneShot = false;
+            player.oneShotDuration = 0;
+            player.hasLaser = false;
+            player.laserDuration = 0;
+            player.hasDoublePoints = false;
+            player.doublePointsDuration = 0;
+            player.hasSpeedBoost = false;
+            player.speedBoostDuration = 0;
             
             bullets = [];
             enemies = [];
