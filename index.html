@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Runner - Arcade Adventure</title>
     <style>
         * {
@@ -235,9 +235,121 @@
                 overflow: hidden;
             }
         }
+
+        /* Rotation Warning for Portrait Mode */
+        #rotateWarning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #rotateWarning .rotate-icon {
+            font-size: 80px;
+            margin-bottom: 30px;
+            animation: rotateAnim 2s infinite;
+        }
+
+        @keyframes rotateAnim {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+        }
+
+        #rotateWarning h2 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px #00ff00;
+        }
+
+        #rotateWarning p {
+            font-size: 18px;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        /* Show rotate warning only in portrait mode on mobile */
+        @media (max-width: 768px) and (orientation: portrait) {
+            #rotateWarning {
+                display: flex !important;
+            }
+            
+            #gameContainer {
+                display: none;
+            }
+        }
+
+        /* Landscape mode optimizations */
+        @media (orientation: landscape) and (max-width: 1024px) {
+            #gameContainer {
+                width: 100vw;
+                height: 100vh;
+                border: none;
+            }
+
+            #ui {
+                font-size: 16px;
+            }
+
+            .joystick {
+                bottom: 40px;
+                left: 40px;
+                width: 100px;
+                height: 100px;
+            }
+
+            .joystick-knob {
+                width: 40px;
+                height: 40px;
+            }
+
+            .touch-button {
+                width: 60px;
+                height: 60px;
+                font-size: 20px;
+            }
+
+            #jumpBtn {
+                bottom: 140px;
+                right: 60px;
+            }
+
+            #shootBtn {
+                bottom: 40px;
+                right: 60px;
+            }
+
+            #dashBtn {
+                bottom: 40px;
+                right: 140px;
+            }
+
+            #specialBtn {
+                bottom: 140px;
+                right: 140px;
+                font-size: 18px;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Rotation Warning for Mobile Portrait Mode -->
+    <div id="rotateWarning">
+        <div class="rotate-icon">📱 ↻</div>
+        <h2>PLEASE ROTATE YOUR DEVICE</h2>
+        <p>This game is best played in landscape mode</p>
+        <p style="margin-top: 20px; font-size: 16px;">🎮 Neon Runner by ANISH 🎮</p>
+    </div>
+
     <div id="gameContainer">
         <canvas id="gameCanvas" width="900" height="600"></canvas>
         
@@ -288,6 +400,35 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        
+        // Handle canvas resizing for mobile landscape
+        function resizeCanvas() {
+            if (window.innerWidth <= 1024 && window.matchMedia("(orientation: landscape)").matches) {
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                
+                // Keep aspect ratio but fill screen
+                canvas.width = Math.max(900, width);
+                canvas.height = Math.max(600, height);
+                
+                // Adjust game scale
+                const scaleX = width / 900;
+                const scaleY = height / 600;
+                ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+            } else if (window.innerWidth > 1024) {
+                // Desktop - keep original size
+                canvas.width = 900;
+                canvas.height = 600;
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+            }
+        }
+
+        // Call on load and orientation change
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(resizeCanvas, 100);
+        });
         
         // Audio Context for synthetic sounds
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -555,6 +696,22 @@
             comboTimer = 0;
             screenShake = 0;
             createPlatforms();
+            
+            // Request fullscreen on mobile
+            if (window.innerWidth <= 1024) {
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(() => {});
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                }
+                
+                // Try to lock orientation to landscape
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            }
+            
             gameLoop();
         }
         
