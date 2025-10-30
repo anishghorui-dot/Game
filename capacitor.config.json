@@ -1,0 +1,8 @@
+{
+  "appId": "com.anish.neonrunner",
+  "appName": "Neon Runner",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
