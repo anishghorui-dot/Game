@@ -470,14 +470,6 @@
             <div>DISTANCE: <span id="distance">0</span>m</div>
         </div>
 
-        <div id="anishLetters">
-            <span class="letter" id="letter-A">A</span>
-            <span class="letter" id="letter-N">N</span>
-            <span class="letter" id="letter-I">I</span>
-            <span class="letter" id="letter-S">S</span>
-            <span class="letter" id="letter-H">H</span>
-        </div>
-
         <div id="powerUpBar">
             <div class="powerup-item" id="activePowerUp" style="display: none;">
                 <span id="powerUpName"></span> <span id="powerUpTimer"></span>
@@ -509,11 +501,6 @@
                     <div class="feature-icon">⭐</div>
                     <div class="feature-text">INVINCIBLE</div>
                 </div>
-            </div>
-
-            <div class="anish-highlight">
-                ✨ Collect A-N-I-S-H Letters ✨<br>
-                <span style="font-size: 14px; opacity: 0.8;">Complete set = 10sec SUPER BOOST + 1000 pts!</span>
             </div>
 
             <button id="startBtn">▶ START GAME</button>
@@ -582,7 +569,6 @@
         let groundLines = [];
         let powerUps = [];
         let particles = [];
-        let anishLetterItems = [];
 
         // Power-up states
         let activePowerUp = null;
@@ -598,17 +584,6 @@
         let fireballActive = false;
         let laserActive = false;
         let attackProjectiles = [];
-
-        // ANISH letter collection
-        const anishLetters = ['A', 'N', 'I', 'S', 'H'];
-        let collectedAnishLetters = {
-            'A': false,
-            'N': false,
-            'I': false,
-            'S': false,
-            'H': false
-        };
-        let anishComboCount = 0;
 
         // Input
         const keys = {};
@@ -750,112 +725,6 @@
             });
         }
 
-        function spawnAnishLetter() {
-            // Find which letters haven't been collected yet
-            const uncollectedLetters = anishLetters.filter(letter => !collectedAnishLetters[letter]);
-            
-            if (uncollectedLetters.length > 0) {
-                const lane = Math.floor(Math.random() * 3);
-                const letter = uncollectedLetters[Math.floor(Math.random() * uncollectedLetters.length)];
-                
-                anishLetterItems.push({
-                    x: lanes[lane],
-                    y: -100,
-                    width: 40,
-                    height: 40,
-                    letter: letter,
-                    lane: lane,
-                    collected: false,
-                    rotation: 0
-                });
-            }
-        }
-
-        function collectAnishLetter(letter) {
-            collectedAnishLetters[letter] = true;
-            
-            // Update UI (silently, just visual)
-            const letterEl = document.getElementById(`letter-${letter}`);
-            if (letterEl) {
-                letterEl.classList.add('collected');
-            }
-            
-            // Check if all letters collected
-            const allCollected = anishLetters.every(l => collectedAnishLetters[l]);
-            
-            if (allCollected) {
-                completeAnishCombo();
-            } else {
-                // Silent collection - no rewards yet, just a subtle sound
-                playSound('letterCollect');
-            }
-        }
-
-        function completeAnishCombo() {
-            anishComboCount++;
-            
-            // Massive bonus!
-            score += 1000;
-            coins += 50;
-            
-            // Activate super boost for 10 seconds
-            gameSpeed *= 1.5;
-            scoreMultiplier = 5;
-            isInvincible = true;
-            magnetActive = true;
-            
-            // Visual celebration
-            showMultiplier('🎉 ANISH COMPLETE! +1000 🎉');
-            
-            // Make all letters pulse
-            anishLetters.forEach(letter => {
-                const letterEl = document.getElementById(`letter-${letter}`);
-                if (letterEl) {
-                    letterEl.classList.add('complete');
-                }
-            });
-            
-            // Create explosion of particles
-            for (let i = 0; i < 50; i++) {
-                particles.push({
-                    x: canvas.width / 2,
-                    y: canvas.height / 2,
-                    vx: (Math.random() - 0.5) * 10,
-                    vy: (Math.random() - 0.5) * 10,
-                    color: ['#FFD700', '#FFA500', '#FF6B6B', '#4CAF50'][Math.floor(Math.random() * 4)],
-                    life: 60
-                });
-            }
-            
-            playSound('anishComplete');
-            
-            // Reset after 10 seconds
-            setTimeout(() => {
-                gameSpeed /= 1.5;
-                scoreMultiplier = 1;
-                isInvincible = false;
-                magnetActive = false;
-                
-                // Reset letters for next collection
-                collectedAnishLetters = {
-                    'A': false,
-                    'N': false,
-                    'I': false,
-                    'S': false,
-                    'H': false
-                };
-                
-                anishLetters.forEach(letter => {
-                    const letterEl = document.getElementById(`letter-${letter}`);
-                    if (letterEl) {
-                        letterEl.classList.remove('collected', 'complete');
-                    }
-                });
-                
-                showMultiplier('Collect ANISH again!');
-            }, 10000);
-        }
-
         function useAttackPowerUp() {
             if (!attackPowerUp || attackCooldown > 0) return;
             
@@ -885,13 +754,45 @@
                     break;
                     
                 case 'bomb':
-                    // Bomb destroys all visible obstacles
+                    // Bomb destroys all visible obstacles with screen shake
+                    bombExplosionEffect();
                     destroyAllVisibleObstacles();
                     playSound('bomb');
                     break;
             }
             
             attackPowerUp = null; // One-time use
+        }
+        
+        function bombExplosionEffect() {
+            // Screen flash effect
+            const flash = document.createElement('div');
+            flash.style.position = 'absolute';
+            flash.style.top = '0';
+            flash.style.left = '0';
+            flash.style.width = '100%';
+            flash.style.height = '100%';
+            flash.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+            flash.style.pointerEvents = 'none';
+            flash.style.zIndex = '1000';
+            document.getElementById('gameContainer').appendChild(flash);
+            
+            // Remove flash after animation
+            setTimeout(() => flash.remove(), 200);
+            
+            // Create explosion particles from center
+            for (let i = 0; i < 100; i++) {
+                const angle = (Math.PI * 2 * i) / 100;
+                const speed = 5 + Math.random() * 5;
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color: ['#FFD700', '#FF4500', '#FF0000', '#FFA500'][Math.floor(Math.random() * 4)],
+                    life: 40
+                });
+            }
         }
 
         function destroyObstaclesInLane(lane) {
@@ -917,12 +818,27 @@
         function activatePowerUp(type) {
             playSound('powerup');
             
+            // Create collection burst particles
+            createParticle(player.x + 25, player.y + 35, '#00FF00');
+            
             switch(type) {
                 case 'shield':
                     hasShield = true;
                     activePowerUp = 'shield';
                     powerUpTimer = 300; // 5 seconds
                     showMultiplier('🛡️ SHIELD ON!');
+                    // Shield burst effect
+                    for (let i = 0; i < 20; i++) {
+                        const angle = (Math.PI * 2 * i) / 20;
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: Math.cos(angle) * 3,
+                            vy: Math.sin(angle) * 3,
+                            color: '#00BFFF',
+                            life: 30
+                        });
+                    }
                     break;
                     
                 case 'magnet':
@@ -930,6 +846,18 @@
                     activePowerUp = 'magnet';
                     powerUpTimer = 300;
                     showMultiplier('🧲 COIN MAGNET!');
+                    // Magnet pulse effect
+                    for (let i = 0; i < 15; i++) {
+                        const angle = (Math.PI * 2 * i) / 15;
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: Math.cos(angle) * 4,
+                            vy: Math.sin(angle) * 4,
+                            color: '#FF00FF',
+                            life: 25
+                        });
+                    }
                     break;
                     
                 case 'invincible':
@@ -937,6 +865,17 @@
                     activePowerUp = 'invincible';
                     powerUpTimer = 300;
                     showMultiplier('⭐ INVINCIBLE!');
+                    // Golden explosion
+                    for (let i = 0; i < 30; i++) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: (Math.random() - 0.5) * 8,
+                            vy: (Math.random() - 0.5) * 8,
+                            color: '#FFD700',
+                            life: 40
+                        });
+                    }
                     break;
                     
                 case 'boost':
@@ -947,21 +886,65 @@
                     gameSpeed *= 1.5;
                     scoreMultiplier = 2;
                     showMultiplier('🚀 SPEED BOOST!');
+                    // Speed lines effect
+                    for (let i = 0; i < 25; i++) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: Math.random() * 8,
+                            color: '#FF6B6B',
+                            life: 35
+                        });
+                    }
                     break;
                     
                 case 'fire':
                     attackPowerUp = 'fire';
                     showMultiplier('🔥 FIREBALL READY!');
+                    // Fire burst
+                    for (let i = 0; i < 20; i++) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: (Math.random() - 0.5) * 5,
+                            vy: (Math.random() - 0.5) * 5,
+                            color: ['#FF4500', '#FFA500', '#FFFF00'][Math.floor(Math.random() * 3)],
+                            life: 30
+                        });
+                    }
                     break;
                     
                 case 'laser':
                     attackPowerUp = 'laser';
                     showMultiplier('⚡ LASER READY!');
+                    // Electric sparks
+                    for (let i = 0; i < 25; i++) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: (Math.random() - 0.5) * 6,
+                            color: ['#00FFFF', '#FFFFFF'][Math.floor(Math.random() * 2)],
+                            life: 25
+                        });
+                    }
                     break;
                     
                 case 'bomb':
                     attackPowerUp = 'bomb';
                     showMultiplier('💣 BOMB READY!');
+                    // Explosive particles
+                    for (let i = 0; i < 30; i++) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: (Math.random() - 0.5) * 7,
+                            vy: (Math.random() - 0.5) * 7,
+                            color: ['#FF0000', '#FFA500', '#FFD700'][Math.floor(Math.random() * 3)],
+                            life: 35
+                        });
+                    }
                     break;
             }
         }
@@ -1163,42 +1146,6 @@
             });
         }
 
-        function updateAnishLetters() {
-            anishLetterItems = anishLetterItems.filter(item => {
-                if (item.collected) return false;
-
-                item.y += gameSpeed;
-                item.rotation += 0.1;
-
-                // Magnet effect (stronger for letters)
-                if (magnetActive) {
-                    const dx = player.x + 25 - (item.x + 20);
-                    const dy = player.y + 35 - (item.y + 20);
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (dist < 200) {
-                        item.x += dx * 0.2;
-                        item.y += dy * 0.2;
-                    }
-                }
-
-                // Check collection
-                const collectRange = magnetActive ? 60 : 0;
-                if (player.lane === item.lane &&
-                    player.x < item.x + item.width + collectRange &&
-                    player.x + player.width > item.x - collectRange &&
-                    player.y < item.y + item.height + collectRange &&
-                    player.y + player.height > item.y - collectRange) {
-                    
-                    collectAnishLetter(item.letter);
-                    createParticle(item.x + 20, item.y + 20, '#FFD700');
-                    return false;
-                }
-
-                return item.y < canvas.height + 100;
-            });
-        }
-
         function updateParticles() {
             particles = particles.filter(p => {
                 p.x += p.vx;
@@ -1255,7 +1202,6 @@
             updateObstacles();
             updateCoins();
             updatePowerUps();
-            updateAnishLetters();
             updateParticles();
             updateGround();
             updateAttackProjectiles();
@@ -1293,11 +1239,6 @@
                 spawnPowerUp();
             }
 
-            // Spawn ANISH letters
-            if (frameCount % 100 === 0) { // More frequent than power-ups
-                spawnAnishLetter();
-            }
-
             // Increase difficulty
             if (frameCount % 300 === 0) {
                 gameSpeed += 0.3;
@@ -1316,25 +1257,83 @@
             ctx.fillStyle = 'rgba(0,0,0,0.3)';
             ctx.fillRect(player.x + 5, 565, player.width - 10, 10);
 
-            // Shield effect
+            // Shield effect with animation
             if (hasShield) {
+                const time = Date.now() / 200;
+                const rotation = time % (Math.PI * 2);
+                const pulseSize = 5 + Math.sin(time * 2) * 2;
+                
                 ctx.strokeStyle = '#00BFFF';
-                ctx.lineWidth = 4;
-                ctx.setLineDash([5, 5]);
-                ctx.strokeRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10);
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5 + Math.sin(time) * 2, 5]);
+                ctx.lineDashOffset = -time * 2;
+                ctx.strokeRect(player.x - pulseSize, player.y - pulseSize, player.width + pulseSize * 2, player.height + pulseSize * 2);
                 ctx.setLineDash([]);
+                
+                // Shield particles
+                if (frameCount % 10 === 0) {
+                    particles.push({
+                        x: player.x + Math.random() * player.width,
+                        y: player.y + Math.random() * player.height,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: -Math.random() * 2,
+                        color: '#00BFFF',
+                        life: 20
+                    });
+                }
             }
 
-            // Invincible glow
+            // Invincible glow with pulse
             if (isInvincible) {
+                const time = Date.now() / 100;
+                const pulseRadius = 40 + Math.sin(time) * 10;
+                const pulseOpacity = 0.6 + Math.sin(time * 2) * 0.2;
+                
                 const glowGradient = ctx.createRadialGradient(
                     player.x + 25, player.y + player.height/2, 0,
-                    player.x + 25, player.y + player.height/2, 40
+                    player.x + 25, player.y + player.height/2, pulseRadius
                 );
-                glowGradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
+                glowGradient.addColorStop(0, `rgba(255, 215, 0, ${pulseOpacity})`);
                 glowGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
                 ctx.fillStyle = glowGradient;
-                ctx.fillRect(player.x - 15, player.y - 15, player.width + 30, player.height + 30);
+                ctx.fillRect(player.x - 20, player.y - 20, player.width + 40, player.height + 40);
+                
+                // Golden sparkles
+                if (frameCount % 5 === 0) {
+                    particles.push({
+                        x: player.x + Math.random() * player.width,
+                        y: player.y + Math.random() * player.height,
+                        vx: (Math.random() - 0.5) * 3,
+                        vy: -Math.random() * 3,
+                        color: '#FFD700',
+                        life: 25
+                    });
+                }
+            }
+            
+            // Magnet effect
+            if (magnetActive) {
+                const time = Date.now() / 150;
+                const pulseRadius = 35 + Math.sin(time) * 5;
+                
+                ctx.strokeStyle = '#FF00FF';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(player.x + 25, player.y + 35, pulseRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Magnetic field lines
+                if (frameCount % 8 === 0) {
+                    const angle = Math.random() * Math.PI * 2;
+                    particles.push({
+                        x: player.x + 25 + Math.cos(angle) * 30,
+                        y: player.y + 35 + Math.sin(angle) * 30,
+                        vx: Math.cos(angle) * 2,
+                        vy: Math.sin(angle) * 2,
+                        color: '#FF00FF',
+                        life: 15
+                    });
+                }
             }
 
             // Body (ANISH themed - green with gradient)
@@ -1578,51 +1577,6 @@
             });
         }
 
-        function drawAnishLetters() {
-            anishLetterItems.forEach(item => {
-                ctx.save();
-                
-                ctx.translate(item.x + 20, item.y + 20);
-                ctx.rotate(item.rotation);
-                
-                // Rainbow glow effect
-                const time = Date.now() / 1000;
-                const hue = (time * 100) % 360;
-                const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 30);
-                glowGradient.addColorStop(0, `hsla(${hue}, 100%, 50%, 0.8)`);
-                glowGradient.addColorStop(1, `hsla(${hue}, 100%, 50%, 0)`);
-                ctx.fillStyle = glowGradient;
-                ctx.fillRect(-30, -30, 60, 60);
-                
-                // Letter background
-                const gradient = ctx.createLinearGradient(-20, -20, 20, 20);
-                gradient.addColorStop(0, '#FFD700');
-                gradient.addColorStop(1, '#FFA500');
-                ctx.fillStyle = gradient;
-                ctx.fillRect(-20, -20, 40, 40);
-                
-                // Border with animation
-                ctx.strokeStyle = '#FFF';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(-20, -20, 40, 40);
-                
-                // Letter
-                ctx.fillStyle = '#000';
-                ctx.font = 'bold 32px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(item.letter, 0, 2);
-                
-                // Sparkle effect
-                ctx.fillStyle = '#FFF';
-                ctx.font = 'bold 12px Arial';
-                ctx.fillText('✨', -15, -15);
-                ctx.fillText('✨', 15, 15);
-                
-                ctx.restore();
-            });
-        }
-
         function drawParticles() {
             particles.forEach(p => {
                 ctx.fillStyle = p.color;
@@ -1637,40 +1591,85 @@
                 ctx.save();
                 
                 if (proj.type === 'fire') {
-                    // Fireball
-                    const gradient = ctx.createRadialGradient(
-                        proj.x + 15, proj.y + 15, 5,
-                        proj.x + 15, proj.y + 15, 15
+                    // Fireball with animated glow
+                    const time = Date.now() / 100;
+                    const pulseSize = 15 + Math.sin(time) * 3;
+                    
+                    // Outer glow
+                    const outerGlow = ctx.createRadialGradient(
+                        proj.x + 15, proj.y + 15, 0,
+                        proj.x + 15, proj.y + 15, pulseSize + 10
                     );
-                    gradient.addColorStop(0, '#FFFF00');
-                    gradient.addColorStop(0.5, '#FF4500');
+                    outerGlow.addColorStop(0, 'rgba(255, 255, 0, 0.8)');
+                    outerGlow.addColorStop(0.5, 'rgba(255, 69, 0, 0.5)');
+                    outerGlow.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                    ctx.fillStyle = outerGlow;
+                    ctx.beginPath();
+                    ctx.arc(proj.x + 15, proj.y + 15, pulseSize + 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Inner fireball
+                    const gradient = ctx.createRadialGradient(
+                        proj.x + 15, proj.y + 15, 0,
+                        proj.x + 15, proj.y + 15, pulseSize
+                    );
+                    gradient.addColorStop(0, '#FFFFFF');
+                    gradient.addColorStop(0.3, '#FFFF00');
+                    gradient.addColorStop(0.6, '#FF4500');
                     gradient.addColorStop(1, '#FF0000');
                     ctx.fillStyle = gradient;
                     ctx.beginPath();
-                    ctx.arc(proj.x + 15, proj.y + 15, 15, 0, Math.PI * 2);
+                    ctx.arc(proj.x + 15, proj.y + 15, pulseSize, 0, Math.PI * 2);
                     ctx.fill();
                     
-                    // Fire emoji
+                    // Fire emoji with shadow
+                    ctx.shadowColor = 'rgba(255, 100, 0, 0.8)';
+                    ctx.shadowBlur = 15;
                     ctx.font = 'bold 24px Arial';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText('🔥', proj.x + 15, proj.y + 15);
+                    ctx.shadowBlur = 0;
+                    
+                    // Particle trail
+                    if (Math.random() < 0.5) {
+                        createParticle(proj.x + 15, proj.y + 15, '#FF4500');
+                    }
                 }
                 
                 ctx.restore();
             });
             
-            // Draw laser beam
+            // Draw laser beam with animation
             if (laserActive) {
                 ctx.save();
-                ctx.fillStyle = 'rgba(0, 255, 255, 0.7)';
+                
+                const time = Date.now() / 50;
+                const opacity = 0.7 + Math.sin(time) * 0.2;
+                
+                // Outer glow
+                ctx.fillStyle = `rgba(0, 255, 255, ${opacity * 0.3})`;
+                ctx.fillRect(player.x, 0, 50, player.y);
+                
+                // Main beam
+                ctx.fillStyle = `rgba(0, 255, 255, ${opacity})`;
                 ctx.fillRect(player.x + 10, 0, 30, player.y);
                 
-                // Laser glow
+                // Bright center
                 ctx.shadowColor = '#00FFFF';
-                ctx.shadowBlur = 20;
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.shadowBlur = 30;
+                ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
                 ctx.fillRect(player.x + 20, 0, 10, player.y);
+                
+                // Electric sparks
+                for (let i = 0; i < 5; i++) {
+                    const sparkY = Math.random() * player.y;
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.beginPath();
+                    ctx.arc(player.x + 25 + (Math.random() - 0.5) * 20, sparkY, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
                 ctx.restore();
             }
         }
@@ -1680,7 +1679,6 @@
             drawObstacles();
             drawCoins();
             drawPowerUps();
-            drawAnishLetters();
             drawAttackProjectiles();
             drawParticles();
             drawPlayer();
@@ -1713,7 +1711,6 @@
             obstacles = [];
             coinItems = [];
             powerUps = [];
-            anishLetterItems = [];
             particles = [];
             groundLines = [];
             
@@ -1726,23 +1723,6 @@
             attackPowerUp = null;
             attackCooldown = 0;
             attackProjectiles = [];
-            
-            // Reset ANISH letters
-            collectedAnishLetters = {
-                'A': false,
-                'N': false,
-                'I': false,
-                'S': false,
-                'H': false
-            };
-            anishComboCount = 0;
-            
-            anishLetters.forEach(letter => {
-                const letterEl = document.getElementById(`letter-${letter}`);
-                if (letterEl) {
-                    letterEl.classList.remove('collected', 'complete');
-                }
-            });
             
             gameLoop();
         }
