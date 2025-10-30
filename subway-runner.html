@@ -53,6 +53,48 @@
             font-weight: bold;
         }
 
+        #anishLetters {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #FFD700;
+            border-radius: 15px;
+            padding: 10px 15px;
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 5px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            z-index: 10;
+        }
+
+        .letter {
+            display: inline-block;
+            color: #666;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            transition: all 0.3s;
+        }
+
+        .letter.collected {
+            color: #FFD700;
+            text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700;
+            animation: letterBounce 0.5s ease-in-out;
+        }
+
+        .letter.complete {
+            animation: letterPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes letterBounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+
+        @keyframes letterPulse {
+            0%, 100% { transform: scale(1); color: #FFD700; }
+            50% { transform: scale(1.1); color: #FFA500; }
+        }
+
         #powerUpBar {
             position: absolute;
             top: 80px;
@@ -236,6 +278,14 @@
             <div>DISTANCE: <span id="distance">0</span>m</div>
         </div>
 
+        <div id="anishLetters">
+            <span class="letter" id="letter-A">A</span>
+            <span class="letter" id="letter-N">N</span>
+            <span class="letter" id="letter-I">I</span>
+            <span class="letter" id="letter-S">S</span>
+            <span class="letter" id="letter-H">H</span>
+        </div>
+
         <div id="powerUpBar">
             <div class="powerup-item" id="activePowerUp" style="display: none;">
                 <span id="powerUpName"></span> <span id="powerUpTimer"></span>
@@ -251,10 +301,14 @@
             <p style="font-size: 24px; color: #FFD700; margin: 20px;">🏃 Subway Surfer Style! 🏃</p>
             <p style="font-size: 18px; margin: 10px;">Swipe or use Arrow Keys</p>
             <div class="controls">
-                <div>⬅️ ➡️ - Switch Lanes</div>
-                <div>⬆️ - Jump | ⬇️ - Slide</div>
-                <div>⚡ Collect Power-Ups!</div>
-                <div>🛡️ Shield | 🚀 Speed | 🧲 Magnet | ⭐ Invincible</div>
+                <div>⬅️ ➡️ - Switch Lanes | ⬆️ Jump | ⬇️ Slide</div>
+                <div>⚡ Collect Power-Ups: 🛡️ 🚀 🧲 ⭐</div>
+                <div style="color: #FFD700; font-size: 20px; margin-top: 10px;">
+                    ✨ Collect A-N-I-S-H Letters! ✨
+                </div>
+                <div style="color: #4CAF50; font-size: 16px;">
+                    Complete set = 10sec SUPER BOOST + 1000 pts!
+                </div>
             </div>
             <button id="startBtn">START GAME</button>
             <p style="font-size: 16px; color: #4CAF50; margin-top: 20px;">✨ Created by ANISH ✨</p>
@@ -311,6 +365,7 @@
         let groundLines = [];
         let powerUps = [];
         let particles = [];
+        let anishLetterItems = [];
 
         // Power-up states
         let activePowerUp = null;
@@ -319,6 +374,17 @@
         let hasShield = false;
         let magnetActive = false;
         let speedBoostActive = false;
+
+        // ANISH letter collection
+        const anishLetters = ['A', 'N', 'I', 'S', 'H'];
+        let collectedAnishLetters = {
+            'A': false,
+            'N': false,
+            'I': false,
+            'S': false,
+            'H': false
+        };
+        let anishComboCount = 0;
 
         // Input
         const keys = {};
@@ -486,6 +552,116 @@
                 lane: lane,
                 collected: false
             });
+        }
+
+        function spawnAnishLetter() {
+            // Find which letters haven't been collected yet
+            const uncollectedLetters = anishLetters.filter(letter => !collectedAnishLetters[letter]);
+            
+            if (uncollectedLetters.length > 0) {
+                const lane = Math.floor(Math.random() * 3);
+                const letter = uncollectedLetters[Math.floor(Math.random() * uncollectedLetters.length)];
+                
+                anishLetterItems.push({
+                    x: lanes[lane],
+                    y: -100,
+                    width: 40,
+                    height: 40,
+                    letter: letter,
+                    lane: lane,
+                    collected: false,
+                    rotation: 0
+                });
+            }
+        }
+
+        function collectAnishLetter(letter) {
+            collectedAnishLetters[letter] = true;
+            
+            // Update UI
+            const letterEl = document.getElementById(`letter-${letter}`);
+            if (letterEl) {
+                letterEl.classList.add('collected');
+            }
+            
+            // Check if all letters collected
+            const allCollected = anishLetters.every(l => collectedAnishLetters[l]);
+            
+            if (allCollected) {
+                completeAnishCombo();
+            } else {
+                // Bonus for each letter
+                score += 100;
+                coins += 5;
+                showMultiplier(`+100 "${letter}" COLLECTED!`);
+            }
+            
+            playSound('letterCollect');
+        }
+
+        function completeAnishCombo() {
+            anishComboCount++;
+            
+            // Massive bonus!
+            score += 1000;
+            coins += 50;
+            
+            // Activate super boost for 10 seconds
+            gameSpeed *= 1.5;
+            scoreMultiplier = 5;
+            isInvincible = true;
+            magnetActive = true;
+            
+            // Visual celebration
+            showMultiplier('🎉 ANISH COMPLETE! +1000 🎉');
+            
+            // Make all letters pulse
+            anishLetters.forEach(letter => {
+                const letterEl = document.getElementById(`letter-${letter}`);
+                if (letterEl) {
+                    letterEl.classList.add('complete');
+                }
+            });
+            
+            // Create explosion of particles
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    color: ['#FFD700', '#FFA500', '#FF6B6B', '#4CAF50'][Math.floor(Math.random() * 4)],
+                    life: 60
+                });
+            }
+            
+            playSound('anishComplete');
+            
+            // Reset after 10 seconds
+            setTimeout(() => {
+                gameSpeed /= 1.5;
+                scoreMultiplier = 1;
+                isInvincible = false;
+                magnetActive = false;
+                
+                // Reset letters for next collection
+                collectedAnishLetters = {
+                    'A': false,
+                    'N': false,
+                    'I': false,
+                    'S': false,
+                    'H': false
+                };
+                
+                anishLetters.forEach(letter => {
+                    const letterEl = document.getElementById(`letter-${letter}`);
+                    if (letterEl) {
+                        letterEl.classList.remove('collected', 'complete');
+                    }
+                });
+                
+                showMultiplier('Collect ANISH again!');
+            }, 10000);
         }
 
         function usePowerUpButton() {
@@ -715,6 +891,42 @@
             });
         }
 
+        function updateAnishLetters() {
+            anishLetterItems = anishLetterItems.filter(item => {
+                if (item.collected) return false;
+
+                item.y += gameSpeed;
+                item.rotation += 0.1;
+
+                // Magnet effect (stronger for letters)
+                if (magnetActive) {
+                    const dx = player.x + 25 - (item.x + 20);
+                    const dy = player.y + 35 - (item.y + 20);
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < 200) {
+                        item.x += dx * 0.2;
+                        item.y += dy * 0.2;
+                    }
+                }
+
+                // Check collection
+                const collectRange = magnetActive ? 60 : 0;
+                if (player.lane === item.lane &&
+                    player.x < item.x + item.width + collectRange &&
+                    player.x + player.width > item.x - collectRange &&
+                    player.y < item.y + item.height + collectRange &&
+                    player.y + player.height > item.y - collectRange) {
+                    
+                    collectAnishLetter(item.letter);
+                    createParticle(item.x + 20, item.y + 20, '#FFD700');
+                    return false;
+                }
+
+                return item.y < canvas.height + 100;
+            });
+        }
+
         function updateParticles() {
             particles = particles.filter(p => {
                 p.x += p.vx;
@@ -748,6 +960,7 @@
             updateObstacles();
             updateCoins();
             updatePowerUps();
+            updateAnishLetters();
             updateParticles();
             updateGround();
 
@@ -775,6 +988,11 @@
             // Spawn power-ups
             if (frameCount % 180 === 0) { // Every 3 seconds
                 spawnPowerUp();
+            }
+
+            // Spawn ANISH letters
+            if (frameCount % 100 === 0) { // More frequent than power-ups
+                spawnAnishLetter();
             }
 
             // Increase difficulty
@@ -1039,6 +1257,51 @@
             });
         }
 
+        function drawAnishLetters() {
+            anishLetterItems.forEach(item => {
+                ctx.save();
+                
+                ctx.translate(item.x + 20, item.y + 20);
+                ctx.rotate(item.rotation);
+                
+                // Rainbow glow effect
+                const time = Date.now() / 1000;
+                const hue = (time * 100) % 360;
+                const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 30);
+                glowGradient.addColorStop(0, `hsla(${hue}, 100%, 50%, 0.8)`);
+                glowGradient.addColorStop(1, `hsla(${hue}, 100%, 50%, 0)`);
+                ctx.fillStyle = glowGradient;
+                ctx.fillRect(-30, -30, 60, 60);
+                
+                // Letter background
+                const gradient = ctx.createLinearGradient(-20, -20, 20, 20);
+                gradient.addColorStop(0, '#FFD700');
+                gradient.addColorStop(1, '#FFA500');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(-20, -20, 40, 40);
+                
+                // Border with animation
+                ctx.strokeStyle = '#FFF';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(-20, -20, 40, 40);
+                
+                // Letter
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 32px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(item.letter, 0, 2);
+                
+                // Sparkle effect
+                ctx.fillStyle = '#FFF';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText('✨', -15, -15);
+                ctx.fillText('✨', 15, 15);
+                
+                ctx.restore();
+            });
+        }
+
         function drawParticles() {
             particles.forEach(p => {
                 ctx.fillStyle = p.color;
@@ -1053,6 +1316,7 @@
             drawObstacles();
             drawCoins();
             drawPowerUps();
+            drawAnishLetters();
             drawParticles();
             drawPlayer();
         }
@@ -1083,6 +1347,7 @@
             obstacles = [];
             coinItems = [];
             powerUps = [];
+            anishLetterItems = [];
             particles = [];
             groundLines = [];
             
@@ -1092,6 +1357,23 @@
             hasShield = false;
             magnetActive = false;
             speedBoostActive = false;
+            
+            // Reset ANISH letters
+            collectedAnishLetters = {
+                'A': false,
+                'N': false,
+                'I': false,
+                'S': false,
+                'H': false
+            };
+            anishComboCount = 0;
+            
+            anishLetters.forEach(letter => {
+                const letterEl = document.getElementById(`letter-${letter}`);
+                if (letterEl) {
+                    letterEl.classList.remove('collected', 'complete');
+                }
+            });
             
             gameLoop();
         }
@@ -1205,6 +1487,35 @@
                     oscillator.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.2);
                     oscillator.stop(audioCtx.currentTime + 0.2);
                     break;
+                    
+                case 'letterCollect':
+                    oscillator.frequency.value = 900;
+                    oscillator.type = 'sine';
+                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.15);
+                    oscillator.frequency.exponentialRampToValueAtTime(1800, audioCtx.currentTime + 0.3);
+                    oscillator.stop(audioCtx.currentTime + 0.3);
+                    break;
+                    
+                case 'anishComplete':
+                    // Victory fanfare
+                    for (let i = 0; i < 3; i++) {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        
+                        const notes = [800, 1000, 1200];
+                        osc.frequency.value = notes[i];
+                        osc.type = 'sine';
+                        gain.gain.setValueAtTime(0.2, audioCtx.currentTime + i * 0.15);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.15 + 0.4);
+                        osc.start(audioCtx.currentTime + i * 0.15);
+                        osc.stop(audioCtx.currentTime + i * 0.15 + 0.4);
+                    }
+                    return; // Don't use the default oscillator
             }
         }
 
