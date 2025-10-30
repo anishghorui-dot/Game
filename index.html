@@ -78,8 +78,13 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            padding: 20px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
             z-index: 100;
             color: #00ff00;
+            box-sizing: border-box;
         }
 
         h1 {
@@ -338,6 +343,40 @@
                 right: 140px;
                 font-size: 18px;
             }
+
+            /* Start screen mobile adjustments */
+            #startScreen, #gameOverScreen {
+                padding: 20px;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #startScreen h1 {
+                font-size: 36px;
+                margin-bottom: 15px;
+            }
+
+            #startScreen p {
+                font-size: 14px !important;
+                margin: 5px 0 !important;
+            }
+
+            .controls {
+                font-size: 12px !important;
+                margin-top: 10px !important;
+            }
+
+            .controls div {
+                margin: 3px 0 !important;
+            }
+
+            button {
+                padding: 12px 30px !important;
+                font-size: 18px !important;
+                margin: 10px 0 !important;
+                position: relative;
+                z-index: 1000;
+            }
         }
     </style>
 </head>
@@ -362,6 +401,7 @@
         <div id="credits">CREATED BY ANISH</div>
 
         <div id="startScreen">
+            <div style="flex: 1; min-height: 20px;"></div>
             <h1>NEON RUNNER</h1>
             <p style="font-size: 20px; margin-bottom: 20px;">Survive the neon wasteland!</p>
             <p style="font-size: 18px; margin-bottom: 10px; color: #00ffff;">🎮 Created by ANISH 🎮</p>
@@ -377,6 +417,7 @@
                 🚀 Defeat enemies to charge special attack 🚀
             </p>
             <button id="startBtn">START GAME</button>
+            <div style="flex: 1; min-height: 40px;"></div>
         </div>
 
         <div id="gameOverScreen" class="hidden">
