@@ -446,9 +446,15 @@
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const reducedEffects = isMobile; // Disable expensive effects on mobile
         
+        // Use simpler canvas on mobile for better performance
+        if (isMobile) {
+            canvas.width = 900;
+            canvas.height = 600;
+        }
+        
         // Handle canvas resizing for mobile landscape
         function resizeCanvas() {
-            if (window.innerWidth <= 1024 && window.matchMedia("(orientation: landscape)").matches) {
+            if (!isMobile && window.innerWidth <= 1024 && window.matchMedia("(orientation: landscape)").matches) {
                 const width = window.innerWidth;
                 const height = window.innerHeight;
                 
@@ -469,11 +475,13 @@
         }
 
         // Call on load and orientation change
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-        window.addEventListener('orientationchange', () => {
-            setTimeout(resizeCanvas, 100);
-        });
+        if (!isMobile) {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            window.addEventListener('orientationchange', () => {
+                setTimeout(resizeCanvas, 100);
+            });
+        }
         
         // Audio Context for synthetic sounds
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -1057,25 +1065,28 @@
             if (player.shootCooldown > 0) player.shootCooldown--;
             if (player.dashCooldown > 0) player.dashCooldown--;
             
-            // Trail when dashing
-            if (player.isDashing) {
-                createParticles(player.x + player.width / 2, player.y + player.height / 2, '#00ffff', 2);
+            // Reduce particle trails on mobile
+            if (!reducedEffects) {
+                // Trail when dashing
+                if (player.isDashing) {
+                    createParticles(player.x + player.width / 2, player.y + player.height / 2, '#00ffff', 2);
+                }
+                
+                // Rainbow trail when flying
+                if (player.isFlying && frameCount % 3 === 0) {
+                    const colors = ['#ff0000', '#ff7700', '#ffff00', '#00ff00', '#0088ff', '#ff00ff'];
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    createParticles(player.x + player.width / 2, player.y + player.height, color, 1);
+                }
+                
+                // Invisible effect
+                if (player.isInvisible) {
+                    createParticles(player.x + player.width / 2, player.y + player.height / 2, '#ffffff', 1);
+                }
             }
             
-            // Rainbow trail when flying
-            if (player.isFlying && frameCount % 3 === 0) {
-                const colors = ['#ff0000', '#ff7700', '#ffff00', '#00ff00', '#0088ff', '#ff00ff'];
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                createParticles(player.x + player.width / 2, player.y + player.height, color, 1);
-            }
-            
-            // Invisible effect
-            if (player.isInvisible) {
-                createParticles(player.x + player.width / 2, player.y + player.height / 2, '#ffffff', 1);
-            }
-            
-            // Speed trail when moving fast
-            if (Math.abs(player.vx) > 3 && frameCount % 5 === 0) {
+            // Speed trail when moving fast - skip on mobile
+            if (!reducedEffects && Math.abs(player.vx) > 3 && frameCount % 5 === 0) {
                 createParticles(player.x + player.width / 2, player.y + player.height / 2, '#ffffff', 1);
             }
         }
@@ -1461,6 +1472,12 @@
         }
         
         function updateParticles() {
+            // Limit particle count aggressively on mobile
+            const maxParticles = reducedEffects ? 30 : 200;
+            if (particles.length > maxParticles) {
+                particles = particles.slice(-maxParticles);
+            }
+            
             particles = particles.filter(p => {
                 p.x += p.vx;
                 p.y += p.vy;
@@ -1482,19 +1499,27 @@
             
             updatePlayer();
             updateBullets();
-            updateLasers();
-            updateEnemies();
-            updatePowerups();
             
-            // Update particles less frequently on mobile
+            // Update lasers only if they exist
+            if (lasers.length > 0) updateLasers();
+            
+            updateEnemies();
+            
+            // Update powerups every other frame on mobile
             if (!reducedEffects || frameCount % 2 === 0) {
+                updatePowerups();
+            }
+            
+            // Update particles every 3rd frame on mobile
+            if (!reducedEffects || frameCount % 3 === 0) {
                 updateParticles();
             }
             
-            updateEnemyBullets();
+            // Update enemy bullets only if they exist
+            if (enemyBullets.length > 0) updateEnemyBullets();
             
             // Spawn enemies less frequently on mobile
-            const spawnRate = reducedEffects ? 120 : 90; // Slower spawn on mobile
+            const spawnRate = reducedEffects ? 150 : 90; // Even slower spawn on mobile
             if (frameCount % spawnRate === 0) {
                 spawnEnemy();
             }
@@ -1883,8 +1908,10 @@
             platforms.forEach(platform => {
                 // Draw thin glowing white line for ground
                 ctx.strokeStyle = '#ffffff';
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = '#ffffff';
+                if (!reducedEffects) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#ffffff';
+                }
                 ctx.lineWidth = 3;
                 ctx.beginPath();
                 ctx.moveTo(platform.x, platform.y);
@@ -1901,6 +1928,9 @@
             gradient.addColorStop(1, '#000000');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Skip grid on mobile for max performance
+            if (reducedEffects) return;
             
             // Grid effect - no shadows on mobile for performance
             ctx.strokeStyle = 'rgba(0, 255, 0, 0.15)';
@@ -1930,8 +1960,8 @@
         function draw() {
             ctx.save();
             
-            // Apply screen shake
-            if (screenShake > 0) {
+            // Apply screen shake - disabled on mobile for smoothness
+            if (screenShake > 0 && !reducedEffects) {
                 const shakeX = (Math.random() - 0.5) * screenShake * 2;
                 const shakeY = (Math.random() - 0.5) * screenShake * 2;
                 ctx.translate(shakeX, shakeY);
