@@ -126,6 +126,115 @@
         .controls div {
             margin: 5px 0;
         }
+
+        /* Touch Controls for Mobile */
+        #touchControls {
+            display: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        @media (max-width: 768px), (pointer: coarse) {
+            #touchControls {
+                display: block;
+            }
+        }
+
+        .joystick {
+            position: absolute;
+            bottom: 80px;
+            left: 80px;
+            width: 120px;
+            height: 120px;
+            background: rgba(0, 255, 0, 0.2);
+            border: 3px solid #00ff00;
+            border-radius: 50%;
+            pointer-events: all;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+
+        .joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 255, 0, 0.6);
+            border: 2px solid #00ff00;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.1s;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.8);
+        }
+
+        .touch-button {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background: rgba(0, 255, 0, 0.3);
+            border: 3px solid #00ff00;
+            border-radius: 50%;
+            pointer-events: all;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00ff00;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 10px #00ff00;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+            user-select: none;
+        }
+
+        .touch-button:active {
+            background: rgba(0, 255, 0, 0.6);
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.9);
+        }
+
+        #jumpBtn {
+            bottom: 200px;
+            right: 100px;
+        }
+
+        #shootBtn {
+            bottom: 80px;
+            right: 100px;
+        }
+
+        #dashBtn {
+            bottom: 80px;
+            right: 200px;
+        }
+
+        #specialBtn {
+            bottom: 200px;
+            right: 200px;
+            font-size: 20px;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            #gameContainer {
+                width: 100vw;
+                height: 100vh;
+                border: none;
+            }
+            
+            canvas {
+                width: 100vw !important;
+                height: 100vh !important;
+            }
+            
+            body {
+                overflow: hidden;
+            }
+        }
     </style>
 </head>
 <body>
@@ -162,6 +271,17 @@
             <h1>GAME OVER</h1>
             <p id="finalScore" style="font-size: 30px; margin: 20px;"></p>
             <button id="restartBtn">RESTART</button>
+        </div>
+
+        <!-- Touch Controls for Mobile -->
+        <div id="touchControls">
+            <div class="joystick" id="joystick">
+                <div class="joystick-knob" id="joystickKnob"></div>
+            </div>
+            <button class="touch-button" id="jumpBtn">↑</button>
+            <button class="touch-button" id="shootBtn">🔫</button>
+            <button class="touch-button" id="dashBtn">⚡</button>
+            <button class="touch-button" id="specialBtn">Q</button>
         </div>
     </div>
 
@@ -1849,6 +1969,111 @@
         // Initial draw
         drawBackground();
         drawPlatforms();
+
+        // Touch controls for mobile
+        let touchMovement = { x: 0, y: 0 };
+        let joystickActive = false;
+
+        const joystick = document.getElementById('joystick');
+        const joystickKnob = document.getElementById('joystickKnob');
+        const jumpBtn = document.getElementById('jumpBtn');
+        const shootBtn = document.getElementById('shootBtn');
+        const dashBtn = document.getElementById('dashBtn');
+        const specialBtn = document.getElementById('specialBtn');
+
+        // Joystick handling
+        function handleJoystickStart(e) {
+            e.preventDefault();
+            joystickActive = true;
+            updateJoystick(e);
+        }
+
+        function handleJoystickMove(e) {
+            e.preventDefault();
+            if (joystickActive) {
+                updateJoystick(e);
+            }
+        }
+
+        function handleJoystickEnd(e) {
+            e.preventDefault();
+            joystickActive = false;
+            touchMovement = { x: 0, y: 0 };
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+            keys['a'] = false;
+            keys['d'] = false;
+            keys['w'] = false;
+            keys['s'] = false;
+        }
+
+        function updateJoystick(e) {
+            const touch = e.touches ? e.touches[0] : e;
+            const rect = joystick.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            let deltaX = touch.clientX - centerX;
+            let deltaY = touch.clientY - centerY;
+            
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const maxDistance = 35;
+            
+            if (distance > maxDistance) {
+                deltaX = (deltaX / distance) * maxDistance;
+                deltaY = (deltaY / distance) * maxDistance;
+            }
+            
+            joystickKnob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+            
+            // Convert to movement
+            touchMovement.x = deltaX / maxDistance;
+            touchMovement.y = deltaY / maxDistance;
+            
+            // Update key states
+            keys['a'] = touchMovement.x < -0.3;
+            keys['d'] = touchMovement.x > 0.3;
+            keys['w'] = touchMovement.y < -0.3;
+            keys['s'] = touchMovement.y > 0.3;
+        }
+
+        // Button handlers
+        jumpBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning) jump();
+        });
+
+        shootBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning) shoot();
+        });
+
+        dashBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning) dash();
+        });
+
+        specialBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning) specialAttack();
+        });
+
+        // Joystick events
+        joystick.addEventListener('touchstart', handleJoystickStart);
+        joystick.addEventListener('touchmove', handleJoystickMove);
+        joystick.addEventListener('touchend', handleJoystickEnd);
+        joystick.addEventListener('touchcancel', handleJoystickEnd);
+
+        // Mouse events for testing on desktop
+        joystick.addEventListener('mousedown', handleJoystickStart);
+        document.addEventListener('mousemove', handleJoystickMove);
+        document.addEventListener('mouseup', handleJoystickEnd);
+
+        // Prevent default touch behavior
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.closest('#touchControls')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
     </script>
 </body>
 </html>
