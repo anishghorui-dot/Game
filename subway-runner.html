@@ -585,6 +585,7 @@
         let attackPowerUp = null; // 'fire', 'laser', or 'bomb'
         let attackCooldown = 0;
         let fireballActive = false;
+        let fireballTimer = 0; // 10 seconds for unlimited fireballs
         let laserActive = false;
         let attackProjectiles = [];
 
@@ -748,11 +749,10 @@
         function useAttackPowerUp() {
             if (!attackPowerUp || attackCooldown > 0) return;
             
-            attackCooldown = 120; // 2 second cooldown
-            
             switch(attackPowerUp) {
                 case 'fire':
-                    // Shoot fireball in current lane
+                    // Shoot fireball in current lane (unlimited during timer)
+                    attackCooldown = 30; // 0.5 second cooldown between shots
                     attackProjectiles.push({
                         type: 'fire',
                         x: player.x + 15,
@@ -763,25 +763,28 @@
                         speed: -10
                     });
                     playSound('attack');
+                    // Don't remove power-up - it lasts 10 seconds
                     break;
                     
                 case 'laser':
-                    // Laser beam that hits all obstacles in lane
+                    // Laser beam that hits all obstacles in lane (one-time use)
+                    attackCooldown = 120; // 2 second cooldown
                     laserActive = true;
                     setTimeout(() => { laserActive = false; }, 500);
                     destroyObstaclesInLane(player.lane);
                     playSound('laser');
+                    attackPowerUp = null; // One-time use
                     break;
                     
                 case 'bomb':
-                    // Bomb destroys all visible obstacles with screen shake
+                    // Bomb destroys all visible obstacles (one-time use)
+                    attackCooldown = 120; // 2 second cooldown
                     bombExplosionEffect();
                     destroyAllVisibleObstacles();
                     playSound('bomb');
+                    attackPowerUp = null; // One-time use
                     break;
             }
-            
-            attackPowerUp = null; // One-time use
         }
         
         function bombExplosionEffect() {
@@ -921,7 +924,8 @@
                     
                 case 'fire':
                     attackPowerUp = 'fire';
-                    showMultiplier('🔥 FIREBALL READY!');
+                    fireballTimer = 600; // 10 seconds at 60fps
+                    showMultiplier('🔥 UNLIMITED FIREBALLS!');
                     // Fire burst
                     for (let i = 0; i < 20; i++) {
                         particles.push({
@@ -1028,7 +1032,12 @@
                     'bomb': '💣'
                 };
                 
-                attackBtn.innerHTML = `${icons[attackPowerUp]}<small>ATTACK</small>`;
+                // Show timer for fire power-up
+                if (attackPowerUp === 'fire' && fireballTimer > 0) {
+                    attackBtn.innerHTML = `${icons[attackPowerUp]}<small>${Math.ceil(fireballTimer / 60)}s</small>`;
+                } else {
+                    attackBtn.innerHTML = `${icons[attackPowerUp]}<small>ATTACK</small>`;
+                }
             } else if (attackCooldown > 0) {
                 attackBtn.style.opacity = '0.5';
                 attackBtn.style.transform = 'scale(1)';
@@ -1288,6 +1297,15 @@
             // Attack cooldown
             if (attackCooldown > 0) {
                 attackCooldown--;
+            }
+            
+            // Fireball timer countdown (10 seconds of unlimited fireballs)
+            if (fireballTimer > 0) {
+                fireballTimer--;
+                if (fireballTimer === 0 && attackPowerUp === 'fire') {
+                    attackPowerUp = null; // Remove fire power-up after 10 seconds
+                    showMultiplier('🔥 FIREBALL EXPIRED!');
+                }
             }
             
             // Invincibility frames countdown
@@ -1828,6 +1846,7 @@
             speedBoostActive = false;
             attackPowerUp = null;
             attackCooldown = 0;
+            fireballTimer = 0;
             attackProjectiles = [];
             
             gameLoop();
