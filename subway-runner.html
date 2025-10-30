@@ -893,7 +893,7 @@
                     speedBoostActive = true; // Add boost feature
                     activePowerUp = 'invincible';
                     powerUpTimer = 600; // 10 seconds duration
-                    gameSpeed *= 3; // 3x Speed boost!
+                    gameSpeed *= 5; // 5x Speed boost!
                     scoreMultiplier = 3; // 3x multiplier!
                     showMultiplier('⭐ INVINCIBLE + TURBO!');
                     // Golden explosion
@@ -1112,8 +1112,8 @@
                     }
                 }
                 
-                // Laser continuously destroys obstacles in its lane
-                if (laserActive && obs.lane === laserLane && obs.y < player.y) {
+                // Laser continuously destroys obstacles in its lane (follows player)
+                if (laserActive && obs.lane === player.lane) {
                     createParticle(obs.x + 25, obs.y + 30, '#00FFFF');
                     score += 100;
                     playSound('destroy');
@@ -1832,40 +1832,41 @@
                 const time = Date.now() / 50;
                 const opacity = 0.7 + Math.sin(time) * 0.2;
                 const pulseWidth = 5 + Math.sin(time * 2) * 3;
+                const laserX = player.x; // Follow player position
                 
                 // Animated energy waves
                 for (let i = 0; i < 3; i++) {
-                    const waveY = (time * 20 + i * 100) % player.y;
-                    const waveOpacity = 1 - (waveY / player.y);
+                    const waveY = (time * 20 + i * 100) % canvas.height;
+                    const waveOpacity = 1 - (waveY / canvas.height);
                     ctx.fillStyle = `rgba(0, 255, 255, ${waveOpacity * 0.5})`;
-                    ctx.fillRect(player.x, waveY, 50, 15);
+                    ctx.fillRect(laserX, waveY, 50, 15);
                 }
                 
                 // Outer glow layers
                 ctx.fillStyle = `rgba(0, 255, 255, ${opacity * 0.2})`;
-                ctx.fillRect(player.x - 5, 0, 60, player.y);
+                ctx.fillRect(laserX - 5, 0, 60, canvas.height);
                 
                 ctx.fillStyle = `rgba(0, 255, 255, ${opacity * 0.4})`;
-                ctx.fillRect(player.x, 0, 50, player.y);
+                ctx.fillRect(laserX, 0, 50, canvas.height);
                 
                 // Main beam with gradient
-                const beamGradient = ctx.createLinearGradient(player.x, 0, player.x + 50, 0);
+                const beamGradient = ctx.createLinearGradient(laserX, 0, laserX + 50, 0);
                 beamGradient.addColorStop(0, `rgba(0, 200, 255, ${opacity * 0.3})`);
                 beamGradient.addColorStop(0.5, `rgba(0, 255, 255, ${opacity})`);
                 beamGradient.addColorStop(1, `rgba(0, 200, 255, ${opacity * 0.3})`);
                 ctx.fillStyle = beamGradient;
-                ctx.fillRect(player.x + 5, 0, 40, player.y);
+                ctx.fillRect(laserX + 5, 0, 40, canvas.height);
                 
                 // Bright core with pulsing
                 ctx.shadowColor = '#00FFFF';
                 ctx.shadowBlur = 40;
                 ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-                ctx.fillRect(player.x + 15 + pulseWidth, 0, 20 - pulseWidth * 2, player.y);
+                ctx.fillRect(laserX + 15 + pulseWidth, 0, 20 - pulseWidth * 2, canvas.height);
                 
                 // Electric sparks along the beam
                 for (let i = 0; i < 15; i++) {
-                    const sparkY = Math.random() * player.y;
-                    const sparkX = player.x + 25 + (Math.random() - 0.5) * 30;
+                    const sparkY = Math.random() * canvas.height;
+                    const sparkX = laserX + 25 + (Math.random() - 0.5) * 30;
                     const sparkSize = 1 + Math.random() * 2;
                     ctx.fillStyle = '#FFFFFF';
                     ctx.beginPath();
@@ -1878,10 +1879,10 @@
                     ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
                     ctx.lineWidth = 2;
                     ctx.beginPath();
-                    let boltX = player.x + 25;
+                    let boltX = laserX + 25;
                     let boltY = 0;
                     ctx.moveTo(boltX, boltY);
-                    while (boltY < player.y) {
+                    while (boltY < canvas.height) {
                         boltX += (Math.random() - 0.5) * 15;
                         boltY += 20 + Math.random() * 20;
                         ctx.lineTo(boltX, boltY);
@@ -1892,8 +1893,8 @@
                 // Energy particles
                 if (frameCount % 2 === 0) {
                     particles.push({
-                        x: player.x + 25 + (Math.random() - 0.5) * 40,
-                        y: Math.random() * player.y,
+                        x: laserX + 25 + (Math.random() - 0.5) * 40,
+                        y: Math.random() * canvas.height,
                         vx: (Math.random() - 0.5) * 4,
                         vy: (Math.random() - 0.5) * 4,
                         color: ['#00FFFF', '#FFFFFF', '#00CCFF'][Math.floor(Math.random() * 3)],
