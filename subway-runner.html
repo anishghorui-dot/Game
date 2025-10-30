@@ -519,8 +519,8 @@
             <button id="startBtn">▶ START GAME</button>
             
             <div class="controls">
-                <div>⬅️ ➡️ Switch Lanes | ⬆️ Jump | ⬇️ Slide</div>
-                <div>⚡ Press BOOST button to activate power-ups</div>
+                <div>⬅️ ➡️ Switch Lanes | 💥 Attack with power-ups</div>
+                <div>🚀 Boosts auto-activate | 🔥⚡💣 Attack obstacles!</div>
             </div>
             
             <div class="creator-tag">Created by <span>ANISH</span></div>
@@ -536,8 +536,17 @@
         <!-- Touch Controls for Mobile -->
         <div id="touchControls">
             <div class="touch-btn" id="leftBtn">⬅️</div>
-            <div class="touch-btn" id="powerUpBtn">⚡<small>BOOST</small></div>
+            <div class="touch-btn" id="attackBtn" style="opacity: 0.3;">💥<small>ATTACK</small></div>
             <div class="touch-btn" id="rightBtn">➡️</div>
+        </div>
+        
+        <!-- Active Power-Up Display -->
+        <div id="activePowerUpDisplay" style="position: absolute; top: 120px; left: 10px; display: none;">
+            <div style="background: rgba(0, 0, 0, 0.8); padding: 10px; border-radius: 10px; border: 2px solid #FFD700;">
+                <div id="activePowerUpIcon" style="font-size: 32px; text-align: center;"></div>
+                <div id="activePowerUpName" style="color: #FFF; font-size: 14px; text-align: center; margin-top: 5px;"></div>
+                <div id="activePowerUpTimer" style="color: #FFD700; font-size: 12px; text-align: center;"></div>
+            </div>
         </div>
     </div>
 
@@ -560,11 +569,7 @@
             x: 0,
             y: 500,
             width: 50,
-            height: 70,
-            velocityY: 0,
-            jumping: false,
-            sliding: false,
-            slideTimer: 0
+            height: 70
         };
 
         // Lane positions
@@ -586,6 +591,13 @@
         let hasShield = false;
         let magnetActive = false;
         let speedBoostActive = false;
+        
+        // Attack power-ups
+        let attackPowerUp = null; // 'fire', 'laser', or 'bomb'
+        let attackCooldown = 0;
+        let fireballActive = false;
+        let laserActive = false;
+        let attackProjectiles = [];
 
         // ANISH letter collection
         const anishLetters = ['A', 'N', 'I', 'S', 'H'];
@@ -609,23 +621,17 @@
             
             if (!gameRunning) return;
             
-            if (e.key === 'ArrowLeft' && player.lane > 0 && !player.sliding) {
+            if (e.key === 'ArrowLeft' && player.lane > 0) {
                 player.lane--;
                 playSound('swipe');
             }
-            if (e.key === 'ArrowRight' && player.lane < 2 && !player.sliding) {
+            if (e.key === 'ArrowRight' && player.lane < 2) {
                 player.lane++;
                 playSound('swipe');
             }
-            if (e.key === 'ArrowUp' && !player.jumping && !player.sliding) {
-                jump();
-            }
-            if (e.key === 'ArrowDown' && !player.jumping && !player.sliding) {
-                slide();
-            }
-            if (e.key === ' ') {
+            if (e.key === ' ' && attackPowerUp && attackCooldown === 0) {
                 e.preventDefault();
-                usePowerUpButton();
+                useAttackPowerUp();
             }
         });
 
@@ -650,19 +656,12 @@
             
             if (Math.abs(deltaX) > Math.abs(deltaY)) {
                 // Horizontal swipe
-                if (deltaX > 30 && player.lane < 2 && !player.sliding) {
+                if (deltaX > 30 && player.lane < 2) {
                     player.lane++;
                     playSound('swipe');
-                } else if (deltaX < -30 && player.lane > 0 && !player.sliding) {
+                } else if (deltaX < -30 && player.lane > 0) {
                     player.lane--;
                     playSound('swipe');
-                }
-            } else {
-                // Vertical swipe
-                if (deltaY < -30 && !player.jumping && !player.sliding) {
-                    jump();
-                } else if (deltaY > 30 && !player.jumping && !player.sliding) {
-                    slide();
                 }
             }
         });
@@ -670,7 +669,7 @@
         // Touch button controls
         document.getElementById('leftBtn').addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (gameRunning && player.lane > 0 && !player.sliding) {
+            if (gameRunning && player.lane > 0) {
                 player.lane--;
                 playSound('swipe');
             }
@@ -678,33 +677,18 @@
 
         document.getElementById('rightBtn').addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (gameRunning && player.lane < 2 && !player.sliding) {
+            if (gameRunning && player.lane < 2) {
                 player.lane++;
                 playSound('swipe');
             }
         });
 
-        document.getElementById('powerUpBtn').addEventListener('touchstart', (e) => {
+        document.getElementById('attackBtn').addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (gameRunning) {
-                usePowerUpButton();
+            if (gameRunning && attackPowerUp && attackCooldown === 0) {
+                useAttackPowerUp();
             }
         });
-
-        // Game functions
-        function jump() {
-            if (!player.jumping) {
-                player.jumping = true;
-                player.velocityY = -15;
-                playSound('jump');
-            }
-        }
-
-        function slide() {
-            player.sliding = true;
-            player.slideTimer = 30; // Slide for 0.5 seconds at 60fps
-            playSound('slide');
-        }
 
         function spawnObstacle() {
             const lane = Math.floor(Math.random() * 3);
@@ -752,7 +736,7 @@
 
         function spawnPowerUp() {
             const lane = Math.floor(Math.random() * 3);
-            const types = ['shield', 'magnet', 'invincible', 'boost'];
+            const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb'];
             const type = types[Math.floor(Math.random() * types.length)];
             
             powerUps.push({
@@ -872,80 +856,185 @@
             }, 10000);
         }
 
-        function usePowerUpButton() {
-            if (activePowerUp === 'boost') {
-                // Speed boost - temporary speed increase
-                if (!speedBoostActive) {
-                    speedBoostActive = true;
-                    gameSpeed *= 2;
-                    scoreMultiplier = 3;
-                    showMultiplier('3X SPEED!');
-                    setTimeout(() => {
-                        gameSpeed /= 2;
-                        scoreMultiplier = 1;
-                        speedBoostActive = false;
-                    }, 3000);
-                    playSound('boost');
-                }
-            } else if (activePowerUp === 'invincible') {
-                // Already active, just showing effect
-                if (isInvincible) {
-                    showMultiplier('⭐ INVINCIBLE!');
-                }
+        function useAttackPowerUp() {
+            if (!attackPowerUp || attackCooldown > 0) return;
+            
+            attackCooldown = 120; // 2 second cooldown
+            
+            switch(attackPowerUp) {
+                case 'fire':
+                    // Shoot fireball in current lane
+                    attackProjectiles.push({
+                        type: 'fire',
+                        x: player.x + 15,
+                        y: player.y - 20,
+                        lane: player.lane,
+                        width: 30,
+                        height: 30,
+                        speed: -10
+                    });
+                    playSound('attack');
+                    break;
+                    
+                case 'laser':
+                    // Laser beam that hits all obstacles in lane
+                    laserActive = true;
+                    setTimeout(() => { laserActive = false; }, 500);
+                    destroyObstaclesInLane(player.lane);
+                    playSound('laser');
+                    break;
+                    
+                case 'bomb':
+                    // Bomb destroys all visible obstacles
+                    destroyAllVisibleObstacles();
+                    playSound('bomb');
+                    break;
             }
+            
+            attackPowerUp = null; // One-time use
+        }
+
+        function destroyObstaclesInLane(lane) {
+            obstacles.forEach(obs => {
+                if (obs.lane === lane && obs.y < canvas.height) {
+                    createParticle(obs.x + 25, obs.y + 30, '#FF4500');
+                    score += 100;
+                }
+            });
+            obstacles = obstacles.filter(obs => obs.lane !== lane || obs.y >= canvas.height);
+        }
+
+        function destroyAllVisibleObstacles() {
+            obstacles.forEach(obs => {
+                if (obs.y < canvas.height && obs.y > -100) {
+                    createParticle(obs.x + 25, obs.y + 30, '#FFD700');
+                    score += 100;
+                }
+            });
+            obstacles = obstacles.filter(obs => obs.y >= canvas.height || obs.y <= -100);
         }
 
         function activatePowerUp(type) {
-            activePowerUp = type;
-            powerUpTimer = 300; // 5 seconds at 60fps
-            
-            document.getElementById('powerUpBar').classList.add('active');
-            document.getElementById('activePowerUp').style.display = 'block';
-            
-            const powerUpBtn = document.getElementById('powerUpBtn');
-            powerUpBtn.classList.remove('disabled');
+            playSound('powerup');
             
             switch(type) {
                 case 'shield':
                     hasShield = true;
-                    document.getElementById('powerUpName').textContent = '🛡️ SHIELD';
+                    activePowerUp = 'shield';
+                    powerUpTimer = 300; // 5 seconds
                     showMultiplier('🛡️ SHIELD ON!');
-                    playSound('powerup');
                     break;
                     
                 case 'magnet':
                     magnetActive = true;
-                    document.getElementById('powerUpName').textContent = '🧲 MAGNET';
+                    activePowerUp = 'magnet';
+                    powerUpTimer = 300;
                     showMultiplier('🧲 COIN MAGNET!');
-                    playSound('powerup');
                     break;
                     
                 case 'invincible':
                     isInvincible = true;
-                    document.getElementById('powerUpName').textContent = '⭐ INVINCIBLE';
+                    activePowerUp = 'invincible';
+                    powerUpTimer = 300;
                     showMultiplier('⭐ INVINCIBLE!');
-                    playSound('powerup');
                     break;
                     
                 case 'boost':
-                    document.getElementById('powerUpName').textContent = '🚀 BOOST READY';
-                    showMultiplier('🚀 BOOST!');
-                    playSound('powerup');
+                    // Auto-apply boost immediately
+                    speedBoostActive = true;
+                    activePowerUp = 'boost';
+                    powerUpTimer = 300;
+                    gameSpeed *= 1.5;
+                    scoreMultiplier = 2;
+                    showMultiplier('🚀 SPEED BOOST!');
+                    break;
+                    
+                case 'fire':
+                    attackPowerUp = 'fire';
+                    showMultiplier('🔥 FIREBALL READY!');
+                    break;
+                    
+                case 'laser':
+                    attackPowerUp = 'laser';
+                    showMultiplier('⚡ LASER READY!');
+                    break;
+                    
+                case 'bomb':
+                    attackPowerUp = 'bomb';
+                    showMultiplier('💣 BOMB READY!');
                     break;
             }
         }
 
         function deactivatePowerUp() {
+            if (speedBoostActive) {
+                gameSpeed = Math.max(5, gameSpeed / 1.5);
+                speedBoostActive = false;
+                scoreMultiplier = 1;
+            }
+            
             hasShield = false;
             magnetActive = false;
             isInvincible = false;
             activePowerUp = null;
             
-            document.getElementById('powerUpBar').classList.remove('active');
-            document.getElementById('activePowerUp').style.display = 'none';
+            document.getElementById('activePowerUpDisplay').style.display = 'none';
+        }
+        
+        function updatePowerUpDisplay() {
+            if (activePowerUp && powerUpTimer > 0) {
+                const display = document.getElementById('activePowerUpDisplay');
+                const icon = document.getElementById('activePowerUpIcon');
+                const name = document.getElementById('activePowerUpName');
+                const timer = document.getElementById('activePowerUpTimer');
+                
+                display.style.display = 'block';
+                
+                const icons = {
+                    'shield': '🛡️',
+                    'magnet': '🧲',
+                    'invincible': '⭐',
+                    'boost': '🚀'
+                };
+                
+                const names = {
+                    'shield': 'SHIELD',
+                    'magnet': 'MAGNET',
+                    'invincible': 'INVINCIBLE',
+                    'boost': 'SPEED BOOST'
+                };
+                
+                icon.textContent = icons[activePowerUp];
+                name.textContent = names[activePowerUp];
+                timer.textContent = `${Math.ceil(powerUpTimer / 60)}s`;
+            } else {
+                document.getElementById('activePowerUpDisplay').style.display = 'none';
+            }
+        }
+        
+        function updateAttackButton() {
+            const attackBtn = document.getElementById('attackBtn');
             
-            const powerUpBtn = document.getElementById('powerUpBtn');
-            powerUpBtn.classList.add('disabled');
+            if (attackPowerUp && attackCooldown === 0) {
+                attackBtn.style.opacity = '1';
+                attackBtn.style.transform = 'scale(1.1)';
+                
+                const icons = {
+                    'fire': '🔥',
+                    'laser': '⚡',
+                    'bomb': '💣'
+                };
+                
+                attackBtn.innerHTML = `${icons[attackPowerUp]}<small>ATTACK</small>`;
+            } else if (attackCooldown > 0) {
+                attackBtn.style.opacity = '0.5';
+                attackBtn.style.transform = 'scale(1)';
+                attackBtn.innerHTML = `⏱️<small>${Math.ceil(attackCooldown / 60)}s</small>`;
+            } else {
+                attackBtn.style.opacity = '0.3';
+                attackBtn.style.transform = 'scale(1)';
+                attackBtn.innerHTML = `💥<small>ATTACK</small>`;
+            }
         }
 
         function showMultiplier(text) {
@@ -975,26 +1064,6 @@
             // Smooth lane transition
             const targetX = lanes[player.lane];
             player.x += (targetX - player.x) * 0.3;
-
-            // Jumping physics
-            if (player.jumping) {
-                player.velocityY += 0.8; // Gravity
-                player.y += player.velocityY;
-
-                if (player.y >= 500) {
-                    player.y = 500;
-                    player.jumping = false;
-                    player.velocityY = 0;
-                }
-            }
-
-            // Sliding
-            if (player.sliding) {
-                player.slideTimer--;
-                if (player.slideTimer <= 0) {
-                    player.sliding = false;
-                }
-            }
         }
 
         function updateObstacles() {
@@ -1002,14 +1071,11 @@
                 obs.y += gameSpeed;
 
                 // Check collision
-                const playerHeight = player.sliding ? player.height / 2 : player.height;
-                const playerY = player.sliding ? player.y + player.height / 2 : player.y;
-
                 if (obs.lane === player.lane &&
                     player.x < obs.x + obs.width - 10 &&
                     player.x + player.width > obs.x + 10 &&
-                    playerY < obs.y + obs.height &&
-                    playerY + playerHeight > obs.y) {
+                    player.y < obs.y + obs.height &&
+                    player.y + player.height > obs.y) {
                     
                     // Check if protected
                     if (isInvincible) {
@@ -1026,8 +1092,6 @@
                         showMultiplier('SHIELD BLOCKED!');
                         playSound('shield');
                         return false;
-                    } else if (obs.type === 'barrier' && player.jumping && player.y < obs.y + 50) {
-                        // Can jump over low barrier
                     } else {
                         // Collision! Game Over
                         gameOver();
@@ -1144,6 +1208,29 @@
                 return p.life > 0;
             });
         }
+        
+        function updateAttackProjectiles() {
+            attackProjectiles = attackProjectiles.filter(proj => {
+                proj.y += proj.speed;
+                
+                // Check collision with obstacles
+                obstacles.forEach((obs, index) => {
+                    if (obs.lane === proj.lane &&
+                        proj.x < obs.x + obs.width &&
+                        proj.x + proj.width > obs.x &&
+                        proj.y < obs.y + obs.height &&
+                        proj.y + proj.height > obs.y) {
+                        
+                        createParticle(obs.x + 25, obs.y + 30, '#FF4500');
+                        obstacles.splice(index, 1);
+                        score += 100;
+                        proj.hit = true;
+                    }
+                });
+                
+                return proj.y > -50 && !proj.hit;
+            });
+        }
 
         function updateGround() {
             // Create moving ground lines for speed effect
@@ -1171,17 +1258,25 @@
             updateAnishLetters();
             updateParticles();
             updateGround();
+            updateAttackProjectiles();
 
             // Power-up timer
             if (powerUpTimer > 0) {
                 powerUpTimer--;
-                const secondsLeft = Math.ceil(powerUpTimer / 60);
-                document.getElementById('powerUpTimer').textContent = `(${secondsLeft}s)`;
+                updatePowerUpDisplay();
                 
                 if (powerUpTimer === 0) {
                     deactivatePowerUp();
                 }
             }
+            
+            // Attack cooldown
+            if (attackCooldown > 0) {
+                attackCooldown--;
+            }
+            
+            // Update attack button visual
+            updateAttackButton();
 
             // Spawn obstacles
             if (frameCount % 60 === 0) {
@@ -1216,9 +1311,6 @@
 
         function drawPlayer() {
             ctx.save();
-            
-            const playerHeight = player.sliding ? player.height / 2 : player.height;
-            const playerY = player.sliding ? player.y + player.height / 2 : player.y;
 
             // Shadow
             ctx.fillStyle = 'rgba(0,0,0,0.3)';
@@ -1229,20 +1321,20 @@
                 ctx.strokeStyle = '#00BFFF';
                 ctx.lineWidth = 4;
                 ctx.setLineDash([5, 5]);
-                ctx.strokeRect(player.x - 5, playerY - 5, player.width + 10, playerHeight + 10);
+                ctx.strokeRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10);
                 ctx.setLineDash([]);
             }
 
             // Invincible glow
             if (isInvincible) {
                 const glowGradient = ctx.createRadialGradient(
-                    player.x + 25, playerY + playerHeight/2, 0,
-                    player.x + 25, playerY + playerHeight/2, 40
+                    player.x + 25, player.y + player.height/2, 0,
+                    player.x + 25, player.y + player.height/2, 40
                 );
                 glowGradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
                 glowGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
                 ctx.fillStyle = glowGradient;
-                ctx.fillRect(player.x - 15, playerY - 15, player.width + 30, playerHeight + 30);
+                ctx.fillRect(player.x - 15, player.y - 15, player.width + 30, player.height + 30);
             }
 
             // Body (ANISH themed - green with gradient)
@@ -1257,42 +1349,40 @@
                 bodyColor2 = '#FF5252';
             }
             
-            const gradient = ctx.createLinearGradient(player.x, playerY, player.x, playerY + playerHeight);
+            const gradient = ctx.createLinearGradient(player.x, player.y, player.x, player.y + player.height);
             gradient.addColorStop(0, bodyColor1);
             gradient.addColorStop(1, bodyColor2);
             ctx.fillStyle = gradient;
-            ctx.fillRect(player.x, playerY, player.width, playerHeight);
+            ctx.fillRect(player.x, player.y, player.width, player.height);
 
             // Outline
             ctx.strokeStyle = isInvincible ? '#FFD700' : '#2E7D32';
             ctx.lineWidth = 3;
-            ctx.strokeRect(player.x, playerY, player.width, playerHeight);
+            ctx.strokeRect(player.x, player.y, player.width, player.height);
 
             // Face
-            if (!player.sliding) {
-                ctx.fillStyle = '#FFF';
-                ctx.fillRect(player.x + 15, playerY + 15, 8, 8);
-                ctx.fillRect(player.x + 27, playerY + 15, 8, 8);
-                
-                // Smile
-                ctx.strokeStyle = '#FFF';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(player.x + 25, playerY + 35, 10, 0, Math.PI);
-                ctx.stroke();
-            }
+            ctx.fillStyle = '#FFF';
+            ctx.fillRect(player.x + 15, player.y + 15, 8, 8);
+            ctx.fillRect(player.x + 27, player.y + 15, 8, 8);
+            
+            // Smile
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(player.x + 25, player.y + 35, 10, 0, Math.PI);
+            ctx.stroke();
 
             // "A" letter on chest (ANISH branding)
             ctx.fillStyle = '#FFD700';
             ctx.font = 'bold 28px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('A', player.x + 25, playerY + (playerHeight * 0.7));
+            ctx.fillText('A', player.x + 25, player.y + (player.height * 0.7));
 
             // Speed trail
             if (speedBoostActive) {
                 for (let i = 0; i < 3; i++) {
                     ctx.fillStyle = `rgba(255, 107, 107, ${0.3 - i * 0.1})`;
-                    ctx.fillRect(player.x - (i * 10), playerY, player.width, playerHeight);
+                    ctx.fillRect(player.x - (i * 10), player.y, player.width, player.height);
                 }
             }
 
@@ -1432,17 +1522,37 @@
                 ctx.translate(powerUp.x + 20, powerUp.y + 20);
                 ctx.rotate(powerUp.rotation || 0);
                 
-                // Glow effect
+                // Glow effect with different colors
+                const glowColors = {
+                    'shield': 'rgba(0, 191, 255, 0.5)',
+                    'magnet': 'rgba(138, 43, 226, 0.5)',
+                    'invincible': 'rgba(255, 215, 0, 0.5)',
+                    'boost': 'rgba(255, 107, 107, 0.5)',
+                    'fire': 'rgba(255, 69, 0, 0.5)',
+                    'laser': 'rgba(0, 255, 255, 0.5)',
+                    'bomb': 'rgba(255, 0, 0, 0.5)'
+                };
+                
                 const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 25);
-                glowGradient.addColorStop(0, 'rgba(0, 255, 0, 0.5)');
-                glowGradient.addColorStop(1, 'rgba(0, 255, 0, 0)');
+                glowGradient.addColorStop(0, glowColors[powerUp.type] || 'rgba(0, 255, 0, 0.5)');
+                glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
                 ctx.fillStyle = glowGradient;
                 ctx.fillRect(-25, -25, 50, 50);
                 
-                // Power-up box
-                ctx.fillStyle = '#00FF00';
+                // Power-up box with different colors
+                const boxColors = {
+                    'shield': '#00BFFF',
+                    'magnet': '#8A2BE2',
+                    'invincible': '#FFD700',
+                    'boost': '#FF6B6B',
+                    'fire': '#FF4500',
+                    'laser': '#00FFFF',
+                    'bomb': '#FF0000'
+                };
+                
+                ctx.fillStyle = boxColors[powerUp.type] || '#00FF00';
                 ctx.fillRect(-20, -20, 40, 40);
-                ctx.strokeStyle = '#FFD700';
+                ctx.strokeStyle = '#FFF';
                 ctx.lineWidth = 3;
                 ctx.strokeRect(-20, -20, 40, 40);
                 
@@ -1456,7 +1566,10 @@
                     'shield': '🛡️',
                     'magnet': '🧲',
                     'invincible': '⭐',
-                    'boost': '🚀'
+                    'boost': '🚀',
+                    'fire': '🔥',
+                    'laser': '⚡',
+                    'bomb': '💣'
                 };
                 
                 ctx.fillText(icons[powerUp.type], 0, 0);
@@ -1518,6 +1631,49 @@
                 ctx.globalAlpha = 1;
             });
         }
+        
+        function drawAttackProjectiles() {
+            attackProjectiles.forEach(proj => {
+                ctx.save();
+                
+                if (proj.type === 'fire') {
+                    // Fireball
+                    const gradient = ctx.createRadialGradient(
+                        proj.x + 15, proj.y + 15, 5,
+                        proj.x + 15, proj.y + 15, 15
+                    );
+                    gradient.addColorStop(0, '#FFFF00');
+                    gradient.addColorStop(0.5, '#FF4500');
+                    gradient.addColorStop(1, '#FF0000');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(proj.x + 15, proj.y + 15, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Fire emoji
+                    ctx.font = 'bold 24px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('🔥', proj.x + 15, proj.y + 15);
+                }
+                
+                ctx.restore();
+            });
+            
+            // Draw laser beam
+            if (laserActive) {
+                ctx.save();
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.7)';
+                ctx.fillRect(player.x + 10, 0, 30, player.y);
+                
+                // Laser glow
+                ctx.shadowColor = '#00FFFF';
+                ctx.shadowBlur = 20;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.fillRect(player.x + 20, 0, 10, player.y);
+                ctx.restore();
+            }
+        }
 
         function draw() {
             drawBackground();
@@ -1525,6 +1681,7 @@
             drawCoins();
             drawPowerUps();
             drawAnishLetters();
+            drawAttackProjectiles();
             drawParticles();
             drawPlayer();
         }
@@ -1553,8 +1710,6 @@
             player.lane = 1;
             player.x = lanes[1];
             player.y = 500;
-            player.jumping = false;
-            player.sliding = false;
             obstacles = [];
             coinItems = [];
             powerUps = [];
@@ -1568,6 +1723,9 @@
             hasShield = false;
             magnetActive = false;
             speedBoostActive = false;
+            attackPowerUp = null;
+            attackCooldown = 0;
+            attackProjectiles = [];
             
             // Reset ANISH letters
             collectedAnishLetters = {
@@ -1722,6 +1880,35 @@
                     oscillator.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.15);
                     oscillator.frequency.exponentialRampToValueAtTime(1800, audioCtx.currentTime + 0.3);
                     oscillator.stop(audioCtx.currentTime + 0.3);
+                    break;
+                    
+                case 'attack':
+                    oscillator.frequency.value = 300;
+                    oscillator.type = 'sawtooth';
+                    gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+                    oscillator.stop(audioCtx.currentTime + 0.2);
+                    break;
+                    
+                case 'laser':
+                    oscillator.frequency.value = 2000;
+                    oscillator.type = 'sine';
+                    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 0.5);
+                    oscillator.stop(audioCtx.currentTime + 0.5);
+                    break;
+                    
+                case 'bomb':
+                    oscillator.frequency.value = 100;
+                    oscillator.type = 'square';
+                    gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.8);
                     break;
                     
                 case 'anishComplete':
