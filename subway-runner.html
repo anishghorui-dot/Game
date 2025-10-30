@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- PWA & Fullscreen Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f0f1e">
+    
     <title>ANISH Runner - Endless Adventure</title>
     <style>
         * {
@@ -17,8 +24,18 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            min-height: -webkit-fill-available;
             font-family: 'Arial Black', sans-serif;
             overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        
+        html {
+            height: -webkit-fill-available;
         }
 
         #gameContainer {
@@ -1522,6 +1539,9 @@
         }
 
         function startGame() {
+            // Request fullscreen on mobile
+            requestFullscreen();
+            
             document.getElementById('startScreen').classList.add('hidden');
             gameRunning = true;
             score = 0;
@@ -1580,6 +1600,20 @@
         function restartGame() {
             document.getElementById('gameOverScreen').classList.add('hidden');
             startGame();
+        }
+
+        // Fullscreen function for mobile
+        function requestFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) { // Safari
+                elem.webkitRequestFullscreen();
+            } else if (elem.mozRequestFullScreen) { // Firefox
+                elem.mozRequestFullScreen();
+            } else if (elem.msRequestFullscreen) { // IE/Edge
+                elem.msRequestFullscreen();
+            }
         }
 
         // Simple sound effects
