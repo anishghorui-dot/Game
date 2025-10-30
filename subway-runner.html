@@ -397,7 +397,7 @@
             position: absolute;
             bottom: 30px;
             width: 100%;
-            justify-content: space-around;
+            justify-content: center;
             padding: 0 30px;
             z-index: 50;
         }
@@ -523,9 +523,7 @@
 
         <!-- Touch Controls for Mobile -->
         <div id="touchControls">
-            <div class="touch-btn" id="leftBtn">⬅️</div>
             <div class="touch-btn" id="attackBtn" style="opacity: 0.3;">💥<small>ATTACK</small></div>
-            <div class="touch-btn" id="rightBtn">➡️</div>
         </div>
         
         <!-- Active Power-Up Display -->
@@ -592,8 +590,6 @@
 
         // Input
         const keys = {};
-        let touchStartX = 0;
-        let touchStartY = 0;
 
         // Keyboard controls
         document.addEventListener('keydown', (e) => {
@@ -619,50 +615,53 @@
             keys[e.key] = false;
         });
 
-        // Touch controls
-        canvas.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        });
+        // Touch controls - Screen tap zones and double tap
+        let lastTapTime = 0;
+        let tapCount = 0;
+        let tapTimeout = null;
 
-        canvas.addEventListener('touchend', (e) => {
+        canvas.addEventListener('touchstart', (e) => {
             if (!gameRunning) return;
             
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const touchX = touch.clientX;
+            const canvasWidth = canvas.offsetWidth;
+            const currentTime = Date.now();
             
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            
-            if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                // Horizontal swipe
-                if (deltaX > 30 && player.lane < 2) {
-                    player.lane++;
-                    playSound('swipe');
-                } else if (deltaX < -30 && player.lane > 0) {
-                    player.lane--;
-                    playSound('swipe');
+            // Double tap detection for attack
+            if (currentTime - lastTapTime < 300) {
+                tapCount++;
+                if (tapCount === 1 && attackPowerUp && attackCooldown === 0) {
+                    useAttackPowerUp();
+                    tapCount = 0;
+                    clearTimeout(tapTimeout);
+                }
+            } else {
+                tapCount = 0;
+                // Single tap for movement
+                if (touchX < canvasWidth / 2) {
+                    // Left side tap - move left
+                    if (player.lane > 0) {
+                        player.lane--;
+                        playSound('swipe');
+                    }
+                } else {
+                    // Right side tap - move right
+                    if (player.lane < 2) {
+                        player.lane++;
+                        playSound('swipe');
+                    }
                 }
             }
+            
+            lastTapTime = currentTime;
+            tapTimeout = setTimeout(() => {
+                tapCount = 0;
+            }, 300);
         });
 
-        // Touch button controls
-        document.getElementById('leftBtn').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (gameRunning && player.lane > 0) {
-                player.lane--;
-                playSound('swipe');
-            }
-        });
-
-        document.getElementById('rightBtn').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (gameRunning && player.lane < 2) {
-                player.lane++;
-                playSound('swipe');
-            }
-        });
-
+        // Attack button control (kept as requested)
         document.getElementById('attackBtn').addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (gameRunning && attackPowerUp && attackCooldown === 0) {
