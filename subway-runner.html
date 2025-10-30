@@ -587,6 +587,7 @@
         let fireballActive = false;
         let fireballTimer = 0; // 10 seconds for unlimited fireballs
         let laserActive = false;
+        let laserLane = -1; // Track which lane the laser is in
         let attackProjectiles = [];
 
         // Input
@@ -752,7 +753,7 @@
             switch(attackPowerUp) {
                 case 'fire':
                     // Shoot fireball in current lane (unlimited during timer)
-                    attackCooldown = 30; // 0.5 second cooldown between shots
+                    attackCooldown = 9; // 0.15 second cooldown for rapid fire!
                     attackProjectiles.push({
                         type: 'fire',
                         x: player.x + 15,
@@ -770,7 +771,11 @@
                     // Laser beam that hits all obstacles in lane (one-time use)
                     attackCooldown = 120; // 2 second cooldown
                     laserActive = true;
-                    setTimeout(() => { laserActive = false; }, 500);
+                    laserLane = player.lane; // Store which lane
+                    setTimeout(() => { 
+                        laserActive = false;
+                        laserLane = -1;
+                    }, 3000); // 3 seconds duration
                     destroyObstaclesInLane(player.lane);
                     playSound('laser');
                     attackPowerUp = null; // One-time use
@@ -885,9 +890,12 @@
                     
                 case 'invincible':
                     isInvincible = true;
+                    speedBoostActive = true; // Add boost feature
                     activePowerUp = 'invincible';
-                    powerUpTimer = 300;
-                    showMultiplier('⭐ INVINCIBLE!');
+                    powerUpTimer = 600; // 10 seconds duration
+                    gameSpeed *= 1.5; // Speed boost
+                    scoreMultiplier = 3; // 3x multiplier!
+                    showMultiplier('⭐ INVINCIBLE + BOOST!');
                     // Golden explosion
                     for (let i = 0; i < 30; i++) {
                         particles.push({
@@ -1102,6 +1110,14 @@
                     } else {
                         obs.lane = 1;
                     }
+                }
+                
+                // Laser continuously destroys obstacles in its lane
+                if (laserActive && obs.lane === laserLane && obs.y < player.y) {
+                    createParticle(obs.x + 25, obs.y + 30, '#00FFFF');
+                    score += 100;
+                    playSound('destroy');
+                    return false;
                 }
 
                 // Check collision (only if not in invincibility frames)
@@ -1399,6 +1415,53 @@
                 glowGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
                 ctx.fillStyle = glowGradient;
                 ctx.fillRect(player.x - 20, player.y - 20, player.width + 40, player.height + 40);
+                
+                // Jet booster flames on the back
+                const flameOffset = Math.sin(time * 3) * 3;
+                
+                // Left jet booster
+                const leftJetGradient = ctx.createLinearGradient(
+                    player.x - 15, player.y + 20, 
+                    player.x - 30, player.y + 30
+                );
+                leftJetGradient.addColorStop(0, '#FFD700');
+                leftJetGradient.addColorStop(0.4, '#FF6B00');
+                leftJetGradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                ctx.fillStyle = leftJetGradient;
+                ctx.beginPath();
+                ctx.moveTo(player.x, player.y + 20);
+                ctx.lineTo(player.x - 20 - flameOffset, player.y + 25);
+                ctx.lineTo(player.x, player.y + 35);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Right jet booster
+                const rightJetGradient = ctx.createLinearGradient(
+                    player.x - 15, player.y + 20, 
+                    player.x - 30, player.y + 30
+                );
+                rightJetGradient.addColorStop(0, '#FFD700');
+                rightJetGradient.addColorStop(0.4, '#FF6B00');
+                rightJetGradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                ctx.fillStyle = rightJetGradient;
+                ctx.beginPath();
+                ctx.moveTo(player.x, player.y + 35);
+                ctx.lineTo(player.x - 20 - flameOffset, player.y + 40);
+                ctx.lineTo(player.x, player.y + 50);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Jet exhaust particles
+                if (frameCount % 2 === 0) {
+                    particles.push({
+                        x: player.x - 10,
+                        y: player.y + 27 + Math.random() * 20,
+                        vx: -3 - Math.random() * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        color: ['#FFD700', '#FF6B00', '#FF0000'][Math.floor(Math.random() * 3)],
+                        life: 15
+                    });
+                }
                 
                 // Golden sparkles
                 if (frameCount % 5 === 0) {
@@ -1768,28 +1831,74 @@
                 
                 const time = Date.now() / 50;
                 const opacity = 0.7 + Math.sin(time) * 0.2;
+                const pulseWidth = 5 + Math.sin(time * 2) * 3;
                 
-                // Outer glow
-                ctx.fillStyle = `rgba(0, 255, 255, ${opacity * 0.3})`;
+                // Animated energy waves
+                for (let i = 0; i < 3; i++) {
+                    const waveY = (time * 20 + i * 100) % player.y;
+                    const waveOpacity = 1 - (waveY / player.y);
+                    ctx.fillStyle = `rgba(0, 255, 255, ${waveOpacity * 0.5})`;
+                    ctx.fillRect(player.x, waveY, 50, 15);
+                }
+                
+                // Outer glow layers
+                ctx.fillStyle = `rgba(0, 255, 255, ${opacity * 0.2})`;
+                ctx.fillRect(player.x - 5, 0, 60, player.y);
+                
+                ctx.fillStyle = `rgba(0, 255, 255, ${opacity * 0.4})`;
                 ctx.fillRect(player.x, 0, 50, player.y);
                 
-                // Main beam
-                ctx.fillStyle = `rgba(0, 255, 255, ${opacity})`;
-                ctx.fillRect(player.x + 10, 0, 30, player.y);
+                // Main beam with gradient
+                const beamGradient = ctx.createLinearGradient(player.x, 0, player.x + 50, 0);
+                beamGradient.addColorStop(0, `rgba(0, 200, 255, ${opacity * 0.3})`);
+                beamGradient.addColorStop(0.5, `rgba(0, 255, 255, ${opacity})`);
+                beamGradient.addColorStop(1, `rgba(0, 200, 255, ${opacity * 0.3})`);
+                ctx.fillStyle = beamGradient;
+                ctx.fillRect(player.x + 5, 0, 40, player.y);
                 
-                // Bright center
+                // Bright core with pulsing
                 ctx.shadowColor = '#00FFFF';
-                ctx.shadowBlur = 30;
+                ctx.shadowBlur = 40;
                 ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-                ctx.fillRect(player.x + 20, 0, 10, player.y);
+                ctx.fillRect(player.x + 15 + pulseWidth, 0, 20 - pulseWidth * 2, player.y);
                 
-                // Electric sparks
-                for (let i = 0; i < 5; i++) {
+                // Electric sparks along the beam
+                for (let i = 0; i < 15; i++) {
                     const sparkY = Math.random() * player.y;
+                    const sparkX = player.x + 25 + (Math.random() - 0.5) * 30;
+                    const sparkSize = 1 + Math.random() * 2;
                     ctx.fillStyle = '#FFFFFF';
                     ctx.beginPath();
-                    ctx.arc(player.x + 25 + (Math.random() - 0.5) * 20, sparkY, 2, 0, Math.PI * 2);
+                    ctx.arc(sparkX, sparkY, sparkSize, 0, Math.PI * 2);
                     ctx.fill();
+                }
+                
+                // Lightning bolts
+                if (frameCount % 3 === 0) {
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    let boltX = player.x + 25;
+                    let boltY = 0;
+                    ctx.moveTo(boltX, boltY);
+                    while (boltY < player.y) {
+                        boltX += (Math.random() - 0.5) * 15;
+                        boltY += 20 + Math.random() * 20;
+                        ctx.lineTo(boltX, boltY);
+                    }
+                    ctx.stroke();
+                }
+                
+                // Energy particles
+                if (frameCount % 2 === 0) {
+                    particles.push({
+                        x: player.x + 25 + (Math.random() - 0.5) * 40,
+                        y: Math.random() * player.y,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: (Math.random() - 0.5) * 4,
+                        color: ['#00FFFF', '#FFFFFF', '#00CCFF'][Math.floor(Math.random() * 3)],
+                        life: 20
+                    });
                 }
                 
                 ctx.restore();
