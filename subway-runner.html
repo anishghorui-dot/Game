@@ -42,7 +42,7 @@
             position: relative;
             width: 400px;
             height: 700px;
-            border: 5px solid #333;
+            border: none;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
             background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 100%);
             overflow: hidden;
@@ -629,29 +629,36 @@
             const canvasWidth = canvas.offsetWidth;
             const currentTime = Date.now();
             
-            // Double tap detection for attack
-            if (currentTime - lastTapTime < 300) {
+            // Calculate screen thirds for median lane detection
+            const leftThird = canvasWidth / 3;
+            const rightThird = (canvasWidth * 2) / 3;
+            const isInMedianLane = touchX >= leftThird && touchX <= rightThird;
+            
+            // Double tap detection for attack (only in median/middle lane)
+            if (currentTime - lastTapTime < 300 && isInMedianLane) {
                 tapCount++;
                 if (tapCount === 1 && attackPowerUp && attackCooldown === 0) {
                     useAttackPowerUp();
                     tapCount = 0;
                     clearTimeout(tapTimeout);
+                    lastTapTime = currentTime;
+                    return; // Exit early to prevent movement
+                }
+            }
+            
+            // Movement logic (works for single tap and double tap on left/right)
+            tapCount = 0;
+            if (touchX < canvasWidth / 2) {
+                // Left side tap - move left
+                if (player.lane > 0) {
+                    player.lane--;
+                    playSound('swipe');
                 }
             } else {
-                tapCount = 0;
-                // Single tap for movement
-                if (touchX < canvasWidth / 2) {
-                    // Left side tap - move left
-                    if (player.lane > 0) {
-                        player.lane--;
-                        playSound('swipe');
-                    }
-                } else {
-                    // Right side tap - move right
-                    if (player.lane < 2) {
-                        player.lane++;
-                        playSound('swipe');
-                    }
+                // Right side tap - move right
+                if (player.lane < 2) {
+                    player.lane++;
+                    playSound('swipe');
                 }
             }
             
