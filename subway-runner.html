@@ -468,6 +468,7 @@
             <div>SCORE: <span id="score">0</span></div>
             <div>COINS: 🪙 <span id="coins">0</span></div>
             <div>DISTANCE: <span id="distance">0</span>m</div>
+            <div id="livesDisplay">LIVES: <span id="lives">❤️❤️❤️</span></div>
         </div>
 
         <div id="powerUpBar">
@@ -556,7 +557,8 @@
             x: 0,
             y: 500,
             width: 50,
-            height: 70
+            height: 70,
+            lives: 3 // Hearts/lives system
         };
 
         // Lane positions
@@ -577,6 +579,9 @@
         let hasShield = false;
         let magnetActive = false;
         let speedBoostActive = false;
+        
+        // Invincibility frames after taking damage
+        let invincibilityFrames = 0;
         
         // Attack power-ups
         let attackPowerUp = null; // 'fire', 'laser', or 'bomb'
@@ -670,13 +675,22 @@
             const types = ['box', 'barrier', 'cone'];
             const type = types[Math.floor(Math.random() * types.length)];
             
+            // 30% chance to create a moving obstacle
+            const isMoving = Math.random() < 0.3;
+            const moveDirection = Math.random() < 0.5 ? -1 : 1; // -1 = left, 1 = right
+            const moveSpeed = isMoving ? (0.5 + Math.random() * 1.5) : 0; // Random speed between 0.5-2
+            
             obstacles.push({
                 x: lanes[lane],
                 y: -100,
                 width: 50,
                 height: type === 'barrier' ? 100 : 60,
                 type: type,
-                lane: lane
+                lane: lane,
+                isMoving: isMoving,
+                moveDirection: moveDirection,
+                moveSpeed: moveSpeed,
+                targetLane: lane
             });
         }
 
@@ -1052,9 +1066,32 @@
         function updateObstacles() {
             obstacles = obstacles.filter(obs => {
                 obs.y += gameSpeed;
+                
+                // Handle moving obstacles
+                if (obs.isMoving) {
+                    // Move horizontally
+                    obs.x += obs.moveDirection * obs.moveSpeed;
+                    
+                    // Change direction if hitting lane boundaries
+                    if (obs.x <= lanes[0] - 10) {
+                        obs.moveDirection = 1;
+                    } else if (obs.x >= lanes[2] + 10) {
+                        obs.moveDirection = -1;
+                    }
+                    
+                    // Update lane based on position
+                    if (obs.x < lanes[1] - 40) {
+                        obs.lane = 0;
+                    } else if (obs.x > lanes[1] + 40) {
+                        obs.lane = 2;
+                    } else {
+                        obs.lane = 1;
+                    }
+                }
 
-                // Check collision
-                if (obs.lane === player.lane &&
+                // Check collision (only if not in invincibility frames)
+                if (invincibilityFrames === 0 &&
+                    obs.lane === player.lane &&
                     player.x < obs.x + obs.width - 10 &&
                     player.x + player.width > obs.x + 10 &&
                     player.y < obs.y + obs.height &&
@@ -1076,14 +1113,40 @@
                         playSound('shield');
                         return false;
                     } else {
-                        // Collision! Game Over
-                        gameOver();
+                        // Take damage
+                        takeDamage();
                         return false;
                     }
                 }
 
                 return obs.y < canvas.height + 100;
             });
+        }
+        
+        function takeDamage() {
+            player.lives--;
+            invincibilityFrames = 120; // 2 seconds of invincibility
+            
+            // Visual feedback
+            createParticle(player.x + 25, player.y + 35, '#FF0000');
+            showMultiplier(`💔 ${player.lives} LIVES LEFT!`);
+            playSound('hit');
+            
+            // Shake effect
+            for (let i = 0; i < 20; i++) {
+                particles.push({
+                    x: player.x + 25,
+                    y: player.y + 35,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    color: '#FF0000',
+                    life: 30
+                });
+            }
+            
+            if (player.lives <= 0) {
+                gameOver();
+            }
         }
 
         function updateCoins() {
@@ -1221,6 +1284,11 @@
                 attackCooldown--;
             }
             
+            // Invincibility frames countdown
+            if (invincibilityFrames > 0) {
+                invincibilityFrames--;
+            }
+            
             // Update attack button visual
             updateAttackButton();
 
@@ -1248,10 +1316,20 @@
             document.getElementById('score').textContent = Math.floor(score);
             document.getElementById('coins').textContent = coins;
             document.getElementById('distance').textContent = distance;
+            
+            // Update lives display
+            const heartsDisplay = '❤️'.repeat(player.lives) + '🖤'.repeat(3 - player.lives);
+            document.getElementById('lives').textContent = heartsDisplay;
         }
 
         function drawPlayer() {
             ctx.save();
+            
+            // Flash player when in invincibility frames
+            if (invincibilityFrames > 0) {
+                const flashOpacity = (frameCount % 10 < 5) ? 1 : 0.3;
+                ctx.globalAlpha = flashOpacity;
+            }
 
             // Shadow
             ctx.fillStyle = 'rgba(0,0,0,0.3)';
@@ -1391,10 +1469,30 @@
         function drawObstacles() {
             obstacles.forEach(obs => {
                 ctx.save();
+                
+                // Moving obstacle indicator (arrows)
+                if (obs.isMoving) {
+                    const arrowColor = '#FFFF00';
+                    ctx.fillStyle = arrowColor;
+                    ctx.font = 'bold 20px Arial';
+                    ctx.textAlign = 'center';
+                    
+                    // Animated arrows showing direction
+                    const offset = Math.sin(Date.now() / 200) * 3;
+                    if (obs.moveDirection > 0) {
+                        ctx.fillText('→', obs.x + 25 + offset, obs.y - 10);
+                    } else {
+                        ctx.fillText('←', obs.x + 25 + offset, obs.y - 10);
+                    }
+                    
+                    // Glow effect for moving obstacles
+                    ctx.shadowColor = arrowColor;
+                    ctx.shadowBlur = 10;
+                }
 
                 if (obs.type === 'box') {
                     // Brown box
-                    ctx.fillStyle = '#8B4513';
+                    ctx.fillStyle = obs.isMoving ? '#A0522D' : '#8B4513';
                     ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
                     ctx.strokeStyle = '#5C2E0C';
                     ctx.lineWidth = 3;
@@ -1411,7 +1509,7 @@
                     ctx.stroke();
                 } else if (obs.type === 'barrier') {
                     // Red barrier
-                    ctx.fillStyle = '#F44336';
+                    ctx.fillStyle = obs.isMoving ? '#FF6B6B' : '#F44336';
                     ctx.fillRect(obs.x + 10, obs.y, 30, obs.height);
                     ctx.fillStyle = '#FFF';
                     // Diagonal stripes
@@ -1420,7 +1518,7 @@
                     }
                 } else {
                     // Orange cone
-                    ctx.fillStyle = '#FF9800';
+                    ctx.fillStyle = obs.isMoving ? '#FFB347' : '#FF9800';
                     ctx.beginPath();
                     ctx.moveTo(obs.x + 25, obs.y);
                     ctx.lineTo(obs.x, obs.y + obs.height);
@@ -1708,6 +1806,8 @@
             player.lane = 1;
             player.x = lanes[1];
             player.y = 500;
+            player.lives = 3;
+            invincibilityFrames = 0;
             obstacles = [];
             coinItems = [];
             powerUps = [];
@@ -1800,6 +1900,16 @@
                     gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
                     oscillator.start(audioCtx.currentTime);
                     oscillator.stop(audioCtx.currentTime + 0.1);
+                    break;
+                    
+                case 'hit':
+                    oscillator.frequency.value = 300;
+                    oscillator.type = 'square';
+                    gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.3);
+                    oscillator.stop(audioCtx.currentTime + 0.3);
                     break;
                     
                 case 'gameover':
