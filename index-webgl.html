@@ -39,6 +39,17 @@
             height: 100%;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #textCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 5;
         }
 
         #ui {
@@ -192,6 +203,52 @@
         #dashBtn { bottom: 30px; right: 120px; }
         #specialBtn { bottom: 120px; right: 120px; font-size: 16px; }
 
+        /* Rotation Warning for Portrait Mode */
+        #rotateWarning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 10000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #00ff00;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #rotateWarning .rotate-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: rotateAnim 2s ease-in-out infinite;
+        }
+
+        @keyframes rotateAnim {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+        }
+
+        #rotateWarning h2 {
+            font-size: 28px;
+            margin: 20px 0;
+            text-shadow: 0 0 20px #00ff00;
+        }
+
+        #rotateWarning p {
+            font-size: 18px;
+        }
+
+        /* Show rotate warning only in portrait mode on mobile */
+        @media (max-width: 768px) and (orientation: portrait) {
+            #rotateWarning {
+                display: flex !important;
+            }
+        }
+
         @media (orientation: landscape) and (max-width: 1024px) {
             #gameContainer {
                 border: none;
@@ -201,14 +258,24 @@
     </style>
 </head>
 <body>
+    <!-- Rotation Warning for Mobile Portrait Mode -->
+    <div id="rotateWarning">
+        <div class="rotate-icon">📱 ↻</div>
+        <h2>PLEASE ROTATE YOUR DEVICE</h2>
+        <p>This game is best played in landscape mode</p>
+        <p style="margin-top: 20px; font-size: 16px;">🎮 Neon Runner by ANISH 🎮</p>
+    </div>
+
     <div id="gameContainer">
         <canvas id="glCanvas" width="900" height="600"></canvas>
+        <canvas id="textCanvas" width="900" height="600"></canvas>
         
         <div id="ui">
             <div>💰 SCORE: <span id="scoreDisplay">0</span></div>
             <div>❤️ HP: <span id="healthDisplay">100</span></div>
             <div>⚡ COMBO: <span id="comboDisplay">0</span></div>
             <div>📊 FPS: <span id="fpsDisplay">60</span></div>
+            <div id="activePowerups" style="margin-top: 10px; font-size: 14px;"></div>
         </div>
 
         <div id="credits">WebGL by ANISH 🚀</div>
@@ -257,6 +324,13 @@
             alert('WebGL not supported on this device!');
             throw new Error('WebGL not available');
         }
+
+        // Text canvas for letters and UI overlays
+        const textCanvas = document.getElementById('textCanvas');
+        const textCtx = textCanvas.getContext('2d');
+        textCtx.font = 'bold 24px Courier New';
+        textCtx.textAlign = 'center';
+        textCtx.textBaseline = 'middle';
 
         // Vertex shader source
         const vertexShaderSource = `
@@ -1231,12 +1305,28 @@
             document.getElementById('scoreDisplay').textContent = score;
             document.getElementById('healthDisplay').textContent = Math.max(0, Math.floor(player.health));
             document.getElementById('comboDisplay').textContent = combo > 0 ? `x${combo}` : '0';
+            
+            // Update active power-ups display
+            const activePowerupsDiv = document.getElementById('activePowerups');
+            const powerupsList = [];
+            if (player.hasShield) powerupsList.push('🛡️ SHIELD');
+            if (player.isFlying) powerupsList.push('✈️ FLYING');
+            if (player.isInvisible) powerupsList.push('👻 INVISIBLE');
+            if (player.hasRapidFire) powerupsList.push('⚡ RAPID FIRE');
+            if (player.hasOneShot) powerupsList.push('💥 ONE-SHOT');
+            if (player.hasLaser) powerupsList.push('⚔️ LASER');
+            if (player.hasDoublePoints) powerupsList.push('💰 2X POINTS');
+            
+            activePowerupsDiv.textContent = powerupsList.join(' | ');
         }
 
         function draw() {
             // Clear screen
             gl.clearColor(0, 0, 0, 1);
             gl.clear(gl.COLOR_BUFFER_BIT);
+            
+            // Clear text canvas
+            textCtx.clearRect(0, 0, textCanvas.width, textCanvas.height);
             
             // Draw background grid
             for (let x = 0; x < canvas.width; x += 30) {
@@ -1304,12 +1394,121 @@
                 const pulse = Math.sin(frameCount * 0.1) * 0.3 + 0.7;
                 drawRect(powerup.x, powerup.y, powerup.width, powerup.height, 
                         0, 1, 1, pulse);
+                
+                // Draw power-up letter on text canvas
+                textCtx.save();
+                textCtx.font = 'bold 16px Courier New';
+                textCtx.fillStyle = '#ffffff';
+                textCtx.strokeStyle = '#000000';
+                textCtx.lineWidth = 3;
+                
+                let powerupText = '';
+                switch(powerup.type) {
+                    case 'health': powerupText = 'HP'; break;
+                    case 'bighealth': powerupText = 'HP+'; break;
+                    case 'flying': powerupText = 'FLY'; break;
+                    case 'invisible': powerupText = 'INV'; break;
+                    case 'shield': powerupText = 'SHD'; break;
+                    case 'rapidfire': powerupText = 'RF'; break;
+                    case 'oneshot': powerupText = '1K'; break;
+                    case 'laser': powerupText = 'LSR'; break;
+                    case 'doublepoints': powerupText = '2X'; break;
+                    case 'score': powerupText = '+$'; break;
+                }
+                
+                textCtx.strokeText(powerupText, powerup.x + powerup.width / 2, powerup.y + powerup.height / 2);
+                textCtx.fillText(powerupText, powerup.x + powerup.width / 2, powerup.y + powerup.height / 2);
+                textCtx.restore();
             });
             
-            // Draw letters
+            // Draw floating ANISH letters
             floatingLetters.forEach(letter => {
                 drawRect(letter.x, letter.y, letter.width, letter.height, 1, 1, 0, 1);
+                
+                // Draw the actual letter on text canvas
+                textCtx.save();
+                textCtx.font = 'bold 24px Courier New';
+                textCtx.fillStyle = '#000000';
+                textCtx.strokeStyle = '#ffff00';
+                textCtx.lineWidth = 3;
+                textCtx.strokeText(letter.letter, letter.x + letter.width / 2, letter.y + letter.height / 2);
+                textCtx.fillText(letter.letter, letter.x + letter.width / 2, letter.y + letter.height / 2);
+                textCtx.restore();
             });
+            
+            // Draw collected letters display
+            textCtx.save();
+            textCtx.font = 'bold 30px Courier New';
+            const letterSpacing = 40;
+            const startX = canvas.width / 2 - (anishLetters.length * letterSpacing) / 2;
+            
+            anishLetters.forEach((letter, i) => {
+                const x = startX + i * letterSpacing;
+                const y = 40;
+                const collected = collectedLetters.includes(letter);
+                
+                if (collected) {
+                    textCtx.fillStyle = '#00ff00';
+                    textCtx.strokeStyle = '#004400';
+                    if (nameGlowTimer > 0) {
+                        textCtx.shadowBlur = 20;
+                        textCtx.shadowColor = '#00ff00';
+                    }
+                } else {
+                    textCtx.fillStyle = '#333333';
+                    textCtx.strokeStyle = '#111111';
+                }
+                
+                textCtx.lineWidth = 3;
+                textCtx.strokeText(letter, x, y);
+                textCtx.fillText(letter, x, y);
+            });
+            textCtx.shadowBlur = 0;
+            textCtx.restore();
+            
+            // Draw bonus text
+            if (bonusTextTimer > 0) {
+                textCtx.save();
+                textCtx.font = 'bold 40px Courier New';
+                textCtx.fillStyle = '#ffff00';
+                textCtx.strokeStyle = '#000000';
+                textCtx.lineWidth = 4;
+                textCtx.shadowBlur = 20;
+                textCtx.shadowColor = '#ffff00';
+                const alpha = bonusTextTimer / 120;
+                textCtx.globalAlpha = alpha;
+                const y = canvas.height / 2 - 50 + (1 - alpha) * 30;
+                textCtx.strokeText('+500 BONUS!', canvas.width / 2, y);
+                textCtx.fillText('+500 BONUS!', canvas.width / 2, y);
+                textCtx.restore();
+            }
+            
+            // Draw special attack charge bar
+            if (player.specialAttackCharge > 0) {
+                const barWidth = 200;
+                const barHeight = 20;
+                const barX = canvas.width / 2 - barWidth / 2;
+                const barY = canvas.height - 40;
+                
+                // Background
+                drawRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4, 0.2, 0.2, 0.2, 0.8);
+                
+                // Fill
+                const fillWidth = (player.specialAttackCharge / player.maxSpecialCharge) * barWidth;
+                drawRect(barX, barY, fillWidth, barHeight, 0, 1, 0, 0.8);
+                
+                // Text
+                textCtx.save();
+                textCtx.font = 'bold 14px Courier New';
+                textCtx.fillStyle = '#ffffff';
+                textCtx.strokeStyle = '#000000';
+                textCtx.lineWidth = 2;
+                const chargeText = player.specialAttackCharge >= player.maxSpecialCharge ? 
+                                 'SPECIAL READY! (Q)' : `SPECIAL ${Math.floor(player.specialAttackCharge)}%`;
+                textCtx.strokeText(chargeText, canvas.width / 2, barY + barHeight / 2);
+                textCtx.fillText(chargeText, canvas.width / 2, barY + barHeight / 2);
+                textCtx.restore();
+            }
         }
 
         function gameLoop(currentTime) {
