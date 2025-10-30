@@ -442,9 +442,9 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
-        // Mobile optimization flag
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const reducedEffects = isMobile; // Disable expensive effects on mobile
+        // Remove all mobile optimizations
+        const isMobile = false;
+        const reducedEffects = false;
         
         // Use simpler canvas on mobile for better performance
         if (isMobile) {
@@ -994,16 +994,13 @@
         }
         
         function createParticles(x, y, color, count) {
-            // Reduce particles drastically on mobile for performance
-            const actualCount = reducedEffects ? Math.min(count, 3) : count;
-            
-            for (let i = 0; i < actualCount; i++) {
+            for (let i = 0; i < count; i++) {
                 particles.push({
                     x: x,
                     y: y,
                     vx: (Math.random() - 0.5) * 6,
                     vy: (Math.random() - 0.5) * 6,
-                    life: reducedEffects ? 15 : 30, // Shorter life on mobile
+                    life: 30,
                     color: color,
                     size: Math.random() * 4 + 2
                 });
@@ -1065,28 +1062,25 @@
             if (player.shootCooldown > 0) player.shootCooldown--;
             if (player.dashCooldown > 0) player.dashCooldown--;
             
-            // Reduce particle trails on mobile
-            if (!reducedEffects) {
-                // Trail when dashing
-                if (player.isDashing) {
-                    createParticles(player.x + player.width / 2, player.y + player.height / 2, '#00ffff', 2);
-                }
-                
-                // Rainbow trail when flying
-                if (player.isFlying && frameCount % 3 === 0) {
-                    const colors = ['#ff0000', '#ff7700', '#ffff00', '#00ff00', '#0088ff', '#ff00ff'];
-                    const color = colors[Math.floor(Math.random() * colors.length)];
-                    createParticles(player.x + player.width / 2, player.y + player.height, color, 1);
-                }
-                
-                // Invisible effect
-                if (player.isInvisible) {
-                    createParticles(player.x + player.width / 2, player.y + player.height / 2, '#ffffff', 1);
-                }
+            // Trail when dashing
+            if (player.isDashing) {
+                createParticles(player.x + player.width / 2, player.y + player.height / 2, '#00ffff', 2);
             }
             
-            // Speed trail when moving fast - skip on mobile
-            if (!reducedEffects && Math.abs(player.vx) > 3 && frameCount % 5 === 0) {
+            // Rainbow trail when flying
+            if (player.isFlying && frameCount % 3 === 0) {
+                const colors = ['#ff0000', '#ff7700', '#ffff00', '#00ff00', '#0088ff', '#ff00ff'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                createParticles(player.x + player.width / 2, player.y + player.height, color, 1);
+            }
+            
+            // Invisible effect
+            if (player.isInvisible) {
+                createParticles(player.x + player.width / 2, player.y + player.height / 2, '#ffffff', 1);
+            }
+            
+            // Speed trail when moving fast
+            if (Math.abs(player.vx) > 3 && frameCount % 5 === 0) {
                 createParticles(player.x + player.width / 2, player.y + player.height / 2, '#ffffff', 1);
             }
         }
@@ -1472,12 +1466,6 @@
         }
         
         function updateParticles() {
-            // Limit particle count aggressively on mobile
-            const maxParticles = reducedEffects ? 30 : 200;
-            if (particles.length > maxParticles) {
-                particles = particles.slice(-maxParticles);
-            }
-            
             particles = particles.filter(p => {
                 p.x += p.vx;
                 p.y += p.vy;
@@ -1499,35 +1487,15 @@
             
             updatePlayer();
             updateBullets();
-            
-            // Update lasers only if they exist
-            if (lasers.length > 0) updateLasers();
-            
+            updateLasers();
             updateEnemies();
+            updatePowerups();
+            updateParticles();
+            updateEnemyBullets();
             
-            // Update powerups every other frame on mobile
-            if (!reducedEffects || frameCount % 2 === 0) {
-                updatePowerups();
-            }
-            
-            // Update particles every 3rd frame on mobile
-            if (!reducedEffects || frameCount % 3 === 0) {
-                updateParticles();
-            }
-            
-            // Update enemy bullets only if they exist
-            if (enemyBullets.length > 0) updateEnemyBullets();
-            
-            // Spawn enemies less frequently on mobile
-            const spawnRate = reducedEffects ? 150 : 90; // Even slower spawn on mobile
-            if (frameCount % spawnRate === 0) {
+            // Spawn enemies
+            if (frameCount % 90 === 0) {
                 spawnEnemy();
-            }
-            
-            // Limit max enemies on mobile
-            const maxEnemies = reducedEffects ? 4 : 10;
-            if (enemies.length > maxEnemies) {
-                enemies.splice(0, 1); // Remove oldest enemy
             }
             
             // Level up
@@ -1591,18 +1559,15 @@
             ctx.save();
             ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
             
-            // Shield effect - reduced blur on mobile
+            // Shield effect
             if (player.hasShield) {
                 ctx.strokeStyle = '#00ffff';
                 ctx.lineWidth = 3;
-                if (!reducedEffects) {
-                    ctx.shadowBlur = 20;
-                    ctx.shadowColor = '#00ffff';
-                }
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#00ffff';
                 ctx.beginPath();
                 ctx.arc(0, 0, player.width / 2 + 10, 0, Math.PI * 2);
                 ctx.stroke();
-                ctx.shadowBlur = 0;
             }
             
             // Invisible effect (semi-transparent)
@@ -1610,22 +1575,18 @@
                 ctx.globalAlpha = 0.3;
             }
             
-            // Glow effect - reduced on mobile
-            if (!reducedEffects) {
-                if (player.isDashing) {
-                    ctx.shadowBlur = 20;
-                    ctx.shadowColor = '#00ffff';
-                } else if (player.isFlying) {
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = '#00ffff';
-                }
+            // Glow effect
+            if (player.isDashing) {
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#00ffff';
+            } else if (player.isFlying) {
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00ffff';
             }
             
             // Body
             ctx.fillStyle = '#00ff00';
             ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
-            
-            ctx.shadowBlur = 0;
             
             // Head
             ctx.fillStyle = '#00ff88';
@@ -1641,12 +1602,11 @@
             }
             
             // Flying jet effect - reduced on mobile
+            // Flying jet effect
             if (player.isFlying) {
                 ctx.fillStyle = '#00ffff';
-                if (!reducedEffects) {
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = '#00ffff';
-                }
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#00ffff';
                 const jetSize = Math.sin(frameCount * 0.3) * 5 + 10;
                 ctx.fillRect(-player.width / 2, player.height / 2, player.width, jetSize);
             }
@@ -1658,26 +1618,20 @@
             bullets.forEach(bullet => {
                 if (bullet.special) {
                     ctx.fillStyle = '#00ff00';
-                    if (!reducedEffects) {
-                        ctx.shadowBlur = 20;
-                        ctx.shadowColor = '#00ff00';
-                    }
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#00ff00';
                 } else if (bullet.damage >= 999) {
                     // One-shot bullet - make it bigger and redder
                     ctx.fillStyle = '#ff0000';
-                    if (!reducedEffects) {
-                        ctx.shadowBlur = 25;
-                        ctx.shadowColor = '#ff0000';
-                    }
+                    ctx.shadowBlur = 25;
+                    ctx.shadowColor = '#ff0000';
                     ctx.fillRect(bullet.x - 2, bullet.y - 2, bullet.width + 4, bullet.height + 4);
                     ctx.shadowBlur = 0;
                     return;
                 } else {
                     ctx.fillStyle = '#ffff00';
-                    if (!reducedEffects) {
-                        ctx.shadowBlur = 10;
-                        ctx.shadowColor = '#ffff00';
-                    }
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#ffff00';
                 }
                 ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
                 ctx.shadowBlur = 0;
@@ -1687,10 +1641,8 @@
             enemyBullets.forEach(bullet => {
                 ctx.save();
                 ctx.fillStyle = bullet.color;
-                if (!reducedEffects) {
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = bullet.color;
-                }
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = bullet.color;
                 
                 if (bullet.bomb) {
                     // Rotating bomb
@@ -1730,11 +1682,8 @@
                 ctx.save();
                 ctx.fillStyle = enemy.color;
                 
-                // Reduce shadow blur on mobile
-                if (!reducedEffects) {
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = enemy.color;
-                }
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = enemy.color;
                 
                 const pulse = Math.sin(enemy.animFrame) * 0.1 + 1;
                 
@@ -1908,10 +1857,8 @@
             platforms.forEach(platform => {
                 // Draw thin glowing white line for ground
                 ctx.strokeStyle = '#ffffff';
-                if (!reducedEffects) {
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = '#ffffff';
-                }
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ffffff';
                 ctx.lineWidth = 3;
                 ctx.beginPath();
                 ctx.moveTo(platform.x, platform.y);
@@ -1929,26 +1876,19 @@
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Skip grid on mobile for max performance
-            if (reducedEffects) return;
             
-            // Grid effect - no shadows on mobile for performance
+            // Grid effect with glow
             ctx.strokeStyle = 'rgba(0, 255, 0, 0.15)';
-            if (!reducedEffects) {
-                ctx.shadowBlur = 5;
-                ctx.shadowColor = 'rgba(0, 255, 0, 0.3)';
-            }
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = 'rgba(0, 255, 0, 0.3)';
             ctx.lineWidth = 1;
-            
-            // Draw fewer grid lines on mobile
-            const gridSpacing = reducedEffects ? 60 : 30;
-            for (let i = 0; i < canvas.width; i += gridSpacing) {
+            for (let i = 0; i < canvas.width; i += 30) {
                 ctx.beginPath();
                 ctx.moveTo(i, 0);
                 ctx.lineTo(i, canvas.height);
                 ctx.stroke();
             }
-            for (let i = 0; i < canvas.height; i += gridSpacing) {
+            for (let i = 0; i < canvas.height; i += 30) {
                 ctx.beginPath();
                 ctx.moveTo(0, i);
                 ctx.lineTo(canvas.width, i);
@@ -1960,8 +1900,8 @@
         function draw() {
             ctx.save();
             
-            // Apply screen shake - disabled on mobile for smoothness
-            if (screenShake > 0 && !reducedEffects) {
+            // Apply screen shake
+            if (screenShake > 0) {
                 const shakeX = (Math.random() - 0.5) * screenShake * 2;
                 const shakeY = (Math.random() - 0.5) * screenShake * 2;
                 ctx.translate(shakeX, shakeY);
