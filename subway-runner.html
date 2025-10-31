@@ -774,8 +774,15 @@
 
         function spawnPowerUp() {
             const lane = Math.floor(Math.random() * 3);
-            const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb'];
-            const type = types[Math.floor(Math.random() * types.length)];
+            
+            // 20% chance for heart, 80% for other power-ups
+            let type;
+            if (Math.random() < 0.2) {
+                type = 'heart';
+            } else {
+                const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb'];
+                type = types[Math.floor(Math.random() * types.length)];
+            }
             
             powerUps.push({
                 x: lanes[lane],
@@ -791,8 +798,14 @@
         function dropPowerUpFromEnemy(x, y) {
             // 20% chance to drop a power-up when enemy is destroyed
             if (Math.random() < 0.2) {
-                const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb'];
-                const type = types[Math.floor(Math.random() * types.length)];
+                // 20% chance for heart, 80% for other power-ups
+                let type;
+                if (Math.random() < 0.2) {
+                    type = 'heart';
+                } else {
+                    const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb'];
+                    type = types[Math.floor(Math.random() * types.length)];
+                }
                 
                 powerUps.push({
                     x: x,
@@ -1160,30 +1173,33 @@
                     }
                     break;
                     
-                case 1: // Lane targeting
+                case 1: // Lane targeting - only 2 lanes, leave one safe
+                    const safeLane = Math.floor(Math.random() * 3); // Random safe lane
                     for (let i = 0; i < 3; i++) {
-                        bossBullets.push({
-                            x: lanes[i] + 15,
-                            y: boss.y + boss.height,
-                            vx: 0,
-                            vy: 6,
-                            width: 25,
-                            height: 25,
-                            type: 'lane',
-                            rotation: 0,
-                            warningTimer: 30
-                        });
+                        if (i !== safeLane) { // Skip the safe lane
+                            bossBullets.push({
+                                x: lanes[i] + 15,
+                                y: boss.y + boss.height,
+                                vx: 0,
+                                vy: 6,
+                                width: 25,
+                                height: 25,
+                                type: 'lane',
+                                rotation: 0,
+                                warningTimer: 30
+                            });
+                        }
                     }
                     break;
                     
-                case 2: // Spiral pattern
-                    for (let i = 0; i < 8; i++) {
-                        const angle = (i / 8) * Math.PI * 2;
+                case 2: // Spiral pattern - reduced bullets for dodging
+                    for (let i = 0; i < 6; i++) { // Reduced from 8 to 6
+                        const angle = (i / 6) * Math.PI * 2;
                         bossBullets.push({
                             x: boss.x + boss.width / 2,
                             y: boss.y + boss.height / 2,
-                            vx: Math.cos(angle) * 4,
-                            vy: Math.sin(angle) * 4 + 2,
+                            vx: Math.cos(angle) * 3.5, // Slightly slower
+                            vy: Math.sin(angle) * 3.5 + 2,
                             width: 15,
                             height: 15,
                             type: 'spiral',
@@ -1206,14 +1222,14 @@
                     });
                     break;
                     
-                case 4: // Burst (Phase 2)
-                    for (let i = 0; i < 12; i++) {
-                        const angle = (i / 12) * Math.PI * 2 + boss.glowPhase;
+                case 4: // Burst (Phase 2) - reduced for dodging
+                    for (let i = 0; i < 8; i++) { // Reduced from 12 to 8
+                        const angle = (i / 8) * Math.PI * 2 + boss.glowPhase;
                         bossBullets.push({
                             x: boss.x + boss.width / 2,
                             y: boss.y + boss.height / 2,
-                            vx: Math.cos(angle) * 5,
-                            vy: Math.sin(angle) * 5 + 1,
+                            vx: Math.cos(angle) * 4.5, // Slightly slower
+                            vy: Math.sin(angle) * 4.5 + 1,
                             width: 12,
                             height: 12,
                             type: 'burst',
@@ -1398,6 +1414,28 @@
             createParticle(player.x + 25, player.y + 35, '#00FF00');
             
             switch(type) {
+                case 'heart':
+                    // Heal one life (max 3)
+                    if (player.lives < 3) {
+                        player.lives++;
+                        showMultiplier('❤️ +1 LIFE!');
+                        // Heart particles
+                        for (let i = 0; i < 30; i++) {
+                            particles.push({
+                                x: player.x + 25,
+                                y: player.y + 35,
+                                vx: (Math.random() - 0.5) * 6,
+                                vy: (Math.random() - 0.5) * 6 - 2,
+                                color: ['#FF1493', '#FF69B4', '#FFB6C1'][Math.floor(Math.random() * 3)],
+                                life: 40
+                            });
+                        }
+                    } else {
+                        showMultiplier('❤️ FULL HEALTH!');
+                        score += 500; // Bonus points if already full health
+                    }
+                    break;
+                    
                 case 'shield':
                     hasShield = true;
                     activePowerUp = 'shield';
@@ -2481,6 +2519,7 @@
                 
                 // Glow effect with different colors
                 const glowColors = {
+                    'heart': 'rgba(255, 105, 180, 0.6)',
                     'shield': 'rgba(0, 191, 255, 0.5)',
                     'magnet': 'rgba(138, 43, 226, 0.5)',
                     'invincible': 'rgba(255, 215, 0, 0.5)',
@@ -2498,6 +2537,7 @@
                 
                 // Power-up box with different colors
                 const boxColors = {
+                    'heart': '#FF1493',
                     'shield': '#00BFFF',
                     'magnet': '#8A2BE2',
                     'invincible': '#FFD700',
@@ -2520,6 +2560,7 @@
                 ctx.textBaseline = 'middle';
                 
                 const icons = {
+                    'heart': '❤️',
                     'shield': '🛡️',
                     'magnet': '🧲',
                     'invincible': '⭐',
