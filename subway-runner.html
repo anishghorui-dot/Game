@@ -1488,17 +1488,70 @@
                     if (!bulletDestroyed && 
                         Math.abs(bullet.x - proj.x) < 35 && 
                         Math.abs(bullet.y - proj.y) < 35) {
-                        // Explosion effect
+                        
+                        // EPIC DESTRUCTION EFFECT!
+                        
+                        // 1. Screen flash
+                        const flash = document.createElement('div');
+                        flash.style.position = 'absolute';
+                        flash.style.left = `${(bullet.x / canvas.width) * 100}%`;
+                        flash.style.top = `${(bullet.y / canvas.height) * 100}%`;
+                        flash.style.width = '60px';
+                        flash.style.height = '60px';
+                        flash.style.marginLeft = '-30px';
+                        flash.style.marginTop = '-30px';
+                        flash.style.borderRadius = '50%';
+                        flash.style.background = 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,215,0,0.6) 50%, transparent 100%)';
+                        flash.style.pointerEvents = 'none';
+                        flash.style.zIndex = '999';
+                        flash.style.animation = 'flashPulse 0.4s ease-out';
+                        document.getElementById('gameContainer').appendChild(flash);
+                        setTimeout(() => flash.remove(), 400);
+                        
+                        // 2. Explosive particle burst
+                        for (let i = 0; i < 25; i++) {
+                            const angle = (Math.PI * 2 * i) / 25;
+                            const speed = 3 + Math.random() * 5;
+                            particles.push({
+                                x: bullet.x,
+                                y: bullet.y,
+                                vx: Math.cos(angle) * speed,
+                                vy: Math.sin(angle) * speed,
+                                color: ['#FFD700', '#FF4500', '#FFFF00', '#FFA500'][Math.floor(Math.random() * 4)],
+                                life: 40
+                            });
+                        }
+                        
+                        // 3. Shockwave rings
+                        for (let ring = 0; ring < 3; ring++) {
+                            setTimeout(() => {
+                                for (let i = 0; i < 12; i++) {
+                                    const angle = (Math.PI * 2 * i) / 12;
+                                    const dist = 15 + ring * 10;
+                                    particles.push({
+                                        x: bullet.x + Math.cos(angle) * dist,
+                                        y: bullet.y + Math.sin(angle) * dist,
+                                        vx: Math.cos(angle) * 3,
+                                        vy: Math.sin(angle) * 3,
+                                        color: ring % 2 === 0 ? '#00FFFF' : '#FFFFFF',
+                                        life: 25
+                                    });
+                                }
+                            }, ring * 50);
+                        }
+                        
+                        // 4. Sparkles
                         for (let i = 0; i < 15; i++) {
                             particles.push({
                                 x: bullet.x,
                                 y: bullet.y,
-                                vx: (Math.random() - 0.5) * 8,
-                                vy: (Math.random() - 0.5) * 8,
-                                color: ['#FFD700', '#FF4500', '#00FFFF'][Math.floor(Math.random() * 3)],
+                                vx: (Math.random() - 0.5) * 10,
+                                vy: (Math.random() - 0.5) * 10,
+                                color: '#FFFFFF',
                                 life: 30
                             });
                         }
+                        
                         playSound('destroy');
                         attackProjectiles.splice(idx, 1);
                         bulletDestroyed = true;
@@ -1509,17 +1562,67 @@
                 
                 // Check collision with laser beam
                 if (laserActive && Math.abs(bullet.x - lanes[laserLane] - 25) < 40) {
-                    // Laser destroys bullets in its path!
+                    // LASER DESTRUCTION - SUPER COOL!
+                    
+                    // 1. Electric vaporization effect
+                    const flash = document.createElement('div');
+                    flash.style.position = 'absolute';
+                    flash.style.left = `${(bullet.x / canvas.width) * 100}%`;
+                    flash.style.top = `${(bullet.y / canvas.height) * 100}%`;
+                    flash.style.width = '80px';
+                    flash.style.height = '80px';
+                    flash.style.marginLeft = '-40px';
+                    flash.style.marginTop = '-40px';
+                    flash.style.borderRadius = '50%';
+                    flash.style.background = 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(0,255,255,0.8) 40%, transparent 100%)';
+                    flash.style.pointerEvents = 'none';
+                    flash.style.zIndex = '999';
+                    flash.style.animation = 'flashPulse 0.3s ease-out';
+                    document.getElementById('gameContainer').appendChild(flash);
+                    setTimeout(() => flash.remove(), 300);
+                    
+                    // 2. Electric sparks shooting outward
+                    for (let i = 0; i < 30; i++) {
+                        const angle = (Math.PI * 2 * i) / 30;
+                        const speed = 4 + Math.random() * 8;
+                        particles.push({
+                            x: bullet.x,
+                            y: bullet.y,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            color: ['#00FFFF', '#FFFFFF', '#00FFFF', '#FFFFFF'][i % 4],
+                            life: 35
+                        });
+                    }
+                    
+                    // 3. Electric arcs
+                    for (let i = 0; i < 8; i++) {
+                        const angle = (Math.PI * 2 * i) / 8;
+                        for (let j = 0; j < 5; j++) {
+                            const dist = 10 + j * 8;
+                            particles.push({
+                                x: bullet.x + Math.cos(angle) * dist,
+                                y: bullet.y + Math.sin(angle) * dist,
+                                vx: Math.cos(angle) * 2,
+                                vy: Math.sin(angle) * 2,
+                                color: j % 2 === 0 ? '#00FFFF' : '#FFFFFF',
+                                life: 30 - j * 3
+                            });
+                        }
+                    }
+                    
+                    // 4. Vapor trail
                     for (let i = 0; i < 20; i++) {
                         particles.push({
                             x: bullet.x,
                             y: bullet.y,
-                            vx: (Math.random() - 0.5) * 10,
-                            vy: (Math.random() - 0.5) * 10,
-                            color: ['#00FFFF', '#FFFFFF', '#FFD700'][Math.floor(Math.random() * 3)],
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: (Math.random() - 0.5) * 6 - 2,
+                            color: i % 3 === 0 ? '#FFFFFF' : '#00FFFF',
                             life: 40
                         });
                     }
+                    
                     return false;
                 }
                 
@@ -2166,14 +2269,65 @@
                             proj.y > bullet.y - bullet.height/2 && 
                             proj.y < bullet.y + bullet.height/2) {
                             
-                            // Create destruction effect
+                            // EPIC DESTRUCTION EFFECT!
+                            
+                            // 1. Screen flash at destruction point
+                            const flash = document.createElement('div');
+                            flash.style.position = 'absolute';
+                            flash.style.left = `${(bullet.x / canvas.width) * 100}%`;
+                            flash.style.top = `${(bullet.y / canvas.height) * 100}%`;
+                            flash.style.width = '60px';
+                            flash.style.height = '60px';
+                            flash.style.marginLeft = '-30px';
+                            flash.style.marginTop = '-30px';
+                            flash.style.borderRadius = '50%';
+                            flash.style.background = 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,215,0,0.6) 50%, transparent 100%)';
+                            flash.style.pointerEvents = 'none';
+                            flash.style.zIndex = '999';
+                            flash.style.animation = 'flashPulse 0.4s ease-out';
+                            document.getElementById('gameContainer').appendChild(flash);
+                            setTimeout(() => flash.remove(), 400);
+                            
+                            // 2. Explosive particle burst
+                            for (let i = 0; i < 25; i++) {
+                                const angle = (Math.PI * 2 * i) / 25;
+                                const speed = 3 + Math.random() * 5;
+                                particles.push({
+                                    x: bullet.x,
+                                    y: bullet.y,
+                                    vx: Math.cos(angle) * speed,
+                                    vy: Math.sin(angle) * speed,
+                                    color: ['#FFD700', '#FF4500', '#FFFF00', '#FFA500'][Math.floor(Math.random() * 4)],
+                                    life: 40
+                                });
+                            }
+                            
+                            // 3. Shockwave rings
+                            for (let ring = 0; ring < 3; ring++) {
+                                setTimeout(() => {
+                                    for (let i = 0; i < 12; i++) {
+                                        const angle = (Math.PI * 2 * i) / 12;
+                                        const dist = 15 + ring * 10;
+                                        particles.push({
+                                            x: bullet.x + Math.cos(angle) * dist,
+                                            y: bullet.y + Math.sin(angle) * dist,
+                                            vx: Math.cos(angle) * 3,
+                                            vy: Math.sin(angle) * 3,
+                                            color: ring % 2 === 0 ? '#00FFFF' : '#FFFFFF',
+                                            life: 25
+                                        });
+                                    }
+                                }, ring * 50);
+                            }
+                            
+                            // 4. Sparkles
                             for (let i = 0; i < 15; i++) {
                                 particles.push({
                                     x: bullet.x,
                                     y: bullet.y,
-                                    vx: (Math.random() - 0.5) * 8,
-                                    vy: (Math.random() - 0.5) * 8,
-                                    color: ['#FFD700', '#FF4500', '#00FFFF'][Math.floor(Math.random() * 3)],
+                                    vx: (Math.random() - 0.5) * 10,
+                                    vy: (Math.random() - 0.5) * 10,
+                                    color: '#FFFFFF',
                                     life: 30
                                 });
                             }
