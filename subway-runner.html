@@ -1482,16 +1482,48 @@
                     }
                 }
                 
-                // Check collision with player attacks
+                // Check collision with player attacks (fireballs)
+                let bulletDestroyed = false;
                 attackProjectiles.forEach((proj, idx) => {
-                    if (Math.abs(bullet.x - proj.x) < 30 && Math.abs(bullet.y - proj.y) < 30) {
-                        createParticle(bullet.x, bullet.y, '#FFA500');
+                    if (!bulletDestroyed && 
+                        Math.abs(bullet.x - proj.x) < 35 && 
+                        Math.abs(bullet.y - proj.y) < 35) {
+                        // Explosion effect
+                        for (let i = 0; i < 15; i++) {
+                            particles.push({
+                                x: bullet.x,
+                                y: bullet.y,
+                                vx: (Math.random() - 0.5) * 8,
+                                vy: (Math.random() - 0.5) * 8,
+                                color: ['#FFD700', '#FF4500', '#00FFFF'][Math.floor(Math.random() * 3)],
+                                life: 30
+                            });
+                        }
+                        playSound('destroy');
+                        score += 50; // Bonus for destroying bullet!
                         attackProjectiles.splice(idx, 1);
-                        bullet.destroyed = true;
+                        bulletDestroyed = true;
                     }
                 });
                 
-                if (bullet.destroyed) return false;
+                if (bulletDestroyed) return false;
+                
+                // Check collision with laser beam
+                if (laserActive && Math.abs(bullet.x - lanes[laserLane] - 25) < 40) {
+                    // Laser destroys bullets in its path!
+                    for (let i = 0; i < 20; i++) {
+                        particles.push({
+                            x: bullet.x,
+                            y: bullet.y,
+                            vx: (Math.random() - 0.5) * 10,
+                            vy: (Math.random() - 0.5) * 10,
+                            color: ['#00FFFF', '#FFFFFF', '#FFD700'][Math.floor(Math.random() * 3)],
+                            life: 40
+                        });
+                    }
+                    score += 50;
+                    return false;
+                }
                 
                 // Remove if off screen
                 return bullet.y < canvas.height + 50 && bullet.y > -50 && 
@@ -2125,6 +2157,42 @@
         function updateAttackProjectiles() {
             attackProjectiles = attackProjectiles.filter(proj => {
                 proj.y += proj.speed;
+                
+                // Check collision with boss bullets - DESTROY THEM!
+                if (bossActive && bossBullets.length > 0) {
+                    let bulletDestroyed = false;
+                    bossBullets = bossBullets.filter(bullet => {
+                        if (!bulletDestroyed && 
+                            proj.x > bullet.x - bullet.width/2 && 
+                            proj.x < bullet.x + bullet.width/2 &&
+                            proj.y > bullet.y - bullet.height/2 && 
+                            proj.y < bullet.y + bullet.height/2) {
+                            
+                            // Create destruction effect
+                            for (let i = 0; i < 15; i++) {
+                                particles.push({
+                                    x: bullet.x,
+                                    y: bullet.y,
+                                    vx: (Math.random() - 0.5) * 8,
+                                    vy: (Math.random() - 0.5) * 8,
+                                    color: ['#FFD700', '#FF4500', '#00FFFF'][Math.floor(Math.random() * 3)],
+                                    life: 30
+                                });
+                            }
+                            
+                            playSound('destroy');
+                            score += 50; // Bonus points for destroying boss bullets!
+                            bulletDestroyed = true;
+                            proj.hit = true;
+                            return false; // Remove the boss bullet
+                        }
+                        return true;
+                    });
+                    
+                    if (bulletDestroyed) {
+                        return false; // Remove the player projectile too
+                    }
+                }
                 
                 // Check collision with boss
                 if (bossActive && boss && !bossDefeated && bossIntroTimer === 0) {
