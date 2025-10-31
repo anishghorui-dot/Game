@@ -69,6 +69,33 @@
             margin: 5px 0;
             font-weight: bold;
         }
+        
+        #musicToggle {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #FFD700;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        
+        #musicToggle:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.1);
+        }
+        
+        #musicToggle:active {
+            transform: scale(0.95);
+        }
 
         #anishLetters {
             position: absolute;
@@ -490,6 +517,9 @@
     <div id="gameContainer">
         <canvas id="gameCanvas" width="400" height="700"></canvas>
         
+        <!-- Music Toggle Button -->
+        <div id="musicToggle" title="Toggle Music">🔊</div>
+        
         <div id="ui">
             <div>SCORE: <span id="score">0</span></div>
             <div>COINS: 🪙 <span id="coins">0</span></div>
@@ -620,6 +650,11 @@
         let hasShield = false;
         let magnetActive = false;
         let speedBoostActive = false;
+        
+        // Background Music
+        let bgMusic = null;
+        let isMusicPlaying = false;
+        let musicInitialized = false;
         
         // Invincibility frames after taking damage
         let invincibilityFrames = 0;
@@ -3401,11 +3436,15 @@
             document.getElementById('attackBtn').style.display = 'flex';
             document.getElementById('bossShopButtons').style.display = 'none';
             
+            // Start background music
+            startMusic();
+            
             gameLoop();
         }
 
         function gameOver() {
             gameRunning = false;
+            stopMusic(); // Stop background music
             document.getElementById('finalScore').textContent = `Score: ${score}`;
             document.getElementById('finalCoins').textContent = `Coins: 🪙 ${coins}`;
             document.getElementById('gameOverScreen').classList.remove('hidden');
@@ -3433,6 +3472,51 @@
 
         // Simple sound effects
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // ============ BACKGROUND MUSIC SYSTEM ============
+        
+        function initMusic() {
+            if (!musicInitialized) {
+                bgMusic = new Audio('Anish game.mp3');
+                bgMusic.loop = true;
+                bgMusic.volume = 0.3; // 30% volume
+                musicInitialized = true;
+            }
+        }
+        
+        function toggleMusic() {
+            initMusic();
+            
+            const musicToggleBtn = document.getElementById('musicToggle');
+            
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                isMusicPlaying = false;
+                musicToggleBtn.textContent = '🔇';
+            } else {
+                bgMusic.play().catch(e => console.log('Audio play failed:', e));
+                isMusicPlaying = true;
+                musicToggleBtn.textContent = '🔊';
+            }
+        }
+        
+        function startMusic() {
+            initMusic();
+            if (!isMusicPlaying) {
+                bgMusic.play().catch(e => console.log('Audio play failed:', e));
+                isMusicPlaying = true;
+                document.getElementById('musicToggle').textContent = '🔊';
+            }
+        }
+        
+        function stopMusic() {
+            if (bgMusic && isMusicPlaying) {
+                bgMusic.pause();
+                bgMusic.currentTime = 0;
+                isMusicPlaying = false;
+                document.getElementById('musicToggle').textContent = '🔇';
+            }
+        }
 
         function playSound(type) {
             const oscillator = audioCtx.createOscillator();
@@ -3601,6 +3685,7 @@
         // Event listeners
         document.getElementById('startBtn').addEventListener('click', startGame);
         document.getElementById('restartBtn').addEventListener('click', restartGame);
+        document.getElementById('musicToggle').addEventListener('click', toggleMusic);
 
         // Initial draw
         drawBackground();
