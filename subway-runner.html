@@ -402,19 +402,6 @@
             10%, 30%, 50%, 70%, 90% { transform: translate(-50%, -50%) translateX(-10px); }
             20%, 40%, 60%, 80% { transform: translate(-50%, -50%) translateX(10px); }
         }
-        
-        .boss-shop-btn {
-            transition: all 0.2s ease;
-        }
-        
-        .boss-shop-btn:hover {
-            transform: scale(1.1);
-            filter: brightness(1.2);
-        }
-        
-        .boss-shop-btn:active {
-            transform: scale(0.95);
-        }
 
         .creator-tag {
             position: absolute;
@@ -566,24 +553,18 @@
         </div>
         
         <!-- Boss Shop Buttons (Only visible during boss battles) -->
-        <div id="bossShopButtons" style="display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 100;">
-            <button id="buyFireBtn" class="boss-shop-btn" style="background: linear-gradient(135deg, #FF4500, #FF8C00); border: 3px solid #FFD700; border-radius: 15px; padding: 15px 20px; color: white; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); min-width: 100px;">
-                <div style="font-size: 24px;">🔥</div>
-                <div>FIRE</div>
-                <div style="font-size: 12px; color: #FFD700;">💰 100</div>
-            </button>
+        <div id="bossShopButtons" style="display: none; position: absolute; bottom: 30px; width: 100%; justify-content: center; gap: 15px; padding: 0 30px; z-index: 50;">
+            <div class="touch-btn" id="buyFireBtn" style="opacity: 0.9;">
+                🔥<small>FIRE<br>💰100</small>
+            </div>
             
-            <button id="centerAttackBtn" class="boss-shop-btn" style="background: linear-gradient(135deg, #8B00FF, #FF00FF); border: 3px solid #FFD700; border-radius: 15px; padding: 15px 20px; color: white; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); min-width: 100px;">
-                <div style="font-size: 24px;">💥</div>
-                <div>ATTACK</div>
-                <div style="font-size: 12px; color: #90EE90;">FREE</div>
-            </button>
+            <div class="touch-btn" id="centerAttackBtn" style="opacity: 0.9;">
+                💥<small>ATTACK<br>FREE</small>
+            </div>
             
-            <button id="buyLaserBtn" class="boss-shop-btn" style="background: linear-gradient(135deg, #00BFFF, #00FFFF); border: 3px solid #FFD700; border-radius: 15px; padding: 15px 20px; color: white; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); min-width: 100px;">
-                <div style="font-size: 24px;">⚡</div>
-                <div>LASER</div>
-                <div style="font-size: 12px; color: #FFD700;">💰 100</div>
-            </button>
+            <div class="touch-btn" id="buyLaserBtn" style="opacity: 0.9;">
+                ⚡<small>LASER<br>💰100</small>
+            </div>
         </div>
         
         <!-- Active Power-Up Display -->
@@ -1234,7 +1215,8 @@
             
             // Hide normal attack button, show boss shop buttons
             document.getElementById('attackBtn').style.display = 'none';
-            document.getElementById('bossShopButtons').style.display = 'flex';
+            const bossShopButtons = document.getElementById('bossShopButtons');
+            bossShopButtons.style.display = 'flex';
         }
         
         function updateBoss() {
