@@ -175,6 +175,15 @@
             z-index: 100;
             color: #fff;
         }
+        
+        #gameOverScreen h1 {
+            position: absolute;
+            top: 80px;
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            text-align: center;
+        }
 
         #startScreen::before {
             content: '';
@@ -541,7 +550,7 @@
         </div>
 
         <div id="gameOverScreen" class="hidden">
-            <h1 style="position: absolute; top: 80px; left: 50%; transform: translateX(-50%); margin: 0;">GAME OVER</h1>
+            <h1>GAME OVER</h1>
             <p id="finalScore" style="font-size: 32px; margin: 20px; color: #FFD700;"></p>
             <p id="finalCoins" style="font-size: 24px; margin: 10px; color: #FFD700;"></p>
             <button id="restartBtn">PLAY AGAIN</button>
