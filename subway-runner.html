@@ -978,7 +978,7 @@
             bossPhase = 1;
             bossAttackTimer = 120;
             
-            // Create boss object
+            // Create boss object with enhanced animation properties
             boss = {
                 x: canvas.width / 2 - 75,
                 y: -250,
@@ -994,7 +994,15 @@
                 shakeY: 0,
                 eyeBlinkTimer: 0,
                 isBlinking: false,
-                auraRotation: 0
+                auraRotation: 0,
+                mouthOpenTimer: 0,
+                isRoaring: false,
+                breathTimer: 0,
+                angryPulse: 0,
+                electricCharge: 0,
+                shadowPulse: 0,
+                hornGlow: 0,
+                lastAttackType: null
             };
             
             showMultiplier('⚠️ BOSS INCOMING!');
@@ -1035,10 +1043,18 @@
                 return;
             }
             
-            // Boss is active - main battle
+            // Boss is active - main battle with enhanced animations
             boss.moveTimer++;
             boss.glowPhase += 0.08;
             boss.auraRotation += 0.03;
+            boss.breathTimer++;
+            boss.angryPulse += bossPhase === 2 ? 0.15 : 0.08;
+            boss.electricCharge += 0.1;
+            boss.shadowPulse += 0.05;
+            boss.hornGlow += 0.12;
+            
+            // Breathing animation - body size pulse
+            const breathScale = 1 + Math.sin(boss.breathTimer * 0.05) * 0.03;
             
             // Eye blink animation
             boss.eyeBlinkTimer++;
@@ -1051,39 +1067,67 @@
                 boss.eyeBlinkTimer = 0;
             }
             
-            // Boss movement pattern
+            // Roaring animation when attacking
+            boss.mouthOpenTimer--;
+            if (boss.mouthOpenTimer <= 0) {
+                boss.isRoaring = false;
+            }
+            
+            // Boss movement pattern with more dynamic motion
             if (boss.moveTimer % 180 < 60) {
-                // Move left
+                // Move left with subtle rotation
                 boss.lane = Math.max(0, boss.lane - 0.02);
             } else if (boss.moveTimer % 180 < 120) {
-                // Move right  
+                // Move right with subtle rotation
                 boss.lane = Math.min(2, boss.lane + 0.02);
             }
             boss.x = lanes[Math.floor(boss.lane)] + (boss.lane % 1) * (lanes[1] - lanes[0]);
             
-            // Idle floating animation
-            boss.y = boss.targetY + Math.sin(boss.moveTimer * 0.05) * 10;
+            // Idle floating animation with breathing effect
+            boss.y = boss.targetY + Math.sin(boss.moveTimer * 0.05) * 10 + Math.cos(boss.breathTimer * 0.03) * 3;
             
-            // Phase transition
+            // Phase transition with epic animation
             if (boss.health < boss.maxHealth * 0.5 && bossPhase === 1) {
                 bossPhase = 2;
+                boss.isRoaring = true;
+                boss.mouthOpenTimer = 120;
                 showMultiplier('💀 BOSS ENRAGED!');
-                // Flash effect
-                for (let i = 0; i < 50; i++) {
+                
+                // Epic transformation particles
+                for (let i = 0; i < 100; i++) {
                     particles.push({
                         x: boss.x + boss.width / 2,
                         y: boss.y + boss.height / 2,
-                        vx: (Math.random() - 0.5) * 10,
-                        vy: (Math.random() - 0.5) * 10,
-                        color: '#FF0000',
-                        life: 40
+                        vx: (Math.random() - 0.5) * 15,
+                        vy: (Math.random() - 0.5) * 15,
+                        color: ['#FF0000', '#FF00FF', '#8B00FF'][Math.floor(Math.random() * 3)],
+                        life: 60
                     });
+                }
+                
+                // Shockwave effect
+                for (let ring = 0; ring < 3; ring++) {
+                    setTimeout(() => {
+                        for (let i = 0; i < 20; i++) {
+                            const angle = (Math.PI * 2 * i) / 20;
+                            particles.push({
+                                x: boss.x + boss.width / 2,
+                                y: boss.y + boss.height / 2,
+                                vx: Math.cos(angle) * (5 + ring * 2),
+                                vy: Math.sin(angle) * (5 + ring * 2),
+                                color: '#FF00FF',
+                                life: 30
+                            });
+                        }
+                    }, ring * 100);
                 }
             }
             
-            // Attack patterns
+            // Attack patterns with roaring animation
             bossAttackTimer--;
             if (bossAttackTimer <= 0) {
+                boss.isRoaring = true;
+                boss.mouthOpenTimer = 30;
                 bossAttack();
                 // Faster attacks in phase 2
                 bossAttackTimer = bossPhase === 1 ? 90 : 60;
@@ -1243,19 +1287,52 @@
             if (!boss || bossDefeated) return;
             
             boss.health -= damage;
-            boss.shakeX = (Math.random() - 0.5) * 10;
-            boss.shakeY = (Math.random() - 0.5) * 10;
+            boss.shakeX = (Math.random() - 0.5) * 15;
+            boss.shakeY = (Math.random() - 0.5) * 15;
             
-            // Hit particles
-            for (let i = 0; i < 20; i++) {
+            // Boss reacts - opens mouth and flashes
+            boss.isRoaring = true;
+            boss.mouthOpenTimer = 20;
+            
+            // Enhanced hit particles with colors based on phase
+            const hitColor = bossPhase === 1 ? '#FF0000' : '#FF00FF';
+            for (let i = 0; i < 30; i++) {
+                particles.push({
+                    x: boss.x + boss.width / 2 + (Math.random() - 0.5) * 50,
+                    y: boss.y + boss.height / 2 + (Math.random() - 0.5) * 50,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.5) * 12,
+                    color: [hitColor, '#FFFF00', '#FFA500'][Math.floor(Math.random() * 3)],
+                    life: 35
+                });
+            }
+            
+            // Electric spark effect on hit
+            for (let i = 0; i < 8; i++) {
+                const angle = (Math.PI * 2 * i) / 8;
                 particles.push({
                     x: boss.x + boss.width / 2,
                     y: boss.y + boss.height / 2,
-                    vx: (Math.random() - 0.5) * 8,
-                    vy: (Math.random() - 0.5) * 8,
-                    color: '#FF0000',
-                    life: 25
+                    vx: Math.cos(angle) * 6,
+                    vy: Math.sin(angle) * 6,
+                    color: '#00FFFF',
+                    life: 20
                 });
+            }
+            
+            // Screen shake intensity based on damage
+            if (damage >= 5) {
+                // Big hit - extra particles and effects
+                for (let i = 0; i < 50; i++) {
+                    particles.push({
+                        x: boss.x + boss.width / 2,
+                        y: boss.y + boss.height / 2,
+                        vx: (Math.random() - 0.5) * 20,
+                        vy: (Math.random() - 0.5) * 20,
+                        color: '#FFFF00',
+                        life: 40
+                    });
+                }
             }
             
             score += 50;
@@ -1264,7 +1341,7 @@
             setTimeout(() => {
                 boss.shakeX = 0;
                 boss.shakeY = 0;
-            }, 100);
+            }, 150);
         }
         
         function defeatBoss() {
@@ -1671,14 +1748,6 @@
                     dropPowerUpFromEnemy(obs.x, obs.y); // Drop power-up from destroyed enemy
                     return false;
                 }
-                
-                // Laser damages boss
-                if (laserActive && bossActive && boss && !bossDefeated && bossIntroTimer === 0) {
-                    const laserX = lanes[player.lane] + 25;
-                    if (laserX > boss.x && laserX < boss.x + boss.width && frameCount % 15 === 0) {
-                        damageBoss(1);
-                    }
-                }
 
                 // Check collision (only if not in invincibility frames)
                 if (invincibilityFrames === 0 &&
@@ -1886,6 +1955,14 @@
             if (bossActive) {
                 updateBoss();
                 updateBossBullets();
+                
+                // Laser damages boss
+                if (laserActive && boss && !bossDefeated && bossIntroTimer === 0) {
+                    const laserX = lanes[player.lane] + 25;
+                    if (laserX > boss.x && laserX < boss.x + boss.width && frameCount % 15 === 0) {
+                        damageBoss(1);
+                    }
+                }
                 
                 // Victory animation
                 if (bossVictoryTimer > 0) {
@@ -2488,99 +2565,226 @@
             const drawX = boss.x + boss.shakeX;
             const drawY = boss.y + boss.shakeY;
             
-            // Rotating aura rings
+            // Shadow effect - dark aura below boss
+            const shadowIntensity = 0.3 + Math.sin(boss.shadowPulse) * 0.1;
+            ctx.fillStyle = `rgba(0, 0, 0, ${shadowIntensity})`;
+            ctx.beginPath();
+            ctx.ellipse(drawX + boss.width / 2, drawY + boss.height + 10, 80, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Electric energy crackling around boss in phase 2
+            if (bossPhase === 2) {
+                for (let i = 0; i < 5; i++) {
+                    const angle = boss.electricCharge + i * (Math.PI * 2 / 5);
+                    const distance = 70 + Math.sin(boss.electricCharge * 2 + i) * 10;
+                    const x = drawX + boss.width / 2 + Math.cos(angle) * distance;
+                    const y = drawY + boss.height / 2 + Math.sin(angle) * distance;
+                    
+                    ctx.strokeStyle = `rgba(138, 0, 255, ${0.5 + Math.sin(boss.electricCharge * 3) * 0.3})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(drawX + boss.width / 2, drawY + boss.height / 2);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                    
+                    // Lightning bolt ends
+                    ctx.fillStyle = '#8B00FF';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            // Rotating aura rings with enhanced colors
             for (let i = 0; i < 3; i++) {
-                ctx.strokeStyle = `rgba(255, ${100 - i * 30}, ${255 - i * 80}, ${0.3 - i * 0.1})`;
+                const ringColor = bossPhase === 1 ? 
+                    `rgba(255, ${100 - i * 30}, ${100 - i * 30}, ${0.4 - i * 0.1})` :
+                    `rgba(${200 - i * 40}, 0, 255, ${0.5 - i * 0.1})`;
+                ctx.strokeStyle = ringColor;
                 ctx.lineWidth = 3;
                 ctx.beginPath();
-                const radius = 80 + i * 15 + Math.sin(boss.auraRotation + i) * 5;
+                const radius = 80 + i * 15 + Math.sin(boss.auraRotation + i) * 8;
                 ctx.arc(drawX + boss.width / 2, drawY + boss.height / 2, radius, 0, Math.PI * 2);
                 ctx.stroke();
             }
             
-            // Pulsing glow
-            const glowSize = 70 + Math.sin(boss.glowPhase) * 20;
+            // Pulsing glow - more intense in phase 2
+            const glowSize = 70 + Math.sin(boss.glowPhase) * (bossPhase === 2 ? 30 : 20);
             const bossGlow = ctx.createRadialGradient(
                 drawX + boss.width / 2, drawY + boss.height / 2, 0,
                 drawX + boss.width / 2, drawY + boss.height / 2, glowSize
             );
-            bossGlow.addColorStop(0, bossPhase === 1 ? 'rgba(255, 0, 0, 0.5)' : 'rgba(255, 0, 255, 0.7)');
+            bossGlow.addColorStop(0, bossPhase === 1 ? 'rgba(255, 0, 0, 0.6)' : 'rgba(255, 0, 255, 0.8)');
+            bossGlow.addColorStop(0.5, bossPhase === 1 ? 'rgba(255, 100, 0, 0.3)' : 'rgba(138, 0, 255, 0.4)');
             bossGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
             ctx.fillStyle = bossGlow;
             ctx.fillRect(drawX - 50, drawY - 50, boss.width + 100, boss.height + 100);
+            
+            // Angry pulse effect when damaged
+            if (boss.angryPulse > 0 && bossPhase === 2) {
+                const angryGlow = ctx.createRadialGradient(
+                    drawX + boss.width / 2, drawY + boss.height / 2, 0,
+                    drawX + boss.width / 2, drawY + boss.height / 2, 100
+                );
+                angryGlow.addColorStop(0, `rgba(255, 0, 0, ${Math.sin(boss.angryPulse) * 0.3})`);
+                angryGlow.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                ctx.fillStyle = angryGlow;
+                ctx.fillRect(drawX - 60, drawY - 60, boss.width + 120, boss.height + 120);
+            }
             
             // Main boss body - menacing skull-like shape
             ctx.fillStyle = bossPhase === 1 ? '#8B0000' : '#4B0082';
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 3;
             
-            // Head
+            // Head with breathing effect
+            const breathScale = 1 + Math.sin(boss.breathTimer * 0.05) * 0.03;
             ctx.beginPath();
-            ctx.arc(drawX + boss.width / 2, drawY + 60, 60, 0, Math.PI * 2);
+            ctx.arc(drawX + boss.width / 2, drawY + 60, 60 * breathScale, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
             
-            // Horns
-            ctx.fillStyle = '#000000';
+            // Horns with glowing tips
+            const hornGlowIntensity = Math.sin(boss.hornGlow) * 0.5 + 0.5;
+            
+            // Left horn with glow
+            if (bossPhase === 2) {
+                const hornGlow = ctx.createRadialGradient(drawX, drawY + 10, 0, drawX, drawY + 10, 20);
+                hornGlow.addColorStop(0, `rgba(138, 0, 255, ${hornGlowIntensity})`);
+                hornGlow.addColorStop(1, 'rgba(138, 0, 255, 0)');
+                ctx.fillStyle = hornGlow;
+                ctx.fillRect(drawX - 20, drawY - 10, 40, 40);
+            }
+            
+            ctx.fillStyle = bossPhase === 1 ? '#000000' : '#4B0082';
             ctx.beginPath();
             ctx.moveTo(drawX + 20, drawY + 40);
             ctx.lineTo(drawX, drawY + 10);
             ctx.lineTo(drawX + 35, drawY + 50);
             ctx.closePath();
             ctx.fill();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
             
+            // Right horn with glow
+            if (bossPhase === 2) {
+                const hornGlow2 = ctx.createRadialGradient(drawX + 150, drawY + 10, 0, drawX + 150, drawY + 10, 20);
+                hornGlow2.addColorStop(0, `rgba(138, 0, 255, ${hornGlowIntensity})`);
+                hornGlow2.addColorStop(1, 'rgba(138, 0, 255, 0)');
+                ctx.fillStyle = hornGlow2;
+                ctx.fillRect(drawX + 130, drawY - 10, 40, 40);
+            }
+            
+            ctx.fillStyle = bossPhase === 1 ? '#000000' : '#4B0082';
             ctx.beginPath();
             ctx.moveTo(drawX + 130, drawY + 40);
             ctx.lineTo(drawX + 150, drawY + 10);
             ctx.lineTo(drawX + 115, drawY + 50);
             ctx.closePath();
             ctx.fill();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
             
-            // Eyes - glowing and menacing
+            // Eyes - glowing and menacing with enhanced effects
             const eyeGlow = boss.isBlinking ? 0 : Math.sin(boss.glowPhase * 2) * 0.3 + 0.7;
+            const eyeColor = bossPhase === 1 ? [255, 0, 0] : [255, 0, 255];
             
             if (!boss.isBlinking) {
-                // Left eye glow
-                const leftEyeGlow = ctx.createRadialGradient(drawX + 45, drawY + 55, 0, drawX + 45, drawY + 55, 20);
-                leftEyeGlow.addColorStop(0, `rgba(255, 0, 0, ${eyeGlow})`);
+                // Left eye glow - enhanced
+                const leftEyeGlow = ctx.createRadialGradient(drawX + 45, drawY + 55, 0, drawX + 45, drawY + 55, 25);
+                leftEyeGlow.addColorStop(0, `rgba(${eyeColor[0]}, ${eyeColor[1]}, ${eyeColor[2]}, ${eyeGlow})`);
+                leftEyeGlow.addColorStop(0.5, `rgba(${eyeColor[0]}, ${eyeColor[1]}, ${eyeColor[2]}, ${eyeGlow * 0.5})`);
                 leftEyeGlow.addColorStop(1, 'rgba(255, 0, 0, 0)');
                 ctx.fillStyle = leftEyeGlow;
-                ctx.fillRect(drawX + 25, drawY + 35, 40, 40);
+                ctx.fillRect(drawX + 20, drawY + 30, 50, 50);
                 
-                // Right eye glow
-                const rightEyeGlow = ctx.createRadialGradient(drawX + 105, drawY + 55, 0, drawX + 105, drawY + 55, 20);
-                rightEyeGlow.addColorStop(0, `rgba(255, 0, 0, ${eyeGlow})`);
+                // Right eye glow - enhanced
+                const rightEyeGlow = ctx.createRadialGradient(drawX + 105, drawY + 55, 0, drawX + 105, drawY + 55, 25);
+                rightEyeGlow.addColorStop(0, `rgba(${eyeColor[0]}, ${eyeColor[1]}, ${eyeColor[2]}, ${eyeGlow})`);
+                rightEyeGlow.addColorStop(0.5, `rgba(${eyeColor[0]}, ${eyeColor[1]}, ${eyeColor[2]}, ${eyeGlow * 0.5})`);
                 rightEyeGlow.addColorStop(1, 'rgba(255, 0, 0, 0)');
                 ctx.fillStyle = rightEyeGlow;
-                ctx.fillRect(drawX + 85, drawY + 35, 40, 40);
+                ctx.fillRect(drawX + 80, drawY + 30, 50, 50);
+                
+                // Eye light beams when angry
+                if (bossPhase === 2 && Math.sin(boss.angryPulse) > 0.5) {
+                    ctx.strokeStyle = `rgba(255, 0, 255, ${Math.sin(boss.angryPulse) * 0.4})`;
+                    ctx.lineWidth = 8;
+                    ctx.beginPath();
+                    ctx.moveTo(drawX + 45, drawY + 65);
+                    ctx.lineTo(drawX + 45, canvas.height);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(drawX + 105, drawY + 65);
+                    ctx.lineTo(drawX + 105, canvas.height);
+                    ctx.stroke();
+                }
             }
             
             // Eyes
-            ctx.fillStyle = boss.isBlinking ? '#000000' : '#FF0000';
+            ctx.fillStyle = boss.isBlinking ? (bossPhase === 1 ? '#8B0000' : '#4B0082') : (bossPhase === 1 ? '#FF0000' : '#FF00FF');
             ctx.fillRect(drawX + 35, drawY + 45, 20, boss.isBlinking ? 3 : 20);
             ctx.fillRect(drawX + 95, drawY + 45, 20, boss.isBlinking ? 3 : 20);
             
             if (!boss.isBlinking) {
-                // Eye pupils
+                // Eye pupils with glow
                 ctx.fillStyle = '#000000';
                 ctx.fillRect(drawX + 42, drawY + 52, 6, 10);
                 ctx.fillRect(drawX + 102, drawY + 52, 6, 10);
+                
+                // Eye highlights
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(drawX + 38, drawY + 48, 3, 3);
+                ctx.fillRect(drawX + 98, drawY + 48, 3, 3);
             }
             
-            // Jagged mouth
+            // Mouth - changes based on roaring with animated jaw
+            const mouthOpenAmount = boss.isRoaring ? Math.min(boss.mouthOpenTimer / 10, 20) : 0;
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 4;
             ctx.beginPath();
             ctx.moveTo(drawX + 40, drawY + 85);
             for (let i = 0; i < 6; i++) {
-                ctx.lineTo(drawX + 40 + i * 14, drawY + 85 + (i % 2 === 0 ? 10 : 0));
+                ctx.lineTo(drawX + 40 + i * 14, drawY + 85 + (i % 2 === 0 ? 10 + mouthOpenAmount : mouthOpenAmount));
             }
             ctx.stroke();
             
-            // Body segments with armor plates
+            // Open mouth interior when roaring
+            if (boss.isRoaring && mouthOpenAmount > 5) {
+                ctx.fillStyle = bossPhase === 1 ? '#660000' : '#4B0082';
+                ctx.beginPath();
+                ctx.moveTo(drawX + 45, drawY + 88);
+                for (let i = 0; i < 5; i++) {
+                    ctx.lineTo(drawX + 45 + i * 14, drawY + 88 + (i % 2 === 0 ? 8 + mouthOpenAmount : mouthOpenAmount));
+                }
+                ctx.closePath();
+                ctx.fill();
+                
+                // Glowing energy in mouth
+                const mouthGlow = ctx.createRadialGradient(
+                    drawX + boss.width / 2, drawY + 95, 0,
+                    drawX + boss.width / 2, drawY + 95, 30
+                );
+                mouthGlow.addColorStop(0, bossPhase === 1 ? 'rgba(255, 100, 0, 0.8)' : 'rgba(138, 0, 255, 0.8)');
+                mouthGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = mouthGlow;
+                ctx.fillRect(drawX + 40, drawY + 85, 80, mouthOpenAmount + 15);
+            }
+            
+            // Body segments with armor plates and glow
             ctx.fillStyle = bossPhase === 1 ? '#660000' : '#330066';
             for (let i = 0; i < 2; i++) {
+                // Armor plate glow
+                if (bossPhase === 2) {
+                    ctx.shadowColor = '#8B00FF';
+                    ctx.shadowBlur = 10;
+                }
                 ctx.fillRect(drawX + 30 + i * 10, drawY + 110 + i * 20, 90 - i * 20, 15);
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 2;
                 ctx.strokeRect(drawX + 30 + i * 10, drawY + 110 + i * 20, 90 - i * 20, 15);
             }
             
