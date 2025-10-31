@@ -1090,20 +1090,18 @@
         }
 
         function deactivatePowerUp() {
+            // Reset invincible first before speed calculations
+            isInvincible = false;
+            hasShield = false;
+            magnetActive = false;
+            
             if (speedBoostActive) {
-                // Check if it was invincible mode (5x) or regular boost (1.5x)
-                if (isInvincible) {
-                    gameSpeed = Math.max(5, gameSpeed / 5); // Reset from 5x speed
-                } else {
-                    gameSpeed = Math.max(5, gameSpeed / 1.5); // Reset from 1.5x speed
-                }
+                // Reset to base game speed (accounts for difficulty level)
+                gameSpeed = baseGameSpeed;
                 speedBoostActive = false;
                 scoreMultiplier = 1;
             }
             
-            hasShield = false;
-            magnetActive = false;
-            isInvincible = false;
             activePowerUp = null;
             
             document.getElementById('activePowerUpDisplay').style.display = 'none';
