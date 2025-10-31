@@ -69,33 +69,6 @@
             margin: 5px 0;
             font-weight: bold;
         }
-        
-        #musicToggle {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 2px solid #FFD700;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 100;
-            transition: all 0.3s;
-        }
-        
-        #musicToggle:hover {
-            background: rgba(0, 0, 0, 0.9);
-            transform: scale(1.1);
-        }
-        
-        #musicToggle:active {
-            transform: scale(0.95);
-        }
 
         #anishLetters {
             position: absolute;
@@ -516,9 +489,6 @@
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas" width="400" height="700"></canvas>
-        
-        <!-- Music Toggle Button -->
-        <div id="musicToggle" title="Toggle Music">🔊</div>
         
         <div id="ui">
             <div>SCORE: <span id="score">0</span></div>
@@ -3484,28 +3454,11 @@
             }
         }
         
-        function toggleMusic() {
-            initMusic();
-            
-            const musicToggleBtn = document.getElementById('musicToggle');
-            
-            if (isMusicPlaying) {
-                bgMusic.pause();
-                isMusicPlaying = false;
-                musicToggleBtn.textContent = '🔇';
-            } else {
-                bgMusic.play().catch(e => console.log('Audio play failed:', e));
-                isMusicPlaying = true;
-                musicToggleBtn.textContent = '🔊';
-            }
-        }
-        
         function startMusic() {
             initMusic();
             if (!isMusicPlaying) {
                 bgMusic.play().catch(e => console.log('Audio play failed:', e));
                 isMusicPlaying = true;
-                document.getElementById('musicToggle').textContent = '🔊';
             }
         }
         
@@ -3514,7 +3467,6 @@
                 bgMusic.pause();
                 bgMusic.currentTime = 0;
                 isMusicPlaying = false;
-                document.getElementById('musicToggle').textContent = '🔇';
             }
         }
 
@@ -3685,7 +3637,6 @@
         // Event listeners
         document.getElementById('startBtn').addEventListener('click', startGame);
         document.getElementById('restartBtn').addEventListener('click', restartGame);
-        document.getElementById('musicToggle').addEventListener('click', toggleMusic);
 
         // Initial draw
         drawBackground();
