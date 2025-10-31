@@ -382,6 +382,39 @@
                 border-color: rgba(255, 215, 0, 0.6);
             }
         }
+        
+        @keyframes popIn {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translate(-50%, -50%) translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-50%, -50%) translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translate(-50%, -50%) translateX(10px); }
+        }
+        
+        .boss-shop-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .boss-shop-btn:hover {
+            transform: scale(1.1);
+            filter: brightness(1.2);
+        }
+        
+        .boss-shop-btn:active {
+            transform: scale(0.95);
+        }
 
         .creator-tag {
             position: absolute;
@@ -530,6 +563,27 @@
         <!-- Touch Controls for Mobile -->
         <div id="touchControls">
             <div class="touch-btn" id="attackBtn" style="opacity: 0.3;">💥<small>ATTACK</small></div>
+        </div>
+        
+        <!-- Boss Shop Buttons (Only visible during boss battles) -->
+        <div id="bossShopButtons" style="display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 100;">
+            <button id="buyFireBtn" class="boss-shop-btn" style="background: linear-gradient(135deg, #FF4500, #FF8C00); border: 3px solid #FFD700; border-radius: 15px; padding: 15px 20px; color: white; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); min-width: 100px;">
+                <div style="font-size: 24px;">🔥</div>
+                <div>FIRE</div>
+                <div style="font-size: 12px; color: #FFD700;">💰 100</div>
+            </button>
+            
+            <button id="centerAttackBtn" class="boss-shop-btn" style="background: linear-gradient(135deg, #8B00FF, #FF00FF); border: 3px solid #FFD700; border-radius: 15px; padding: 15px 20px; color: white; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); min-width: 100px;">
+                <div style="font-size: 24px;">💥</div>
+                <div>ATTACK</div>
+                <div style="font-size: 12px; color: #90EE90;">FREE</div>
+            </button>
+            
+            <button id="buyLaserBtn" class="boss-shop-btn" style="background: linear-gradient(135deg, #00BFFF, #00FFFF); border: 3px solid #FFD700; border-radius: 15px; padding: 15px 20px; color: white; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); min-width: 100px;">
+                <div style="font-size: 24px;">⚡</div>
+                <div>LASER</div>
+                <div style="font-size: 12px; color: #FFD700;">💰 100</div>
+            </button>
         </div>
         
         <!-- Active Power-Up Display -->
@@ -695,6 +749,46 @@
             e.preventDefault();
             if (gameRunning && attackPowerUp && attackCooldown === 0) {
                 useAttackPowerUp();
+            }
+        });
+        
+        // Boss shop button controls
+        document.getElementById('buyFireBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (gameRunning && bossActive && boss && bossIntroTimer === 0) {
+                buyBossAttack('fire', 100);
+            }
+        });
+        document.getElementById('buyFireBtn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning && bossActive && boss && bossIntroTimer === 0) {
+                buyBossAttack('fire', 100);
+            }
+        });
+        
+        document.getElementById('centerAttackBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (gameRunning && attackPowerUp && attackCooldown === 0) {
+                useAttackPowerUp();
+            }
+        });
+        document.getElementById('centerAttackBtn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning && attackPowerUp && attackCooldown === 0) {
+                useAttackPowerUp();
+            }
+        });
+        
+        document.getElementById('buyLaserBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (gameRunning && bossActive && boss && bossIntroTimer === 0) {
+                buyBossAttack('laser', 100);
+            }
+        });
+        document.getElementById('buyLaserBtn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameRunning && bossActive && boss && bossIntroTimer === 0) {
+                buyBossAttack('laser', 100);
             }
         });
 
@@ -981,6 +1075,121 @@
             }
         }
         
+        // ============ BOSS SHOP SYSTEM ============
+        
+        function buyBossAttack(type, cost) {
+            // Check if enough coins
+            if (coins < cost) {
+                showInsufficientCoinsMessage();
+                return;
+            }
+            
+            // Check cooldown
+            if (attackCooldown > 0) {
+                return;
+            }
+            
+            // Deduct coins
+            coins -= cost;
+            
+            // Execute the attack based on type
+            switch(type) {
+                case 'fire':
+                    // Shoot fireball at boss
+                    attackCooldown = 30; // 0.5 second cooldown
+                    attackProjectiles.push({
+                        type: 'fire',
+                        x: player.x + 15,
+                        y: player.y - 20,
+                        lane: player.lane,
+                        width: 30,
+                        height: 30,
+                        speed: -10
+                    });
+                    playSound('attack');
+                    showBuyMessage('🔥 FIRE PURCHASED!', cost);
+                    break;
+                    
+                case 'laser':
+                    // Laser beam at boss
+                    attackCooldown = 120; // 2 second cooldown
+                    laserActive = true;
+                    laserLane = player.lane;
+                    setTimeout(() => { 
+                        laserActive = false;
+                        laserLane = -1;
+                    }, 3000); // 3 seconds duration
+                    playSound('laser');
+                    showBuyMessage('⚡ LASER PURCHASED!', cost);
+                    
+                    // Damage boss with laser
+                    if (boss && bossIntroTimer === 0) {
+                        damageBoss(3); // 3 damage per laser
+                    }
+                    break;
+                    
+                case 'bomb':
+                    // Bomb attack on boss
+                    attackCooldown = 120; // 2 second cooldown
+                    bombExplosionEffect();
+                    playSound('bomb');
+                    showBuyMessage('💣 BOMB PURCHASED!', cost);
+                    
+                    // Damage boss significantly
+                    if (boss && bossIntroTimer === 0) {
+                        damageBoss(5); // 5 damage from bomb
+                    }
+                    break;
+            }
+        }
+        
+        function showBuyMessage(message, cost) {
+            const msg = document.createElement('div');
+            msg.textContent = message;
+            msg.style.position = 'absolute';
+            msg.style.top = '50%';
+            msg.style.left = '50%';
+            msg.style.transform = 'translate(-50%, -50%)';
+            msg.style.fontSize = '32px';
+            msg.style.fontWeight = 'bold';
+            msg.style.color = '#FFD700';
+            msg.style.textShadow = '0 0 10px #000, 0 0 20px #FFD700';
+            msg.style.zIndex = '1000';
+            msg.style.pointerEvents = 'none';
+            msg.style.animation = 'popIn 0.5s ease-out';
+            document.getElementById('gameContainer').appendChild(msg);
+            
+            setTimeout(() => msg.remove(), 1500);
+        }
+        
+        function showInsufficientCoinsMessage() {
+            const msg = document.createElement('div');
+            msg.textContent = '❌ NOT ENOUGH COINS!';
+            msg.style.position = 'absolute';
+            msg.style.top = '50%';
+            msg.style.left = '50%';
+            msg.style.transform = 'translate(-50%, -50%)';
+            msg.style.fontSize = '28px';
+            msg.style.fontWeight = 'bold';
+            msg.style.color = '#FF0000';
+            msg.style.textShadow = '0 0 10px #000, 0 0 20px #FF0000';
+            msg.style.zIndex = '1000';
+            msg.style.pointerEvents = 'none';
+            msg.style.animation = 'shake 0.5s ease-out';
+            document.getElementById('gameContainer').appendChild(msg);
+            
+            // Shake the coin display
+            const coinDisplay = document.querySelector('#ui div:nth-child(2)');
+            if (coinDisplay) {
+                coinDisplay.style.animation = 'shake 0.5s ease-out';
+                setTimeout(() => {
+                    coinDisplay.style.animation = '';
+                }, 500);
+            }
+            
+            setTimeout(() => msg.remove(), 1500);
+        }
+        
         // ============ BOSS BATTLE SYSTEM ============
         
         function spawnBoss() {
@@ -1022,6 +1231,10 @@
             
             // Clear some obstacles to make room
             obstacles = obstacles.filter(obs => obs.y > 200);
+            
+            // Hide normal attack button, show boss shop buttons
+            document.getElementById('attackBtn').style.display = 'none';
+            document.getElementById('bossShopButtons').style.display = 'flex';
         }
         
         function updateBoss() {
@@ -1405,6 +1618,10 @@
             bossBullets = [];
             bossVictoryTimer = 0;
             obstacles = []; // Clear remaining obstacles
+            
+            // Hide boss shop buttons, show normal attack button
+            document.getElementById('bossShopButtons').style.display = 'none';
+            document.getElementById('attackBtn').style.display = 'flex';
         }
 
         function activatePowerUp(type) {
@@ -3197,6 +3414,10 @@
             bossWarningTimer = 0;
             bossIntroTimer = 0;
             bossVictoryTimer = 0;
+            
+            // Show normal attack button, hide boss shop buttons
+            document.getElementById('attackBtn').style.display = 'flex';
+            document.getElementById('bossShopButtons').style.display = 'none';
             
             gameLoop();
         }
