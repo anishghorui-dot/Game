@@ -1500,7 +1500,6 @@
                             });
                         }
                         playSound('destroy');
-                        score += 50; // Bonus for destroying bullet!
                         attackProjectiles.splice(idx, 1);
                         bulletDestroyed = true;
                     }
@@ -1521,7 +1520,6 @@
                             life: 40
                         });
                     }
-                    score += 50;
                     return false;
                 }
                 
@@ -2181,7 +2179,6 @@
                             }
                             
                             playSound('destroy');
-                            score += 50; // Bonus points for destroying boss bullets!
                             bulletDestroyed = true;
                             proj.hit = true;
                             return false; // Remove the boss bullet
