@@ -1709,23 +1709,190 @@
             showMultiplier('🎉 BOSS DEFEATED!');
             score += 5000;
             
-            // Epic explosion
-            for (let i = 0; i < 150; i++) {
+            const bossX = boss.x + boss.width / 2;
+            const bossY = boss.y + boss.height / 2;
+            
+            // 1. MASSIVE SCREEN SHAKE
+            for (let shake = 0; shake < 20; shake++) {
+                setTimeout(() => {
+                    const shakeDiv = document.createElement('div');
+                    shakeDiv.style.position = 'absolute';
+                    shakeDiv.style.top = '0';
+                    shakeDiv.style.left = '0';
+                    shakeDiv.style.width = '100%';
+                    shakeDiv.style.height = '100%';
+                    shakeDiv.style.backgroundColor = `rgba(255, 255, 255, ${0.3 - shake * 0.01})`;
+                    shakeDiv.style.pointerEvents = 'none';
+                    shakeDiv.style.zIndex = '998';
+                    document.getElementById('gameContainer').appendChild(shakeDiv);
+                    setTimeout(() => shakeDiv.remove(), 50);
+                }, shake * 50);
+            }
+            
+            // 2. NUCLEAR EXPLOSION FLASH
+            const bigFlash = document.createElement('div');
+            bigFlash.style.position = 'absolute';
+            bigFlash.style.top = '0';
+            bigFlash.style.left = '0';
+            bigFlash.style.width = '100%';
+            bigFlash.style.height = '100%';
+            bigFlash.style.background = 'radial-gradient(circle at center, rgba(255,255,255,1) 0%, rgba(255,215,0,0.8) 30%, rgba(255,69,0,0.5) 60%, transparent 100%)';
+            bigFlash.style.pointerEvents = 'none';
+            bigFlash.style.zIndex = '999';
+            bigFlash.style.animation = 'flashPulse 1s ease-out';
+            document.getElementById('gameContainer').appendChild(bigFlash);
+            setTimeout(() => bigFlash.remove(), 1000);
+            
+            // 3. EXPANDING SHOCKWAVE RINGS (Multiple waves)
+            for (let wave = 0; wave < 8; wave++) {
+                setTimeout(() => {
+                    for (let i = 0; i < 30; i++) {
+                        const angle = (Math.PI * 2 * i) / 30;
+                        const distance = 30 + wave * 40;
+                        particles.push({
+                            x: bossX + Math.cos(angle) * distance,
+                            y: bossY + Math.sin(angle) * distance,
+                            vx: Math.cos(angle) * (8 + wave),
+                            vy: Math.sin(angle) * (8 + wave),
+                            color: wave % 2 === 0 ? '#FFFFFF' : '#FFD700',
+                            life: 60
+                        });
+                    }
+                }, wave * 100);
+            }
+            
+            // 4. MASSIVE PARTICLE EXPLOSION (500 particles!)
+            for (let i = 0; i < 500; i++) {
+                const angle = (Math.PI * 2 * i) / 500;
+                const speed = 5 + Math.random() * 20;
                 particles.push({
-                    x: boss.x + boss.width / 2,
-                    y: boss.y + boss.height / 2,
-                    vx: (Math.random() - 0.5) * 15,
-                    vy: (Math.random() - 0.5) * 15,
-                    color: ['#FF0000', '#FF6600', '#FFFF00', '#FF00FF', '#00FFFF'][Math.floor(Math.random() * 5)],
-                    life: 60
+                    x: bossX,
+                    y: bossY,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color: ['#FF0000', '#FF6600', '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF'][Math.floor(Math.random() * 6)],
+                    life: 80
                 });
             }
             
-            // Guaranteed power-up drops
+            // 5. ELECTRIC DISCHARGE BOLTS
+            for (let bolt = 0; bolt < 12; bolt++) {
+                setTimeout(() => {
+                    const angle = (Math.PI * 2 * bolt) / 12;
+                    for (let j = 0; j < 20; j++) {
+                        const dist = j * 15;
+                        particles.push({
+                            x: bossX + Math.cos(angle) * dist,
+                            y: bossY + Math.sin(angle) * dist,
+                            vx: Math.cos(angle) * 8,
+                            vy: Math.sin(angle) * 8,
+                            color: j % 2 === 0 ? '#00FFFF' : '#FFFFFF',
+                            life: 50 - j
+                        });
+                    }
+                }, bolt * 50);
+            }
+            
+            // 6. FIRE SPIRAL ERUPTION
+            for (let spiral = 0; spiral < 5; spiral++) {
+                setTimeout(() => {
+                    for (let i = 0; i < 40; i++) {
+                        const angle = (Math.PI * 2 * i) / 40 + spiral * 0.5;
+                        const radius = 20 + i * 3;
+                        particles.push({
+                            x: bossX + Math.cos(angle) * radius,
+                            y: bossY + Math.sin(angle) * radius,
+                            vx: Math.cos(angle) * 5,
+                            vy: Math.sin(angle) * 5 - 3,
+                            color: i % 3 === 0 ? '#FF0000' : i % 3 === 1 ? '#FF8800' : '#FFFF00',
+                            life: 70
+                        });
+                    }
+                }, spiral * 150);
+            }
+            
+            // 7. UPWARD ENERGY BEAMS
+            for (let beam = 0; beam < 8; beam++) {
+                setTimeout(() => {
+                    const offsetX = (Math.random() - 0.5) * 100;
+                    for (let j = 0; j < 30; j++) {
+                        particles.push({
+                            x: bossX + offsetX,
+                            y: bossY - j * 10,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: -15 - Math.random() * 5,
+                            color: beam % 3 === 0 ? '#FFD700' : beam % 3 === 1 ? '#FF00FF' : '#00FFFF',
+                            life: 60
+                        });
+                    }
+                }, beam * 80);
+            }
+            
+            // 8. DEBRIS CHUNKS
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    particles.push({
+                        x: bossX + (Math.random() - 0.5) * 100,
+                        y: bossY + (Math.random() - 0.5) * 100,
+                        vx: (Math.random() - 0.5) * 25,
+                        vy: (Math.random() - 0.5) * 25 - 5,
+                        color: '#333333',
+                        life: 100
+                    });
+                }, i * 30);
+            }
+            
+            // 9. SPARKLE STARS
+            for (let star = 0; star < 100; star++) {
+                setTimeout(() => {
+                    particles.push({
+                        x: bossX + (Math.random() - 0.5) * 200,
+                        y: bossY + (Math.random() - 0.5) * 200,
+                        vx: (Math.random() - 0.5) * 15,
+                        vy: (Math.random() - 0.5) * 15,
+                        color: '#FFFFFF',
+                        life: 60
+                    });
+                }, star * 20);
+            }
+            
+            // 10. VICTORY FIREWORKS
+            for (let fw = 0; fw < 5; fw++) {
+                setTimeout(() => {
+                    const fwX = canvas.width / 2 + (Math.random() - 0.5) * 200;
+                    const fwY = 100 + Math.random() * 100;
+                    for (let i = 0; i < 50; i++) {
+                        const angle = (Math.PI * 2 * i) / 50;
+                        particles.push({
+                            x: fwX,
+                            y: fwY,
+                            vx: Math.cos(angle) * 8,
+                            vy: Math.sin(angle) * 8,
+                            color: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF'][fw],
+                            life: 50
+                        });
+                    }
+                }, 1000 + fw * 300);
+            }
+            
+            // Guaranteed power-up drops with dramatic entrance
             for (let i = 0; i < 3; i++) {
                 setTimeout(() => {
                     const types = ['fire', 'laser', 'bomb', 'invincible'];
                     const type = types[Math.floor(Math.random() * types.length)];
+                    
+                    // Power-up entrance particles
+                    for (let j = 0; j < 20; j++) {
+                        particles.push({
+                            x: lanes[i] + 20,
+                            y: boss.y + 50,
+                            vx: (Math.random() - 0.5) * 5,
+                            vy: (Math.random() - 0.5) * 5,
+                            color: '#FFD700',
+                            life: 40
+                        });
+                    }
+                    
                     powerUps.push({
                         x: lanes[i],
                         y: boss.y + 50,
@@ -1735,7 +1902,7 @@
                         lane: i,
                         collected: false
                     });
-                }, i * 200);
+                }, 800 + i * 200);
             }
             
             playSound('powerup');
