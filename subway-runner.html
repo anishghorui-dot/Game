@@ -4598,112 +4598,186 @@
                 // Bullet-like visuals with black borders (NO GLOW)
                 switch(bullet.type) {
                     case 'spread':
-                        // Round bullet - gradient fill
-                        const spreadGradient = ctx.createRadialGradient(-3, -3, 2, 0, 0, bullet.width / 2);
-                        spreadGradient.addColorStop(0, '#FFA500');
-                        spreadGradient.addColorStop(0.6, '#FF4500');
-                        spreadGradient.addColorStop(1, '#CC0000');
-                        ctx.fillStyle = spreadGradient;
-                        ctx.beginPath();
-                        ctx.arc(0, 0, bullet.width / 2, 0, Math.PI * 2);
-                        ctx.fill();
+                        // Cylindrical bullet - side view
+                        const cylinderWidth = bullet.width * 0.6;
+                        const cylinderHeight = bullet.width * 1.2;
                         
-                        // Black border
+                        // Cylinder gradient (3D lighting)
+                        const spreadGradient = ctx.createLinearGradient(-cylinderWidth/2, 0, cylinderWidth/2, 0);
+                        spreadGradient.addColorStop(0, '#CC3300');
+                        spreadGradient.addColorStop(0.2, '#FF4500');
+                        spreadGradient.addColorStop(0.5, '#FF6633');
+                        spreadGradient.addColorStop(0.8, '#FF4500');
+                        spreadGradient.addColorStop(1, '#CC3300');
+                        ctx.fillStyle = spreadGradient;
+                        
+                        // Main cylinder body
+                        ctx.fillRect(-cylinderWidth/2, -cylinderHeight/2, cylinderWidth, cylinderHeight);
+                        
+                        // Top cap (ellipse)
+                        ctx.beginPath();
+                        ctx.ellipse(0, -cylinderHeight/2, cylinderWidth/2, cylinderWidth/4, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = '#FF6633';
+                        ctx.fill();
                         ctx.strokeStyle = '#000000';
-                        ctx.lineWidth = 3;
+                        ctx.lineWidth = 2;
                         ctx.stroke();
                         
-                        // Shine highlight
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                        // Bottom cap (ellipse)
                         ctx.beginPath();
-                        ctx.arc(-4, -4, 4, 0, Math.PI * 2);
+                        ctx.ellipse(0, cylinderHeight/2, cylinderWidth/2, cylinderWidth/4, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = '#CC3300';
                         ctx.fill();
+                        ctx.stroke();
+                        
+                        // Black border on body
+                        ctx.strokeStyle = '#000000';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(-cylinderWidth/2, -cylinderHeight/2, cylinderWidth, cylinderHeight);
+                        
+                        // Shine highlight on left side
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                        ctx.fillRect(-cylinderWidth/2 + 2, -cylinderHeight/2 + 4, 3, cylinderHeight - 8);
                         break;
                         
                     case 'lane':
-                        // Rectangular bullet - metallic look
-                        const laneGradient = ctx.createLinearGradient(-bullet.width/2, 0, bullet.width/2, 0);
+                        // Wide cylindrical bullet
+                        const laneCylWidth = bullet.width * 0.8;
+                        const laneCylHeight = bullet.height * 1.3;
+                        
+                        // Cylinder gradient
+                        const laneGradient = ctx.createLinearGradient(-laneCylWidth/2, 0, laneCylWidth/2, 0);
                         laneGradient.addColorStop(0, '#990000');
+                        laneGradient.addColorStop(0.25, '#CC0000');
                         laneGradient.addColorStop(0.5, '#FF0000');
+                        laneGradient.addColorStop(0.75, '#CC0000');
                         laneGradient.addColorStop(1, '#990000');
                         ctx.fillStyle = laneGradient;
-                        ctx.fillRect(-bullet.width/2, -bullet.height/2, bullet.width, bullet.height);
+                        
+                        // Main body
+                        ctx.fillRect(-laneCylWidth/2, -laneCylHeight/2, laneCylWidth, laneCylHeight);
+                        
+                        // Top cap
+                        ctx.beginPath();
+                        ctx.ellipse(0, -laneCylHeight/2, laneCylWidth/2, laneCylWidth/5, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = '#CC0000';
+                        ctx.fill();
+                        ctx.strokeStyle = '#000000';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        
+                        // Bottom cap
+                        ctx.beginPath();
+                        ctx.ellipse(0, laneCylHeight/2, laneCylWidth/2, laneCylWidth/5, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = '#880000';
+                        ctx.fill();
+                        ctx.stroke();
                         
                         // Black border
                         ctx.strokeStyle = '#000000';
                         ctx.lineWidth = 3;
-                        ctx.strokeRect(-bullet.width/2, -bullet.height/2, bullet.width, bullet.height);
+                        ctx.strokeRect(-laneCylWidth/2, -laneCylHeight/2, laneCylWidth, laneCylHeight);
                         
                         // Metal shine
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-                        ctx.fillRect(-bullet.width/2 + 3, -bullet.height/2 + 3, bullet.width/3, bullet.height - 6);
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                        ctx.fillRect(-laneCylWidth/2 + 3, -laneCylHeight/2 + 3, 4, laneCylHeight - 6);
                         break;
                         
                     case 'spiral':
-                        // Star-shaped bullet
-                        const spiralGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, bullet.width / 2);
-                        spiralGradient.addColorStop(0, '#CC00CC');
-                        spiralGradient.addColorStop(0.6, '#8B00FF');
+                        // Thin cylindrical bullet with spiral marking
+                        const spiralCylWidth = bullet.width * 0.5;
+                        const spiralCylHeight = bullet.width * 1.4;
+                        
+                        // Cylinder gradient (purple)
+                        const spiralGradient = ctx.createLinearGradient(-spiralCylWidth/2, 0, spiralCylWidth/2, 0);
+                        spiralGradient.addColorStop(0, '#550088');
+                        spiralGradient.addColorStop(0.3, '#8800CC');
+                        spiralGradient.addColorStop(0.5, '#AA00FF');
+                        spiralGradient.addColorStop(0.7, '#8800CC');
                         spiralGradient.addColorStop(1, '#550088');
                         ctx.fillStyle = spiralGradient;
+                        
+                        // Main body
+                        ctx.fillRect(-spiralCylWidth/2, -spiralCylHeight/2, spiralCylWidth, spiralCylHeight);
+                        
+                        // Top cap
                         ctx.beginPath();
-                        for (let i = 0; i < 5; i++) {
-                            const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
-                            const r = bullet.width / 2.5;
-                            if (i === 0) {
-                                ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
-                            } else {
-                                ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
-                            }
-                            // Inner point
-                            const innerAngle = angle + Math.PI / 5;
-                            const innerR = r * 0.4;
-                            ctx.lineTo(Math.cos(innerAngle) * innerR, Math.sin(innerAngle) * innerR);
-                        }
-                        ctx.closePath();
+                        ctx.ellipse(0, -spiralCylHeight/2, spiralCylWidth/2, spiralCylWidth/3, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = '#9900DD';
                         ctx.fill();
+                        ctx.strokeStyle = '#000000';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        
+                        // Bottom cap
+                        ctx.beginPath();
+                        ctx.ellipse(0, spiralCylHeight/2, spiralCylWidth/2, spiralCylWidth/3, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = '#550088';
+                        ctx.fill();
+                        ctx.stroke();
+                        
+                        // Spiral line marking
+                        ctx.strokeStyle = '#FF00FF';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        const spiralPoints = 15;
+                        for (let i = 0; i < spiralPoints; i++) {
+                            const t = i / (spiralPoints - 1);
+                            const y = -spiralCylHeight/2 + t * spiralCylHeight;
+                            const x = Math.sin(t * Math.PI * 4) * (spiralCylWidth/2 - 2);
+                            if (i === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                        }
+                        ctx.stroke();
                         
                         // Black border
                         ctx.strokeStyle = '#000000';
                         ctx.lineWidth = 3;
-                        ctx.stroke();
-                        
-                        // Center highlight
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                        ctx.beginPath();
-                        ctx.arc(0, 0, 4, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.strokeRect(-spiralCylWidth/2, -spiralCylHeight/2, spiralCylWidth, spiralCylHeight);
                         break;
                         
                     case 'homing':
-                        // Missile-shaped bullet with fins
-                        const homingGradient = ctx.createLinearGradient(0, -bullet.width/2, 0, bullet.width/2);
-                        homingGradient.addColorStop(0, '#FFAA00');
-                        homingGradient.addColorStop(0.5, '#FF6600');
-                        homingGradient.addColorStop(1, '#CC3300');
+                        // Missile-shaped cylinder (tapered)
+                        const missileCylWidth = bullet.width * 0.55;
+                        const missileCylHeight = bullet.width * 1.5;
+                        
+                        // Cylinder gradient (orange-yellow)
+                        const homingGradient = ctx.createLinearGradient(-missileCylWidth/2, 0, missileCylWidth/2, 0);
+                        homingGradient.addColorStop(0, '#CC5500');
+                        homingGradient.addColorStop(0.3, '#FF6600');
+                        homingGradient.addColorStop(0.5, '#FF8800');
+                        homingGradient.addColorStop(0.7, '#FF6600');
+                        homingGradient.addColorStop(1, '#CC5500');
                         ctx.fillStyle = homingGradient;
                         
-                        // Main body (pointed)
-                        ctx.beginPath();
-                        ctx.moveTo(0, -bullet.width/2);
-                        ctx.lineTo(bullet.width/4, 0);
-                        ctx.lineTo(bullet.width/5, bullet.width/2);
-                        ctx.lineTo(-bullet.width/5, bullet.width/2);
-                        ctx.lineTo(-bullet.width/4, 0);
-                        ctx.closePath();
-                        ctx.fill();
+                        // Main body (cylinder)
+                        ctx.fillRect(-missileCylWidth/2, -missileCylHeight/2 + 8, missileCylWidth, missileCylHeight - 8);
                         
-                        // Black border
+                        // Pointed nose cone (3D)
+                        ctx.beginPath();
+                        ctx.moveTo(0, -missileCylHeight/2);
+                        ctx.lineTo(-missileCylWidth/2, -missileCylHeight/2 + 8);
+                        ctx.lineTo(missileCylWidth/2, -missileCylHeight/2 + 8);
+                        ctx.closePath();
+                        ctx.fillStyle = '#FFAA00';
+                        ctx.fill();
                         ctx.strokeStyle = '#000000';
-                        ctx.lineWidth = 3;
+                        ctx.lineWidth = 2;
                         ctx.stroke();
                         
-                        // Fins
-                        ctx.fillStyle = '#AA2200';
+                        // Bottom cap
                         ctx.beginPath();
-                        ctx.moveTo(-bullet.width/4, 0);
-                        ctx.lineTo(-bullet.width/2.5, bullet.width/4);
-                        ctx.lineTo(-bullet.width/4, bullet.width/3);
+                        ctx.ellipse(0, missileCylHeight/2, missileCylWidth/2, missileCylWidth/3, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = '#AA4400';
+                        ctx.fill();
+                        ctx.stroke();
+                        
+                        // Side fins
+                        ctx.fillStyle = '#995500';
+                        ctx.beginPath();
+                        ctx.moveTo(-missileCylWidth/2, 0);
+                        ctx.lineTo(-missileCylWidth/2 - 6, missileCylHeight/3);
+                        ctx.lineTo(-missileCylWidth/2, missileCylHeight/2 - 4);
                         ctx.closePath();
                         ctx.fill();
                         ctx.strokeStyle = '#000000';
@@ -4711,52 +4785,64 @@
                         ctx.stroke();
                         
                         ctx.beginPath();
-                        ctx.moveTo(bullet.width/4, 0);
-                        ctx.lineTo(bullet.width/2.5, bullet.width/4);
-                        ctx.lineTo(bullet.width/4, bullet.width/3);
+                        ctx.moveTo(missileCylWidth/2, 0);
+                        ctx.lineTo(missileCylWidth/2 + 6, missileCylHeight/3);
+                        ctx.lineTo(missileCylWidth/2, missileCylHeight/2 - 4);
                         ctx.closePath();
                         ctx.fill();
                         ctx.stroke();
                         
-                        // Nose highlight
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-                        ctx.beginPath();
-                        ctx.moveTo(0, -bullet.width/2);
-                        ctx.lineTo(3, -bullet.width/3);
-                        ctx.lineTo(-3, -bullet.width/3);
-                        ctx.closePath();
-                        ctx.fill();
+                        // Black border on body
+                        ctx.strokeStyle = '#000000';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(-missileCylWidth/2, -missileCylHeight/2 + 8, missileCylWidth, missileCylHeight - 8);
+                        
+                        // Shine highlight
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                        ctx.fillRect(-missileCylWidth/2 + 2, -missileCylHeight/2 + 10, 2, missileCylHeight - 20);
                         break;
                         
                     case 'burst':
-                        // Diamond-shaped bullet
-                        const burstGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, bullet.width / 2);
-                        burstGradient.addColorStop(0, '#00DDFF');
-                        burstGradient.addColorStop(0.6, '#0088FF');
-                        burstGradient.addColorStop(1, '#0044AA');
+                        // Short fat cylindrical bullet
+                        const burstCylWidth = bullet.width * 0.7;
+                        const burstCylHeight = bullet.width * 0.9;
+                        
+                        // Cylinder gradient (cyan-blue)
+                        const burstGradient = ctx.createLinearGradient(-burstCylWidth/2, 0, burstCylWidth/2, 0);
+                        burstGradient.addColorStop(0, '#005588');
+                        burstGradient.addColorStop(0.25, '#0088CC');
+                        burstGradient.addColorStop(0.5, '#00AAFF');
+                        burstGradient.addColorStop(0.75, '#0088CC');
+                        burstGradient.addColorStop(1, '#005588');
                         ctx.fillStyle = burstGradient;
+                        
+                        // Main body
+                        ctx.fillRect(-burstCylWidth/2, -burstCylHeight/2, burstCylWidth, burstCylHeight);
+                        
+                        // Top cap (more rounded)
                         ctx.beginPath();
-                        ctx.moveTo(0, -bullet.width/2);
-                        ctx.lineTo(bullet.width/3, 0);
-                        ctx.lineTo(0, bullet.width/2);
-                        ctx.lineTo(-bullet.width/3, 0);
-                        ctx.closePath();
+                        ctx.ellipse(0, -burstCylHeight/2, burstCylWidth/2, burstCylWidth/3, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = '#00BBFF';
                         ctx.fill();
+                        ctx.strokeStyle = '#000000';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        
+                        // Bottom cap
+                        ctx.beginPath();
+                        ctx.ellipse(0, burstCylHeight/2, burstCylWidth/2, burstCylWidth/3, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = '#004477';
+                        ctx.fill();
+                        ctx.stroke();
                         
                         // Black border
                         ctx.strokeStyle = '#000000';
                         ctx.lineWidth = 3;
-                        ctx.stroke();
+                        ctx.strokeRect(-burstCylWidth/2, -burstCylHeight/2, burstCylWidth, burstCylHeight);
                         
-                        // Diamond highlight
+                        // Ice shine highlight
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                        ctx.beginPath();
-                        ctx.moveTo(0, -bullet.width/3);
-                        ctx.lineTo(bullet.width/6, 0);
-                        ctx.lineTo(0, bullet.width/6);
-                        ctx.lineTo(-bullet.width/6, 0);
-                        ctx.closePath();
-                        ctx.fill();
+                        ctx.fillRect(-burstCylWidth/2 + 3, -burstCylHeight/2 + 3, 3, burstCylHeight - 6);
                         break;
                 }
                 
