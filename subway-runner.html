@@ -671,6 +671,9 @@
         let groundLines = [];
         let powerUps = [];
         let particles = [];
+        
+        // Cached gradients for performance
+        let roadGradientCached = null;
 
         // Power-up states
         let activePowerUp = null;
@@ -3636,12 +3639,14 @@
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Road with depth gradient
-            const roadGradient = ctx.createLinearGradient(50, 0, 350, 0);
-            roadGradient.addColorStop(0, '#3a3a3a');
-            roadGradient.addColorStop(0.5, '#555555');
-            roadGradient.addColorStop(1, '#3a3a3a');
-            ctx.fillStyle = roadGradient;
+            // Road with depth gradient - cached for performance
+            if (!roadGradientCached) {
+                roadGradientCached = ctx.createLinearGradient(50, 0, 350, 0);
+                roadGradientCached.addColorStop(0, '#3a3a3a');
+                roadGradientCached.addColorStop(0.5, '#555555');
+                roadGradientCached.addColorStop(1, '#3a3a3a');
+            }
+            ctx.fillStyle = roadGradientCached;
             ctx.fillRect(50, 0, 300, canvas.height);
             
             // Road edge highlights
@@ -3649,15 +3654,15 @@
             ctx.fillRect(50, 0, 5, canvas.height);
             ctx.fillRect(345, 0, 5, canvas.height);
 
-            // Animated lane lines with glow
+            // Animated lane lines - optimized (reduced shadow blur)
+            ctx.lineWidth = 4;
+            ctx.setLineDash([20, 20]);
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+            ctx.shadowBlur = 3;
+            
             groundLines.forEach(line => {
                 const lineOpacity = 0.7 + Math.sin(time * 2 + line.y * 0.01) * 0.3;
-                
                 ctx.strokeStyle = `rgba(255, 255, 255, ${lineOpacity})`;
-                ctx.lineWidth = 4;
-                ctx.setLineDash([20, 20]);
-                ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
-                ctx.shadowBlur = 5;
                 
                 ctx.beginPath();
                 ctx.moveTo(140, line.y);
@@ -3665,10 +3670,10 @@
                 ctx.moveTo(225, line.y);
                 ctx.lineTo(225, line.y + 40);
                 ctx.stroke();
-                
-                ctx.shadowBlur = 0;
-                ctx.setLineDash([]);
             });
+            
+            ctx.shadowBlur = 0;
+            ctx.setLineDash([]);
 
             // Sidewalks
             ctx.fillStyle = '#999';
@@ -3733,11 +3738,11 @@
                         shine: '#FFFACD'
                     },
                     'boost': {
-                        glow: 'rgba(255, 69, 0, 0.8)',
-                        primary: '#FF4500',
-                        secondary: '#FF6347',
-                        accent: '#FF8C00',
-                        shine: '#FFA07A'
+                        glow: 'rgba(0, 200, 255, 0.9)',
+                        primary: '#00C8FF',
+                        secondary: '#0096CC',
+                        accent: '#40D8FF',
+                        shine: '#E0F8FF'
                     },
                     'fire': {
                         glow: 'rgba(255, 69, 0, 0.9)',
@@ -3764,39 +3769,45 @@
                 
                 const style = powerUpStyles[powerUp.type] || powerUpStyles['invincible'];
                 
-                // Outer glow aura (pulsing)
-                const auraSize = 35 + pulse * 10;
-                const auraGradient = ctx.createRadialGradient(0, 0, 5, 0, 0, auraSize);
-                auraGradient.addColorStop(0, style.glow);
-                auraGradient.addColorStop(0.5, style.glow.replace(/[\d.]+\)$/g, '0.3)'));
-                auraGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.fillStyle = auraGradient;
+                // Multi-layer constant glow (ALWAYS VISIBLE)
+                const glowIntensity = 0.9 + pulse * 0.1;
+                
+                // Outer glow layer
+                const outerGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, 35);
+                outerGlow.addColorStop(0, style.glow);
+                outerGlow.addColorStop(0.6, style.glow.replace(/[\d.]+\)$/g, `${glowIntensity * 0.5})`));
+                outerGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = outerGlow;
                 ctx.beginPath();
-                ctx.arc(0, 0, auraSize, 0, Math.PI * 2);
+                ctx.arc(0, 0, 35, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Rotating energy ring - optimized
-                ctx.save();
-                ctx.rotate(rotation);
-                ctx.fillStyle = style.accent;
-                ctx.shadowColor = style.glow;
-                ctx.shadowBlur = 8;
-                for (let i = 0; i < 4; i++) {
-                    const angle = (i / 4) * Math.PI * 2;
-                    const r = 28;
-                    ctx.beginPath();
-                    ctx.arc(Math.cos(angle) * r, Math.sin(angle) * r, 2.5, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                ctx.shadowBlur = 0;
-                ctx.restore();
+                // Mid glow layer
+                const midGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, 25);
+                midGlow.addColorStop(0, style.glow);
+                midGlow.addColorStop(0.7, style.glow.replace(/[\d.]+\)$/g, `${glowIntensity * 0.7})`));
+                midGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = midGlow;
+                ctx.beginPath();
+                ctx.arc(0, 0, 25, 0, Math.PI * 2);
+                ctx.fill();
                 
-                // 3D cube/sphere container - optimized shadows
-                ctx.shadowBlur = 12;
-                ctx.shadowColor = style.glow;
+                // Inner glow (bright core)
+                const innerGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, 18);
+                innerGlow.addColorStop(0, style.shine);
+                innerGlow.addColorStop(0.4, style.primary);
+                innerGlow.addColorStop(1, style.secondary);
+                ctx.fillStyle = innerGlow;
+                ctx.beginPath();
+                ctx.arc(0, 0, 18, 0, Math.PI * 2);
+                ctx.fill();
                 
-                // Main body (3D effect with gradient)
-                const bodyGradient = ctx.createRadialGradient(-8, -8, 5, 0, 0, 25);
+                // ALWAYS apply shadow glow
+                ctx.shadowColor = style.glow;
+                ctx.shadowBlur = 18;
+                
+                // Main body gradient for icon shape
+                const bodyGradient = ctx.createRadialGradient(-8, -8, 5, 0, 0, 22);
                 bodyGradient.addColorStop(0, style.shine);
                 bodyGradient.addColorStop(0.3, style.accent);
                 bodyGradient.addColorStop(0.7, style.primary);
@@ -3896,18 +3907,18 @@
                     ctx.fillText('⭐', 0, 0);
                     
                 } else if (powerUp.type === 'boost') {
-                    // Rocket shape
+                    // Rocket shape (cyan/blue - speed themed)
                     // Body
                     ctx.beginPath();
                     ctx.moveTo(0, -18);
                     ctx.lineTo(8, 0);
-                    ctx.lineTo(5, 15);
-                    ctx.lineTo(-5, 15);
+                    ctx.lineTo(6, 15);
+                    ctx.lineTo(-6, 15);
                     ctx.lineTo(-8, 0);
                     ctx.closePath();
                     ctx.fill();
                     
-                    // Nose cone
+                    // Nose cone (bright white/cyan)
                     ctx.fillStyle = style.shine;
                     ctx.beginPath();
                     ctx.moveTo(0, -18);
@@ -3916,16 +3927,37 @@
                     ctx.closePath();
                     ctx.fill();
                     
-                    // Flame effect
-                    const flameGradient = ctx.createLinearGradient(0, 15, 0, 25);
-                    flameGradient.addColorStop(0, '#FFD700');
-                    flameGradient.addColorStop(0.5, '#FF4500');
-                    flameGradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
-                    ctx.fillStyle = flameGradient;
+                    // Side fins
+                    ctx.fillStyle = style.secondary;
                     ctx.beginPath();
-                    ctx.moveTo(-5, 15);
-                    ctx.lineTo(0, 25 + Math.sin(time * 10) * 3);
-                    ctx.lineTo(5, 15);
+                    ctx.moveTo(-8, 0);
+                    ctx.lineTo(-12, 8);
+                    ctx.lineTo(-8, 10);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(8, 0);
+                    ctx.lineTo(12, 8);
+                    ctx.lineTo(8, 10);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Blue flame exhaust (different from fire)
+                    const blueFlameGradient = ctx.createLinearGradient(0, 15, 0, 26);
+                    blueFlameGradient.addColorStop(0, '#00FFFF');
+                    blueFlameGradient.addColorStop(0.5, '#0080FF');
+                    blueFlameGradient.addColorStop(1, 'rgba(0, 128, 255, 0)');
+                    ctx.fillStyle = blueFlameGradient;
+                    ctx.beginPath();
+                    ctx.moveTo(-6, 15);
+                    ctx.lineTo(-3, 26 + Math.sin(time * 10) * 3);
+                    ctx.lineTo(0, 15);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(0, 15);
+                    ctx.lineTo(3, 26 + Math.sin(time * 10 + 1) * 3);
+                    ctx.lineTo(6, 15);
                     ctx.closePath();
                     ctx.fill();
                     
@@ -4015,13 +4047,6 @@
                 // Reset canvas state before restore
                 ctx.shadowBlur = 0;
                 ctx.globalAlpha = 1;
-                
-                // Outer ring highlight
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(0, 0, 22, 0, Math.PI * 2);
-                ctx.stroke();
                 
                 ctx.restore();
             });
@@ -4186,28 +4211,28 @@
             bodyGradient.addColorStop(1, phaseColors.primary);
             ctx.fillStyle = bodyGradient;
             
-            // Main body armor (3 layered plates)
-            for (let i = 0; i < 3; i++) {
-                const plateY = drawY + 105 + i * 18;
-                const plateWidth = 95 - i * 15;
-                const plateX = drawX + 27 + i * 7.5;
+            // Main body armor (2 layered plates - optimized)
+            for (let i = 0; i < 2; i++) {
+                const plateY = drawY + 105 + i * 20;
+                const plateWidth = 90 - i * 15;
+                const plateX = drawX + 30 + i * 7.5;
                 
                 // Plate shadow
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-                ctx.fillRect(plateX + 2, plateY + 2, plateWidth, 14);
+                ctx.fillRect(plateX + 2, plateY + 2, plateWidth, 16);
                 
                 // Plate gradient
-                const plateGradient = ctx.createLinearGradient(plateX, plateY, plateX, plateY + 14);
+                const plateGradient = ctx.createLinearGradient(plateX, plateY, plateX, plateY + 16);
                 plateGradient.addColorStop(0, phaseColors.secondary);
                 plateGradient.addColorStop(0.5, phaseColors.primary);
                 plateGradient.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
                 ctx.fillStyle = plateGradient;
-                ctx.fillRect(plateX, plateY, plateWidth, 14);
+                ctx.fillRect(plateX, plateY, plateWidth, 16);
                 
                 // Plate edges
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
                 ctx.lineWidth = 2;
-                ctx.strokeRect(plateX, plateY, plateWidth, 14);
+                ctx.strokeRect(plateX, plateY, plateWidth, 16);
                 
                 // Plate highlight
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
@@ -4223,7 +4248,7 @@
                     for (let j = 0; j < 3; j++) {
                         const rivetX = plateX + (j + 1) * (plateWidth / 4);
                         ctx.beginPath();
-                        ctx.arc(rivetX, plateY + 7, 2, 0, Math.PI * 2);
+                        ctx.arc(rivetX, plateY + 8, 2, 0, Math.PI * 2);
                         ctx.fill();
                     }
                 }
@@ -4287,13 +4312,13 @@
             ctx.lineWidth = 3;
             ctx.stroke();
             
-            // Skull texture lines
+            // Skull texture lines - reduced for performance
             ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.lineWidth = 2;
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < 2; i++) {
                 ctx.beginPath();
-                ctx.moveTo(drawX + 40 + i * 15, drawY + 30);
-                ctx.lineTo(drawX + 45 + i * 15, drawY + 90);
+                ctx.moveTo(drawX + 45 + i * 20, drawY + 30);
+                ctx.lineTo(drawX + 50 + i * 20, drawY + 90);
                 ctx.stroke();
             }
             
