@@ -3142,8 +3142,6 @@
                     const time = Date.now() / 200;
                     const arrowColor = '#FFFF00';
                     ctx.fillStyle = arrowColor;
-                    ctx.shadowColor = arrowColor;
-                    ctx.shadowBlur = 15;
                     ctx.font = 'bold 22px Arial';
                     ctx.textAlign = 'center';
                     
@@ -3207,6 +3205,11 @@
                     ctx.lineWidth = 3;
                     ctx.strokeRect(obs.x + 3, obs.y + 3, obs.width - 6, obs.height - 6);
                     
+                    // Red border
+                    ctx.strokeStyle = '#FF0000';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+                    
                 } else if (obs.type === 'barrier') {
                     // Modern barrier with stripes
                     const barrierBase = obs.isMoving ? '#E53935' : '#C62828';
@@ -3244,13 +3247,10 @@
                         ctx.fill();
                     }
                     
-                    // Warning glow
-                    ctx.shadowColor = barrierBase;
-                    ctx.shadowBlur = 10;
-                    ctx.strokeStyle = barrierBase;
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(obs.x + 8, obs.y + 15, 34, obs.height - 30);
-                    ctx.shadowBlur = 0;
+                    // Red border
+                    ctx.strokeStyle = '#FF0000';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
                     
                 } else if (obs.type === 'cone') {
                     // Traffic cone with 3D depth
@@ -3282,11 +3282,18 @@
                     
                     // Reflective stripes
                     ctx.fillStyle = '#FFF';
-                    ctx.shadowColor = '#FFF';
-                    ctx.shadowBlur = 5;
                     ctx.fillRect(obs.x + 12, obs.y + 18, 26, 6);
                     ctx.fillRect(obs.x + 8, obs.y + 35, 34, 6);
-                    ctx.shadowBlur = 0;
+                    
+                    // Red border around cone
+                    ctx.strokeStyle = '#FF0000';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + 25, obs.y + 5);
+                    ctx.lineTo(obs.x + 5, obs.y + obs.height - 5);
+                    ctx.lineTo(obs.x + 45, obs.y + obs.height - 5);
+                    ctx.closePath();
+                    ctx.stroke();
                     
                     // Highlight
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
@@ -3298,10 +3305,8 @@
                     ctx.fill();
                     
                 } else if (obs.type === 'spike') {
-                    // Deadly spikes with glow
+                    // Deadly spikes
                     ctx.fillStyle = '#8B00FF';
-                    ctx.shadowColor = '#8B00FF';
-                    ctx.shadowBlur = 20;
                     
                     // Draw sharp spikes
                     for (let i = 0; i < 3; i++) {
@@ -3323,6 +3328,11 @@
                         ctx.closePath();
                         ctx.fill();
                         
+                        // Red border on spike
+                        ctx.strokeStyle = '#FF0000';
+                        ctx.lineWidth = 3;
+                        ctx.stroke();
+                        
                         // Highlight
                         ctx.fillStyle = 'rgba(200, 100, 255, 0.5)';
                         ctx.beginPath();
@@ -3337,32 +3347,16 @@
                     if (frameCount % 20 < 3) {
                         ctx.strokeStyle = '#FFF';
                         ctx.lineWidth = 2;
-                        ctx.shadowColor = '#FFF';
-                        ctx.shadowBlur = 10;
                         ctx.beginPath();
                         ctx.moveTo(obs.x, obs.y + 20);
                         ctx.lineTo(obs.x + 50, obs.y + 10);
                         ctx.stroke();
                     }
-                    ctx.shadowBlur = 0;
                     
                 } else if (obs.type === 'bouncer') {
                     // Bouncing energy ball
                     const bounceOffset = Math.sin(Date.now() / 200 + obs.y * 0.1) * 8;
                     const ballY = obs.y + 30 + bounceOffset;
-                    
-                    // Glow aura
-                    const glowGradient = ctx.createRadialGradient(
-                        obs.x + 25, ballY, 5,
-                        obs.x + 25, ballY, 40
-                    );
-                    glowGradient.addColorStop(0, 'rgba(0, 255, 0, 0.8)');
-                    glowGradient.addColorStop(0.5, 'rgba(0, 255, 0, 0.3)');
-                    glowGradient.addColorStop(1, 'rgba(0, 255, 0, 0)');
-                    ctx.fillStyle = glowGradient;
-                    ctx.beginPath();
-                    ctx.arc(obs.x + 25, ballY, 40, 0, Math.PI * 2);
-                    ctx.fill();
                     
                     // Main ball
                     const ballGradient = ctx.createRadialGradient(
@@ -3376,6 +3370,11 @@
                     ctx.beginPath();
                     ctx.arc(obs.x + 25, ballY, 25, 0, Math.PI * 2);
                     ctx.fill();
+                    
+                    // Red border
+                    ctx.strokeStyle = '#FF0000';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
                     
                     // Warning symbol
                     ctx.fillStyle = '#000';
@@ -3391,11 +3390,7 @@
                     
                 } else if (obs.type === 'zigzag') {
                     // Electric zigzag with animation
-                    const pulse = Math.sin(Date.now() / 150) * 3;
-                    
                     ctx.fillStyle = '#00BFFF';
-                    ctx.shadowColor = '#00BFFF';
-                    ctx.shadowBlur = 20 + pulse;
                     
                     // Zigzag body
                     ctx.beginPath();
@@ -3410,6 +3405,11 @@
                     ctx.closePath();
                     ctx.fill();
                     
+                    // Red border
+                    ctx.strokeStyle = '#FF0000';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
                     // Electric core
                     ctx.fillStyle = '#FFF';
                     ctx.beginPath();
@@ -3420,14 +3420,9 @@
                     ctx.closePath();
                     ctx.fill();
                     
-                    ctx.shadowBlur = 0;
-                    
                 } else if (obs.type === 'chaser') {
                     // Aggressive red enemy
                     const shake = Math.sin(Date.now() / 100) * 1.5;
-                    
-                    ctx.shadowColor = '#FF1744';
-                    ctx.shadowBlur = 25;
                     
                     // Body
                     const chaserGradient = ctx.createLinearGradient(obs.x, obs.y, obs.x, obs.y + obs.height);
@@ -3435,6 +3430,11 @@
                     chaserGradient.addColorStop(1, '#C62828');
                     ctx.fillStyle = chaserGradient;
                     ctx.fillRect(obs.x + shake, obs.y, obs.width, obs.height);
+                    
+                    // Red border
+                    ctx.strokeStyle = '#FF0000';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(obs.x + shake, obs.y, obs.width, obs.height);
                     
                     // Angry eyes
                     ctx.fillStyle = '#FFF';
@@ -3465,15 +3465,9 @@
                         ctx.stroke();
                     }
                     
-                    ctx.shadowBlur = 0;
-                    
                 } else if (obs.type === 'splitter') {
                     // Splitter obstacle
                     const splitColor = obs.hasSplit ? '#666' : '#FFD700';
-                    const glowColor = obs.hasSplit ? '#444' : '#FFA000';
-                    
-                    ctx.shadowColor = glowColor;
-                    ctx.shadowBlur = obs.hasSplit ? 5 : 20;
                     
                     // Main body
                     const splitGradient = ctx.createRadialGradient(
@@ -3484,6 +3478,11 @@
                     splitGradient.addColorStop(1, splitColor);
                     ctx.fillStyle = splitGradient;
                     ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    
+                    // Red border
+                    ctx.strokeStyle = '#FF0000';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
                     
                     if (!obs.hasSplit) {
                         // Split line
@@ -3508,26 +3507,10 @@
                         }
                     }
                     
-                    ctx.shadowBlur = 0;
-                    
                 } else if (obs.type === 'teleporter') {
                     // Portal effect
                     const pulse = Math.sin(Date.now() / 150);
                     const portalRadius = 25 + pulse * 5;
-                    
-                    // Outer glow rings
-                    for (let i = 0; i < 3; i++) {
-                        const ringRadius = portalRadius + (i * 8) + pulse * 2;
-                        const ringAlpha = 0.3 - (i * 0.1);
-                        
-                        ctx.strokeStyle = `rgba(255, 0, 255, ${ringAlpha})`;
-                        ctx.lineWidth = 3;
-                        ctx.shadowColor = '#FF00FF';
-                        ctx.shadowBlur = 20;
-                        ctx.beginPath();
-                        ctx.arc(obs.x + 25, obs.y + 30, ringRadius, 0, Math.PI * 2);
-                        ctx.stroke();
-                    }
                     
                     // Portal body
                     const portalGradient = ctx.createRadialGradient(
@@ -3543,10 +3526,14 @@
                     ctx.arc(obs.x + 25, obs.y + 30, portalRadius, 0, Math.PI * 2);
                     ctx.fill();
                     
+                    // Red border
+                    ctx.strokeStyle = '#FF0000';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
                     // Teleport symbol
                     ctx.strokeStyle = '#FFF';
                     ctx.lineWidth = 3;
-                    ctx.shadowBlur = 10;
                     ctx.beginPath();
                     ctx.arc(obs.x + 25, obs.y + 30, 12, 0, Math.PI * 2);
                     ctx.stroke();
@@ -3567,8 +3554,6 @@
                         ctx.arc(px, py, 2, 0, Math.PI * 2);
                         ctx.fill();
                     }
-                    
-                    ctx.shadowBlur = 0;
                 }
 
                 ctx.restore();
@@ -3738,11 +3723,11 @@
                         shine: '#FFFACD'
                     },
                     'boost': {
-                        glow: 'rgba(0, 200, 255, 0.9)',
-                        primary: '#00C8FF',
-                        secondary: '#0096CC',
-                        accent: '#40D8FF',
-                        shine: '#E0F8FF'
+                        glow: 'rgba(255, 69, 0, 0.9)',
+                        primary: '#FF4500',
+                        secondary: '#FF8C00',
+                        accent: '#FFA500',
+                        shine: '#FFD700'
                     },
                     'fire': {
                         glow: 'rgba(255, 69, 0, 0.9)',
@@ -3759,11 +3744,11 @@
                         shine: '#F0FFFF'
                     },
                     'bomb': {
-                        glow: 'rgba(220, 20, 60, 0.9)',
-                        primary: '#DC143C',
-                        secondary: '#B22222',
-                        accent: '#FF4500',
-                        shine: '#FFA07A'
+                        glow: 'rgba(50, 50, 50, 0.9)',
+                        primary: '#000000',
+                        secondary: '#333333',
+                        accent: '#555555',
+                        shine: '#888888'
                     }
                 };
                 
@@ -3907,8 +3892,14 @@
                     ctx.fillText('⭐', 0, 0);
                     
                 } else if (powerUp.type === 'boost') {
-                    // Rocket shape (cyan/blue - speed themed)
-                    // Body
+                    // Rocket shape (orange/red - speed themed)
+                    // Body gradient (orange to red)
+                    const boostBodyGradient = ctx.createLinearGradient(-8, -18, 8, 18);
+                    boostBodyGradient.addColorStop(0, '#FF8C00');  // Orange top
+                    boostBodyGradient.addColorStop(0.5, '#FF4500'); // Red-orange middle
+                    boostBodyGradient.addColorStop(1, '#DC143C');   // Crimson bottom
+                    ctx.fillStyle = boostBodyGradient;
+                    
                     ctx.beginPath();
                     ctx.moveTo(0, -18);
                     ctx.lineTo(8, 0);
@@ -3918,8 +3909,11 @@
                     ctx.closePath();
                     ctx.fill();
                     
-                    // Nose cone (bright white/cyan)
-                    ctx.fillStyle = style.shine;
+                    // Nose cone (bright orange/yellow)
+                    const noseGradient = ctx.createLinearGradient(0, -18, 0, -8);
+                    noseGradient.addColorStop(0, '#FFD700');  // Gold
+                    noseGradient.addColorStop(1, '#FFA500');  // Orange
+                    ctx.fillStyle = noseGradient;
                     ctx.beginPath();
                     ctx.moveTo(0, -18);
                     ctx.lineTo(6, -8);
@@ -3927,8 +3921,8 @@
                     ctx.closePath();
                     ctx.fill();
                     
-                    // Side fins
-                    ctx.fillStyle = style.secondary;
+                    // Side fins (darker red)
+                    ctx.fillStyle = '#B22222';
                     ctx.beginPath();
                     ctx.moveTo(-8, 0);
                     ctx.lineTo(-12, 8);
@@ -3942,12 +3936,12 @@
                     ctx.closePath();
                     ctx.fill();
                     
-                    // Blue flame exhaust (different from fire)
-                    const blueFlameGradient = ctx.createLinearGradient(0, 15, 0, 26);
-                    blueFlameGradient.addColorStop(0, '#00FFFF');
-                    blueFlameGradient.addColorStop(0.5, '#0080FF');
-                    blueFlameGradient.addColorStop(1, 'rgba(0, 128, 255, 0)');
-                    ctx.fillStyle = blueFlameGradient;
+                    // Orange-red flame exhaust (different from fire power-up)
+                    const boostFlameGradient = ctx.createLinearGradient(0, 15, 0, 26);
+                    boostFlameGradient.addColorStop(0, '#FFD700');    // Gold
+                    boostFlameGradient.addColorStop(0.4, '#FF8C00');  // Orange
+                    boostFlameGradient.addColorStop(1, 'rgba(255, 69, 0, 0)'); // Fade to transparent
+                    ctx.fillStyle = boostFlameGradient;
                     ctx.beginPath();
                     ctx.moveTo(-6, 15);
                     ctx.lineTo(-3, 26 + Math.sin(time * 10) * 3);
