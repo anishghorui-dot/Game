@@ -542,7 +542,8 @@
             <button id="startBtn">▶ START GAME</button>
             
             <div class="controls">
-                <div>⬅️ ➡️ Switch Lanes | 💥 Attack with power-ups</div>
+                <div>⬅️ ➡️ (or 4/6 keys) Switch Lanes | 💥 Space/5 Attack</div>
+                <div>🎮 Keypad: 2/4 Left, 6/8 Right, 5/0 Attack</div>
                 <div>🚀 Boosts auto-activate | 🔥⚡💣 Attack obstacles!</div>
             </div>
             
@@ -668,6 +669,7 @@
             
             if (!gameRunning) return;
             
+            // Arrow keys (Desktop)
             if (e.key === 'ArrowLeft' && player.lane > 0) {
                 player.lane--;
                 playSound('swipe');
@@ -676,6 +678,25 @@
                 player.lane++;
                 playSound('swipe');
             }
+            
+            // Keypad phone support - Number keys
+            // 4 or 2 = Move Left
+            if ((e.key === '4' || e.key === '2') && player.lane > 0) {
+                player.lane--;
+                playSound('swipe');
+            }
+            // 6 or 8 = Move Right
+            if ((e.key === '6' || e.key === '8') && player.lane < 2) {
+                player.lane++;
+                playSound('swipe');
+            }
+            // 5 or 0 = Attack
+            if ((e.key === '5' || e.key === '0') && attackPowerUp && attackCooldown === 0) {
+                e.preventDefault();
+                useAttackPowerUp();
+            }
+            
+            // Spacebar (Desktop)
             if (e.key === ' ' && attackPowerUp && attackCooldown === 0) {
                 e.preventDefault();
                 useAttackPowerUp();
@@ -4134,6 +4155,21 @@
         // Event listeners
         document.getElementById('startBtn').addEventListener('click', startGame);
         document.getElementById('restartBtn').addEventListener('click', restartGame);
+        
+        // Keypad phone support for menus
+        document.addEventListener('keydown', (e) => {
+            // Press 5 or Enter to start/restart game from menu
+            if (!gameRunning && (e.key === '5' || e.key === 'Enter')) {
+                const startScreen = document.getElementById('startScreen');
+                const gameOverScreen = document.getElementById('gameOverScreen');
+                
+                if (!startScreen.classList.contains('hidden')) {
+                    startGame();
+                } else if (!gameOverScreen.classList.contains('hidden')) {
+                    restartGame();
+                }
+            }
+        });
 
         // Initial draw
         drawBackground();
