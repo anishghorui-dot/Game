@@ -3685,12 +3685,17 @@
         }
 
         function drawPowerUps() {
+            const time = Date.now() / 1000;
+            
             powerUps.forEach(powerUp => {
                 ctx.save();
                 
+                // Reset all canvas state to prevent fading
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+                
                 const centerX = powerUp.x + 20;
                 const centerY = powerUp.y + 20;
-                const time = Date.now() / 1000;
                 const float = Math.sin(time * 3 + powerUp.x * 0.1) * 3;
                 const rotation = time + powerUp.x * 0.01;
                 const pulse = Math.sin(time * 4) * 0.15;
@@ -3770,24 +3775,24 @@
                 ctx.arc(0, 0, auraSize, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Rotating energy ring
+                // Rotating energy ring - optimized
                 ctx.save();
                 ctx.rotate(rotation);
-                ctx.strokeStyle = style.accent;
-                ctx.lineWidth = 2;
+                ctx.fillStyle = style.accent;
                 ctx.shadowColor = style.glow;
-                ctx.shadowBlur = 10;
-                for (let i = 0; i < 6; i++) {
-                    const angle = (i / 6) * Math.PI * 2;
+                ctx.shadowBlur = 8;
+                for (let i = 0; i < 4; i++) {
+                    const angle = (i / 4) * Math.PI * 2;
                     const r = 28;
                     ctx.beginPath();
-                    ctx.arc(Math.cos(angle) * r, Math.sin(angle) * r, 3, 0, Math.PI * 2);
-                    ctx.stroke();
+                    ctx.arc(Math.cos(angle) * r, Math.sin(angle) * r, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
                 }
+                ctx.shadowBlur = 0;
                 ctx.restore();
                 
-                // 3D cube/sphere container
-                ctx.shadowBlur = 20;
+                // 3D cube/sphere container - optimized shadows
+                ctx.shadowBlur = 12;
                 ctx.shadowColor = style.glow;
                 
                 // Main body (3D effect with gradient)
@@ -4007,7 +4012,9 @@
                     ctx.fill();
                 }
                 
+                // Reset canvas state before restore
                 ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
                 
                 // Outer ring highlight
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
@@ -4096,66 +4103,48 @@
                 energy: bossPhase === 1 ? '#FFA500' : '#DA70D6'
             };
             
-            // Electric crackling aura (phase 2)
+            // Electric crackling aura (phase 2) - optimized
             if (bossPhase === 2) {
-                for (let i = 0; i < 8; i++) {
-                    const angle = boss.electricCharge + i * (Math.PI / 4);
+                ctx.shadowColor = '#8B00FF';
+                ctx.shadowBlur = 15;
+                ctx.strokeStyle = 'rgba(138, 0, 255, 0.8)';
+                ctx.lineWidth = 3;
+                
+                for (let i = 0; i < 6; i++) {
+                    const angle = boss.electricCharge + i * (Math.PI / 3);
                     const distance = 75 + Math.sin(boss.electricCharge * 3 + i) * 15;
                     const x = drawX + boss.width / 2 + Math.cos(angle) * distance;
                     const y = drawY + boss.height / 2 + Math.sin(angle) * distance;
                     
-                    // Lightning bolt with glow
-                    ctx.shadowColor = '#8B00FF';
-                    ctx.shadowBlur = 15;
-                    ctx.strokeStyle = `rgba(138, 0, 255, ${0.6 + Math.sin(boss.electricCharge * 5 + i) * 0.4})`;
-                    ctx.lineWidth = 3;
+                    // Lightning bolt - simplified
+                    ctx.globalAlpha = 0.6 + Math.sin(boss.electricCharge * 5 + i) * 0.3;
                     ctx.beginPath();
                     ctx.moveTo(drawX + boss.width / 2, drawY + boss.height / 2);
-                    
-                    // Jagged lightning path
-                    const midX = (drawX + boss.width / 2 + x) / 2 + Math.sin(time * 10 + i) * 10;
-                    const midY = (drawY + boss.height / 2 + y) / 2 + Math.cos(time * 10 + i) * 10;
-                    ctx.lineTo(midX, midY);
                     ctx.lineTo(x, y);
                     ctx.stroke();
                     
-                    // Lightning bolt ends with glow
+                    // Lightning bolt ends
                     ctx.fillStyle = '#FFFFFF';
                     ctx.beginPath();
                     ctx.arc(x, y, 4, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.fillStyle = '#8B00FF';
-                    ctx.beginPath();
-                    ctx.arc(x, y, 6, 0, Math.PI * 2);
-                    ctx.globalAlpha = 0.5;
-                    ctx.fill();
-                    ctx.globalAlpha = 1;
                 }
+                ctx.globalAlpha = 1;
                 ctx.shadowBlur = 0;
             }
             
-            // Rotating energy rings with 3D depth
-            for (let i = 0; i < 4; i++) {
+            // Rotating energy rings with 3D depth - optimized
+            ctx.shadowColor = phaseColors.glow;
+            ctx.shadowBlur = 10;
+            for (let i = 0; i < 3; i++) {
                 const ringRadius = 85 + i * 20 + Math.sin(boss.auraRotation + i) * 10;
                 const ringAlpha = 0.6 - i * 0.12;
                 const ringWidth = 4 - i * 0.5;
                 
-                // Ring glow
-                ctx.shadowColor = phaseColors.glow;
-                ctx.shadowBlur = 12;
                 ctx.strokeStyle = `rgba(${bossPhase === 1 ? '255, 69, 0' : '138, 0, 255'}, ${ringAlpha})`;
                 ctx.lineWidth = ringWidth;
                 ctx.beginPath();
                 ctx.arc(drawX + boss.width / 2, drawY + boss.height / 2, ringRadius, 0, Math.PI * 2);
-                ctx.stroke();
-                
-                // Ring highlights (partial arcs)
-                ctx.strokeStyle = `rgba(255, 255, 255, ${ringAlpha * 0.5})`;
-                ctx.lineWidth = ringWidth * 0.5;
-                ctx.beginPath();
-                ctx.arc(drawX + boss.width / 2, drawY + boss.height / 2, ringRadius, 
-                    -Math.PI / 4 + boss.auraRotation * (i + 1), 
-                    Math.PI / 4 + boss.auraRotation * (i + 1));
                 ctx.stroke();
             }
             ctx.shadowBlur = 0;
@@ -4264,14 +4253,14 @@
             ctx.stroke();
             ctx.shadowBlur = 0;
             
-            // Core energy particles
-            for (let i = 0; i < 6; i++) {
-                const particleAngle = time * 2 + i * (Math.PI / 3);
+            // Core energy particles - optimized
+            ctx.fillStyle = phaseColors.energy;
+            for (let i = 0; i < 4; i++) {
+                const particleAngle = time * 2 + i * (Math.PI / 2);
                 const particleDist = 25 + Math.sin(time * 3 + i) * 5;
                 const px = drawX + boss.width / 2 + Math.cos(particleAngle) * particleDist;
                 const py = drawY + 120 + Math.sin(particleAngle) * particleDist;
                 
-                ctx.fillStyle = phaseColors.energy;
                 ctx.beginPath();
                 ctx.arc(px, py, 2, 0, Math.PI * 2);
                 ctx.fill();
@@ -4381,10 +4370,10 @@
                 ctx.ellipse(drawX + 100, drawY + 58, 18, 20, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // Left eye glow with layers
-                for (let i = 3; i > 0; i--) {
-                    const glowRadius = 25 * i / 3;
-                    const glowAlpha = eyeGlowIntensity * (1 - i / 4);
+                // Left eye glow - optimized (2 layers instead of 3)
+                for (let i = 2; i > 0; i--) {
+                    const glowRadius = 25 * i / 2;
+                    const glowAlpha = eyeGlowIntensity * (1 - i / 3);
                     const leftEyeGlow = ctx.createRadialGradient(
                         drawX + 50, drawY + 58, 0,
                         drawX + 50, drawY + 58, glowRadius
@@ -4395,10 +4384,10 @@
                     ctx.fillRect(drawX + 25, drawY + 33, 50, 50);
                 }
                 
-                // Right eye glow with layers
-                for (let i = 3; i > 0; i--) {
-                    const glowRadius = 25 * i / 3;
-                    const glowAlpha = eyeGlowIntensity * (1 - i / 4);
+                // Right eye glow - optimized (2 layers instead of 3)
+                for (let i = 2; i > 0; i--) {
+                    const glowRadius = 25 * i / 2;
+                    const glowAlpha = eyeGlowIntensity * (1 - i / 3);
                     const rightEyeGlow = ctx.createRadialGradient(
                         drawX + 100, drawY + 58, 0,
                         drawX + 100, drawY + 58, glowRadius
