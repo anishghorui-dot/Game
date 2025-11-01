@@ -2918,142 +2918,210 @@
                 }
             }
 
-            // ==== UPGRADED 3D STYLE CAR ====
+            // ==== SLEEK SPORTS CAR DESIGN ====
             const time = Date.now() / 1000;
-            const bounce = Math.sin(time * 8) * 1.5; // Subtle bounce animation
-            const tilt = Math.sin(time * 6) * 0.02; // Subtle tilt for motion feel
+            const bounce = Math.sin(time * 8) * 1; // Subtle bounce animation
+            const tilt = Math.sin(time * 6) * 0.015; // Subtle tilt for motion feel
             
             ctx.save();
-            ctx.translate(player.x + player.width/2, player.y + player.height/2);
+            ctx.translate(player.x + player.width/2, player.y + player.height/2 + bounce);
             ctx.rotate(tilt);
-            ctx.translate(-(player.x + player.width/2), -(player.y + player.height/2));
+            ctx.translate(-(player.x + player.width/2), -(player.y + player.height/2 + bounce));
             
             // Dynamic body colors
-            let bodyColor1 = '#4CAF50';
-            let bodyColor2 = '#2E7D32';
-            let accentColor = '#66BB6A';
-            let glowColor = 'rgba(76, 175, 80, 0.3)';
+            let bodyColor1 = '#2E7D32';
+            let bodyColor2 = '#1B5E20';
+            let accentColor = '#4CAF50';
+            let glowColor = 'rgba(76, 175, 80, 0.4)';
+            let windowTint = 'rgba(50, 150, 200, 0.7)';
             
             if (isInvincible) {
                 bodyColor1 = '#FFD700';
                 bodyColor2 = '#FF8C00';
                 accentColor = '#FFA500';
-                glowColor = 'rgba(255, 215, 0, 0.5)';
+                glowColor = 'rgba(255, 215, 0, 0.6)';
+                windowTint = 'rgba(255, 200, 100, 0.6)';
             } else if (speedBoostActive) {
                 bodyColor1 = '#FF1744';
-                bodyColor2 = '#D50000';
+                bodyColor2 = '#C62828';
                 accentColor = '#FF5252';
-                glowColor = 'rgba(255, 23, 68, 0.4)';
+                glowColor = 'rgba(255, 23, 68, 0.5)';
+                windowTint = 'rgba(255, 100, 100, 0.6)';
             }
+            
+            const carY = player.y;
+            const carX = player.x;
             
             // Speed trail with motion blur
             if (speedBoostActive || isInvincible) {
                 for (let i = 0; i < 5; i++) {
                     const alpha = 0.15 - i * 0.03;
                     const offset = i * 8;
-                    ctx.fillStyle = `rgba(255, ${isInvincible ? 215 : 23}, ${isInvincible ? 0 : 68}, ${alpha})`;
-                    ctx.fillRect(player.x - offset, player.y + bounce, player.width, player.height);
+                    ctx.fillStyle = `rgba(${isInvincible ? '255, 215, 0' : '255, 23, 68'}, ${alpha})`;
+                    ctx.fillRect(carX - offset, carY, player.width, player.height);
                 }
             }
-            
-            // Outer glow/aura
-            ctx.shadowColor = glowColor;
-            ctx.shadowBlur = isInvincible ? 25 : 15;
-            
-            // Car body - main shape with 3D depth
-            const carGradient = ctx.createLinearGradient(player.x, player.y, player.x + player.width, player.y);
-            carGradient.addColorStop(0, bodyColor2);
-            carGradient.addColorStop(0.5, bodyColor1);
-            carGradient.addColorStop(1, bodyColor2);
-            ctx.fillStyle = carGradient;
-            
-            // Rounded rectangle body
-            ctx.beginPath();
-            ctx.roundRect(player.x, player.y + bounce, player.width, player.height, 8);
-            ctx.fill();
-            
-            // Top highlight for 3D effect
-            const highlightGradient = ctx.createLinearGradient(player.x, player.y + bounce, player.x, player.y + bounce + 20);
-            highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
-            highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            ctx.fillStyle = highlightGradient;
-            ctx.fillRect(player.x + 3, player.y + bounce + 3, player.width - 6, 15);
-            
-            ctx.shadowBlur = 0;
-            
-            // Windshield - sleek modern look
-            const windshieldGradient = ctx.createLinearGradient(player.x + 8, player.y + bounce + 5, player.x + 8, player.y + bounce + 25);
-            windshieldGradient.addColorStop(0, 'rgba(100, 180, 255, 0.6)');
-            windshieldGradient.addColorStop(0.5, 'rgba(150, 210, 255, 0.8)');
-            windshieldGradient.addColorStop(1, 'rgba(50, 120, 200, 0.4)');
-            ctx.fillStyle = windshieldGradient;
-            ctx.beginPath();
-            ctx.roundRect(player.x + 8, player.y + bounce + 5, player.width - 16, 20, 5);
-            ctx.fill();
-            
-            // Windshield reflection
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.beginPath();
-            ctx.roundRect(player.x + 10, player.y + bounce + 7, (player.width - 20) * 0.6, 8, 3);
-            ctx.fill();
-            
-            // Headlights - glowing effect
-            const headlightGlow = isInvincible ? '#FFD700' : (speedBoostActive ? '#FF1744' : '#FFEB3B');
-            ctx.fillStyle = headlightGlow;
-            ctx.shadowColor = headlightGlow;
-            ctx.shadowBlur = 10;
-            ctx.beginPath();
-            ctx.arc(player.x + 8, player.y + bounce + player.height - 8, 4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(player.x + player.width - 8, player.y + bounce + player.height - 8, 4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-            
-            // Racing stripe / accent
-            ctx.fillStyle = accentColor;
-            ctx.fillRect(player.x + player.width/2 - 2, player.y + bounce + 5, 4, player.height - 10);
-            
-            // "A" Logo with metallic effect
-            const logoGradient = ctx.createLinearGradient(player.x + 25, player.y + bounce + 35, player.x + 25, player.y + bounce + 50);
-            logoGradient.addColorStop(0, '#FFFFFF');
-            logoGradient.addColorStop(0.5, '#FFD700');
-            logoGradient.addColorStop(1, '#FFA500');
-            ctx.fillStyle = logoGradient;
-            ctx.font = 'bold 22px Arial';
-            ctx.textAlign = 'center';
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-            ctx.lineWidth = 3;
-            ctx.strokeText('A', player.x + 25, player.y + bounce + 48);
-            ctx.fillText('A', player.x + 25, player.y + bounce + 48);
-            
-            // Spoiler at the back
-            ctx.fillStyle = bodyColor2;
-            ctx.fillRect(player.x, player.y + bounce - 3, player.width, 3);
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-            ctx.fillRect(player.x, player.y + bounce - 1, player.width, 1);
             
             // Under-glow effect
             if (isInvincible || speedBoostActive) {
                 const underGlow = ctx.createRadialGradient(
-                    player.x + player.width/2, player.y + bounce + player.height, 5,
-                    player.x + player.width/2, player.y + bounce + player.height, 30
+                    carX + player.width/2, carY + player.height + 2, 5,
+                    carX + player.width/2, carY + player.height + 2, 35
                 );
                 underGlow.addColorStop(0, glowColor);
                 underGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
                 ctx.fillStyle = underGlow;
-                ctx.fillRect(player.x - 10, player.y + bounce + player.height - 5, player.width + 20, 15);
+                ctx.fillRect(carX - 10, carY + player.height - 3, player.width + 20, 15);
             }
             
-            // Outline/border for definition
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-            ctx.lineWidth = 2;
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.ellipse(carX + player.width/2, carY + player.height + 3, player.width * 0.4, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Main car body - sleek aerodynamic shape
+            ctx.shadowColor = glowColor;
+            ctx.shadowBlur = isInvincible ? 20 : 12;
+            
+            // Lower body (wider base)
+            const lowerBodyGradient = ctx.createLinearGradient(carX, carY + 30, carX + player.width, carY + 30);
+            lowerBodyGradient.addColorStop(0, bodyColor2);
+            lowerBodyGradient.addColorStop(0.5, bodyColor1);
+            lowerBodyGradient.addColorStop(1, bodyColor2);
+            ctx.fillStyle = lowerBodyGradient;
             ctx.beginPath();
-            ctx.roundRect(player.x, player.y + bounce, player.width, player.height, 8);
+            ctx.moveTo(carX + 5, carY + 30);
+            ctx.lineTo(carX + player.width - 5, carY + 30);
+            ctx.lineTo(carX + player.width - 2, carY + player.height - 5);
+            ctx.lineTo(carX + 2, carY + player.height - 5);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Upper body (cabin - tapered for sports car look)
+            const upperBodyGradient = ctx.createLinearGradient(carX, carY, carX + player.width, carY);
+            upperBodyGradient.addColorStop(0, bodyColor2);
+            upperBodyGradient.addColorStop(0.3, bodyColor1);
+            upperBodyGradient.addColorStop(0.7, bodyColor1);
+            upperBodyGradient.addColorStop(1, bodyColor2);
+            ctx.fillStyle = upperBodyGradient;
+            ctx.beginPath();
+            ctx.moveTo(carX + 8, carY + 8);
+            ctx.lineTo(carX + player.width - 8, carY + 8);
+            ctx.lineTo(carX + player.width - 5, carY + 32);
+            ctx.lineTo(carX + 5, carY + 32);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            
+            // Hood/bonnet highlight
+            const hoodHighlight = ctx.createLinearGradient(carX, carY + 30, carX, carY + 45);
+            hoodHighlight.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+            hoodHighlight.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = hoodHighlight;
+            ctx.fillRect(carX + 8, carY + 30, player.width - 16, 12);
+            
+            // Windshield - sleek angled
+            const windshieldGradient = ctx.createLinearGradient(carX, carY + 10, carX, carY + 26);
+            windshieldGradient.addColorStop(0, windowTint);
+            windshieldGradient.addColorStop(0.6, 'rgba(80, 180, 230, 0.5)');
+            windshieldGradient.addColorStop(1, 'rgba(30, 100, 150, 0.3)');
+            ctx.fillStyle = windshieldGradient;
+            ctx.beginPath();
+            ctx.moveTo(carX + 10, carY + 10);
+            ctx.lineTo(carX + player.width - 10, carY + 10);
+            ctx.lineTo(carX + player.width - 7, carY + 26);
+            ctx.lineTo(carX + 7, carY + 26);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Windshield reflection
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.fillRect(carX + 12, carY + 12, player.width * 0.4, 6);
+            
+            // Spoiler (racing style)
+            ctx.fillStyle = bodyColor2;
+            ctx.fillRect(carX + 3, carY + 5, player.width - 6, 3);
+            ctx.fillStyle = accentColor;
+            ctx.fillRect(carX + 3, carY + 6, player.width - 6, 1);
+            
+            // Side mirrors
+            ctx.fillStyle = bodyColor2;
+            ctx.fillRect(carX - 2, carY + 18, 3, 6);
+            ctx.fillRect(carX + player.width - 1, carY + 18, 3, 6);
+            
+            // Racing stripes
+            ctx.fillStyle = accentColor;
+            ctx.fillRect(carX + player.width/2 - 2, carY + 8, 4, player.height - 13);
+            
+            // Side accent lines (racing detail)
+            ctx.strokeStyle = accentColor;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(carX + 8, carY + 38);
+            ctx.lineTo(carX + player.width - 8, carY + 38);
             ctx.stroke();
             
-            ctx.restore();
-
+            // Headlights - aggressive angular design
+            const headlightGlow = isInvincible ? '#FFD700' : (speedBoostActive ? '#FF1744' : '#00E5FF');
+            ctx.fillStyle = headlightGlow;
+            ctx.shadowColor = headlightGlow;
+            ctx.shadowBlur = 15;
+            
+            // Left headlight
+            ctx.beginPath();
+            ctx.moveTo(carX + 4, carY + player.height - 8);
+            ctx.lineTo(carX + 8, carY + player.height - 6);
+            ctx.lineTo(carX + 8, carY + player.height - 10);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Right headlight
+            ctx.beginPath();
+            ctx.moveTo(carX + player.width - 4, carY + player.height - 8);
+            ctx.lineTo(carX + player.width - 8, carY + player.height - 6);
+            ctx.lineTo(carX + player.width - 8, carY + player.height - 10);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            
+            // Tail lights (LED style)
+            ctx.fillStyle = '#FF0040';
+            ctx.fillRect(carX + 4, carY + 6, 3, 2);
+            ctx.fillRect(carX + player.width - 7, carY + 6, 3, 2);
+            
+            // Air intake vents
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.fillRect(carX + 8, carY + player.height - 15, 5, 3);
+            ctx.fillRect(carX + player.width - 13, carY + player.height - 15, 5, 3);
+            
+            // "A" Logo badge (metallic)
+            const logoGradient = ctx.createRadialGradient(carX + 25, carY + 50, 2, carX + 25, carY + 50, 10);
+            logoGradient.addColorStop(0, '#FFFFFF');
+            logoGradient.addColorStop(0.4, '#FFD700');
+            logoGradient.addColorStop(1, '#FFA500');
+            ctx.fillStyle = logoGradient;
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.strokeText('A', carX + 25, carY + 54);
+            ctx.fillText('A', carX + 25, carY + 54);
+            
+            // Car outline for definition
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(carX + 8, carY + 8);
+            ctx.lineTo(carX + player.width - 8, carY + 8);
+            ctx.lineTo(carX + player.width - 5, carY + 32);
+            ctx.lineTo(carX + player.width - 2, carY + player.height - 5);
+            ctx.lineTo(carX + 2, carY + player.height - 5);
+            ctx.lineTo(carX + 5, carY + 32);
+            ctx.closePath();
+            ctx.stroke();
+            
             ctx.restore();
         }
 
@@ -3066,151 +3134,438 @@
                     ctx.globalAlpha = obs.alpha;
                 }
                 
-                // Moving obstacle indicator (arrows)
+                // Moving obstacle indicator (animated arrow with trail)
                 if (obs.isMoving) {
+                    const time = Date.now() / 200;
                     const arrowColor = '#FFFF00';
                     ctx.fillStyle = arrowColor;
-                    ctx.font = 'bold 20px Arial';
+                    ctx.shadowColor = arrowColor;
+                    ctx.shadowBlur = 15;
+                    ctx.font = 'bold 22px Arial';
                     ctx.textAlign = 'center';
                     
-                    // Animated arrows showing direction
-                    const offset = Math.sin(Date.now() / 200) * 3;
-                    if (obs.moveDirection > 0) {
-                        ctx.fillText('→', obs.x + 25 + offset, obs.y - 10);
-                    } else {
-                        ctx.fillText('←', obs.x + 25 + offset, obs.y - 10);
-                    }
+                    // Animated arrows with trail effect
+                    const offset = Math.sin(time) * 4;
+                    const arrow = obs.moveDirection > 0 ? '→' : '←';
                     
-                    // Glow effect for moving obstacles
-                    ctx.shadowColor = arrowColor;
-                    ctx.shadowBlur = 10;
+                    for (let i = 0; i < 3; i++) {
+                        ctx.globalAlpha = (1 - i * 0.3) * (obs.alpha || 1);
+                        ctx.fillText(arrow, obs.x + 25 + offset - (i * 8 * obs.moveDirection), obs.y - 12);
+                    }
+                    ctx.globalAlpha = obs.alpha || 1;
                 }
 
                 if (obs.type === 'box') {
-                    // Brown box
-                    ctx.fillStyle = obs.isMoving ? '#A0522D' : '#8B4513';
-                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-                    ctx.strokeStyle = '#5C2E0C';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+                    // 3D Crate with depth
+                    const crateFront = obs.isMoving ? '#A0522D' : '#8B4513';
+                    const crateTop = obs.isMoving ? '#CD853F' : '#A0522D';
+                    const crateSide = obs.isMoving ? '#8B4513' : '#704214';
                     
-                    // Box details
-                    ctx.strokeStyle = '#A0522D';
-                    ctx.lineWidth = 2;
+                    // Front face
+                    const frontGradient = ctx.createLinearGradient(obs.x, obs.y, obs.x + obs.width, obs.y);
+                    frontGradient.addColorStop(0, crateSide);
+                    frontGradient.addColorStop(0.5, crateFront);
+                    frontGradient.addColorStop(1, crateSide);
+                    ctx.fillStyle = frontGradient;
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    
+                    // Top 3D edge
+                    ctx.fillStyle = crateTop;
                     ctx.beginPath();
                     ctx.moveTo(obs.x, obs.y);
-                    ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
-                    ctx.moveTo(obs.x + obs.width, obs.y);
-                    ctx.lineTo(obs.x, obs.y + obs.height);
-                    ctx.stroke();
-                } else if (obs.type === 'barrier') {
-                    // Red barrier
-                    ctx.fillStyle = obs.isMoving ? '#FF6B6B' : '#F44336';
-                    ctx.fillRect(obs.x + 10, obs.y, 30, obs.height);
-                    ctx.fillStyle = '#FFF';
-                    // Diagonal stripes
-                    for (let i = 0; i < obs.height; i += 20) {
-                        ctx.fillRect(obs.x + 10, obs.y + i, 30, 10);
-                    }
-                } else if (obs.type === 'cone') {
-                    // Orange cone
-                    ctx.fillStyle = obs.isMoving ? '#FFB347' : '#FF9800';
-                    ctx.beginPath();
-                    ctx.moveTo(obs.x + 25, obs.y);
-                    ctx.lineTo(obs.x, obs.y + obs.height);
-                    ctx.lineTo(obs.x + 50, obs.y + obs.height);
+                    ctx.lineTo(obs.x + 5, obs.y - 5);
+                    ctx.lineTo(obs.x + obs.width + 5, obs.y - 5);
+                    ctx.lineTo(obs.x + obs.width, obs.y);
                     ctx.closePath();
                     ctx.fill();
                     
-                    // White stripes on cone
-                    ctx.fillStyle = '#FFF';
-                    ctx.fillRect(obs.x + 10, obs.y + 20, 30, 8);
-                    ctx.fillRect(obs.x + 5, obs.y + 40, 40, 8);
-                } else if (obs.type === 'spike') {
-                    // Purple spiky obstacle
-                    ctx.fillStyle = '#8B00FF';
-                    ctx.shadowColor = '#8B00FF';
-                    ctx.shadowBlur = 15;
-                    // Draw spikes
-                    for (let i = 0; i < 3; i++) {
+                    // Right 3D edge
+                    ctx.fillStyle = crateSide;
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + obs.width, obs.y);
+                    ctx.lineTo(obs.x + obs.width + 5, obs.y - 5);
+                    ctx.lineTo(obs.x + obs.width + 5, obs.y + obs.height - 5);
+                    ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Wood grain lines
+                    ctx.strokeStyle = 'rgba(92, 46, 12, 0.5)';
+                    ctx.lineWidth = 2;
+                    for (let i = 10; i < obs.height; i += 15) {
                         ctx.beginPath();
-                        ctx.moveTo(obs.x + i * 17, obs.y + obs.height);
-                        ctx.lineTo(obs.x + 8 + i * 17, obs.y);
-                        ctx.lineTo(obs.x + 17 + i * 17, obs.y + obs.height);
+                        ctx.moveTo(obs.x + 5, obs.y + i);
+                        ctx.lineTo(obs.x + obs.width - 5, obs.y + i);
+                        ctx.stroke();
+                    }
+                    
+                    // Crate bands
+                    ctx.strokeStyle = '#5C2E0C';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(obs.x + 3, obs.y + 3, obs.width - 6, obs.height - 6);
+                    
+                } else if (obs.type === 'barrier') {
+                    // Modern barrier with stripes
+                    const barrierBase = obs.isMoving ? '#E53935' : '#C62828';
+                    
+                    // Left pole
+                    const poleGradient = ctx.createLinearGradient(obs.x, obs.y, obs.x + 10, obs.y);
+                    poleGradient.addColorStop(0, '#555');
+                    poleGradient.addColorStop(0.5, '#888');
+                    poleGradient.addColorStop(1, '#555');
+                    ctx.fillStyle = poleGradient;
+                    ctx.fillRect(obs.x, obs.y, 10, obs.height);
+                    
+                    // Right pole
+                    ctx.fillRect(obs.x + 40, obs.y, 10, obs.height);
+                    
+                    // Barrier tape
+                    ctx.fillStyle = barrierBase;
+                    ctx.fillRect(obs.x + 8, obs.y + 15, 34, obs.height - 30);
+                    
+                    // Diagonal stripes
+                    ctx.fillStyle = '#FFF';
+                    for (let i = -obs.height; i < obs.height * 2; i += 15) {
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x + 8, obs.y + i);
+                        ctx.lineTo(obs.x + 18, obs.y + i + 10);
+                        ctx.lineTo(obs.x + 8, obs.y + i + 20);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x + 32, obs.y + i);
+                        ctx.lineTo(obs.x + 42, obs.y + i + 10);
+                        ctx.lineTo(obs.x + 32, obs.y + i + 20);
                         ctx.closePath();
                         ctx.fill();
                     }
-                } else if (obs.type === 'bouncer') {
-                    // Green bouncing obstacle
-                    ctx.fillStyle = '#00FF00';
-                    ctx.shadowColor = '#00FF00';
-                    ctx.shadowBlur = 20;
+                    
+                    // Warning glow
+                    ctx.shadowColor = barrierBase;
+                    ctx.shadowBlur = 10;
+                    ctx.strokeStyle = barrierBase;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(obs.x + 8, obs.y + 15, 34, obs.height - 30);
+                    ctx.shadowBlur = 0;
+                    
+                } else if (obs.type === 'cone') {
+                    // Traffic cone with 3D depth
+                    const coneOrange = obs.isMoving ? '#FFB347' : '#FF6F00';
+                    const coneDark = '#E65100';
+                    
+                    // Cone shadow
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
                     ctx.beginPath();
-                    ctx.arc(obs.x + 25, obs.y + 30, 30, 0, Math.PI * 2);
+                    ctx.ellipse(obs.x + 25, obs.y + obs.height + 2, 20, 5, 0, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.fillStyle = '#FFF';
-                    ctx.font = 'bold 20px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('!', obs.x + 25, obs.y + 38);
-                } else if (obs.type === 'zigzag') {
-                    // Blue zigzag obstacle
-                    ctx.fillStyle = '#00BFFF';
-                    ctx.shadowColor = '#00BFFF';
-                    ctx.shadowBlur = 15;
+                    
+                    // Cone body with gradient
+                    const coneGradient = ctx.createLinearGradient(obs.x, obs.y, obs.x + 50, obs.y);
+                    coneGradient.addColorStop(0, coneDark);
+                    coneGradient.addColorStop(0.5, coneOrange);
+                    coneGradient.addColorStop(1, coneDark);
+                    ctx.fillStyle = coneGradient;
                     ctx.beginPath();
-                    ctx.moveTo(obs.x, obs.y + obs.height / 2);
-                    ctx.lineTo(obs.x + 15, obs.y);
-                    ctx.lineTo(obs.x + 35, obs.y + obs.height);
-                    ctx.lineTo(obs.x + 50, obs.y + obs.height / 2);
-                    ctx.lineTo(obs.x + 35, obs.y);
-                    ctx.lineTo(obs.x + 15, obs.y + obs.height);
+                    ctx.moveTo(obs.x + 25, obs.y + 5);
+                    ctx.lineTo(obs.x + 5, obs.y + obs.height - 5);
+                    ctx.lineTo(obs.x + 45, obs.y + obs.height - 5);
                     ctx.closePath();
                     ctx.fill();
-                } else if (obs.type === 'chaser') {
-                    // Red chaser with eyes
-                    ctx.fillStyle = '#FF1744';
-                    ctx.shadowColor = '#FF1744';
-                    ctx.shadowBlur = 20;
-                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-                    // Eyes
+                    
+                    // Base
+                    ctx.fillStyle = '#424242';
+                    ctx.fillRect(obs.x, obs.y + obs.height - 5, 50, 5);
+                    
+                    // Reflective stripes
                     ctx.fillStyle = '#FFF';
-                    ctx.fillRect(obs.x + 10, obs.y + 15, 10, 10);
-                    ctx.fillRect(obs.x + 30, obs.y + 15, 10, 10);
+                    ctx.shadowColor = '#FFF';
+                    ctx.shadowBlur = 5;
+                    ctx.fillRect(obs.x + 12, obs.y + 18, 26, 6);
+                    ctx.fillRect(obs.x + 8, obs.y + 35, 34, 6);
+                    ctx.shadowBlur = 0;
+                    
+                    // Highlight
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + 25, obs.y + 5);
+                    ctx.lineTo(obs.x + 18, obs.y + 30);
+                    ctx.lineTo(obs.x + 25, obs.y + 28);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                } else if (obs.type === 'spike') {
+                    // Deadly spikes with glow
+                    ctx.fillStyle = '#8B00FF';
+                    ctx.shadowColor = '#8B00FF';
+                    ctx.shadowBlur = 20;
+                    
+                    // Draw sharp spikes
+                    for (let i = 0; i < 3; i++) {
+                        const spikeX = obs.x + i * 17;
+                        
+                        // Spike body
+                        const spikeGradient = ctx.createRadialGradient(
+                            spikeX + 8, obs.y + 20, 5,
+                            spikeX + 8, obs.y, 15
+                        );
+                        spikeGradient.addColorStop(0, '#8B00FF');
+                        spikeGradient.addColorStop(1, '#6A00CC');
+                        ctx.fillStyle = spikeGradient;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(spikeX, obs.y + obs.height);
+                        ctx.lineTo(spikeX + 8, obs.y);
+                        ctx.lineTo(spikeX + 17, obs.y + obs.height);
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Highlight
+                        ctx.fillStyle = 'rgba(200, 100, 255, 0.5)';
+                        ctx.beginPath();
+                        ctx.moveTo(spikeX + 4, obs.y + obs.height - 15);
+                        ctx.lineTo(spikeX + 8, obs.y + 5);
+                        ctx.lineTo(spikeX + 8, obs.y + obs.height - 10);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    
+                    // Electric effect
+                    if (frameCount % 20 < 3) {
+                        ctx.strokeStyle = '#FFF';
+                        ctx.lineWidth = 2;
+                        ctx.shadowColor = '#FFF';
+                        ctx.shadowBlur = 10;
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x, obs.y + 20);
+                        ctx.lineTo(obs.x + 50, obs.y + 10);
+                        ctx.stroke();
+                    }
+                    ctx.shadowBlur = 0;
+                    
+                } else if (obs.type === 'bouncer') {
+                    // Bouncing energy ball
+                    const bounceOffset = Math.sin(Date.now() / 200 + obs.y * 0.1) * 8;
+                    const ballY = obs.y + 30 + bounceOffset;
+                    
+                    // Glow aura
+                    const glowGradient = ctx.createRadialGradient(
+                        obs.x + 25, ballY, 5,
+                        obs.x + 25, ballY, 40
+                    );
+                    glowGradient.addColorStop(0, 'rgba(0, 255, 0, 0.8)');
+                    glowGradient.addColorStop(0.5, 'rgba(0, 255, 0, 0.3)');
+                    glowGradient.addColorStop(1, 'rgba(0, 255, 0, 0)');
+                    ctx.fillStyle = glowGradient;
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 25, ballY, 40, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Main ball
+                    const ballGradient = ctx.createRadialGradient(
+                        obs.x + 20, ballY - 5, 5,
+                        obs.x + 25, ballY, 30
+                    );
+                    ballGradient.addColorStop(0, '#CCFF00');
+                    ballGradient.addColorStop(0.5, '#00FF00');
+                    ballGradient.addColorStop(1, '#00CC00');
+                    ctx.fillStyle = ballGradient;
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 25, ballY, 25, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Warning symbol
                     ctx.fillStyle = '#000';
-                    ctx.fillRect(obs.x + 15, obs.y + 18, 4, 4);
-                    ctx.fillRect(obs.x + 35, obs.y + 18, 4, 4);
+                    ctx.font = 'bold 24px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('!', obs.x + 25, ballY + 8);
+                    
+                    // Motion trail
+                    ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 25, ballY - bounceOffset/2, 20, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                } else if (obs.type === 'zigzag') {
+                    // Electric zigzag with animation
+                    const pulse = Math.sin(Date.now() / 150) * 3;
+                    
+                    ctx.fillStyle = '#00BFFF';
+                    ctx.shadowColor = '#00BFFF';
+                    ctx.shadowBlur = 20 + pulse;
+                    
+                    // Zigzag body
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x, obs.y + obs.height / 2);
+                    ctx.lineTo(obs.x + 12, obs.y + 5);
+                    ctx.lineTo(obs.x + 25, obs.y + obs.height - 5);
+                    ctx.lineTo(obs.x + 38, obs.y + 5);
+                    ctx.lineTo(obs.x + 50, obs.y + obs.height / 2);
+                    ctx.lineTo(obs.x + 38, obs.y + obs.height - 5);
+                    ctx.lineTo(obs.x + 25, obs.y + 5);
+                    ctx.lineTo(obs.x + 12, obs.y + obs.height - 5);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Electric core
+                    ctx.fillStyle = '#FFF';
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + 15, obs.y + obs.height / 2);
+                    ctx.lineTo(obs.x + 25, obs.y + 20);
+                    ctx.lineTo(obs.x + 35, obs.y + obs.height / 2);
+                    ctx.lineTo(obs.x + 25, obs.y + obs.height - 20);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.shadowBlur = 0;
+                    
+                } else if (obs.type === 'chaser') {
+                    // Aggressive red enemy
+                    const shake = Math.sin(Date.now() / 100) * 1.5;
+                    
+                    ctx.shadowColor = '#FF1744';
+                    ctx.shadowBlur = 25;
+                    
+                    // Body
+                    const chaserGradient = ctx.createLinearGradient(obs.x, obs.y, obs.x, obs.y + obs.height);
+                    chaserGradient.addColorStop(0, '#FF5252');
+                    chaserGradient.addColorStop(1, '#C62828');
+                    ctx.fillStyle = chaserGradient;
+                    ctx.fillRect(obs.x + shake, obs.y, obs.width, obs.height);
+                    
+                    // Angry eyes
+                    ctx.fillStyle = '#FFF';
+                    ctx.fillRect(obs.x + 8 + shake, obs.y + 12, 12, 12);
+                    ctx.fillRect(obs.x + 30 + shake, obs.y + 12, 12, 12);
+                    
+                    // Pupils (following player)
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(obs.x + 12 + shake, obs.y + 16, 6, 6);
+                    ctx.fillRect(obs.x + 34 + shake, obs.y + 16, 6, 6);
+                    
+                    // Angry mouth
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + 10 + shake, obs.y + 45);
+                    ctx.lineTo(obs.x + 25 + shake, obs.y + 38);
+                    ctx.lineTo(obs.x + 40 + shake, obs.y + 45);
+                    ctx.stroke();
+                    
+                    // Speed lines
+                    ctx.strokeStyle = 'rgba(255, 23, 68, 0.5)';
+                    ctx.lineWidth = 2;
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x - 10, obs.y + 15 + i * 12);
+                        ctx.lineTo(obs.x - 20, obs.y + 15 + i * 12);
+                        ctx.stroke();
+                    }
+                    
+                    ctx.shadowBlur = 0;
+                    
                 } else if (obs.type === 'splitter') {
-                    // Yellow splitter
-                    ctx.fillStyle = obs.hasSplit ? '#888' : '#FFD700';
-                    ctx.shadowColor = '#FFD700';
-                    ctx.shadowBlur = 15;
+                    // Splitter obstacle
+                    const splitColor = obs.hasSplit ? '#666' : '#FFD700';
+                    const glowColor = obs.hasSplit ? '#444' : '#FFA000';
+                    
+                    ctx.shadowColor = glowColor;
+                    ctx.shadowBlur = obs.hasSplit ? 5 : 20;
+                    
+                    // Main body
+                    const splitGradient = ctx.createRadialGradient(
+                        obs.x + 25, obs.y + 30, 5,
+                        obs.x + 25, obs.y + 30, 30
+                    );
+                    splitGradient.addColorStop(0, obs.hasSplit ? '#888' : '#FFEB3B');
+                    splitGradient.addColorStop(1, splitColor);
+                    ctx.fillStyle = splitGradient;
                     ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    
                     if (!obs.hasSplit) {
+                        // Split line
                         ctx.strokeStyle = '#000';
                         ctx.lineWidth = 3;
+                        ctx.setLineDash([5, 5]);
                         ctx.beginPath();
                         ctx.moveTo(obs.x + 25, obs.y);
                         ctx.lineTo(obs.x + 25, obs.y + obs.height);
                         ctx.stroke();
+                        ctx.setLineDash([]);
+                        
+                        // Energy crackling
+                        if (frameCount % 10 < 5) {
+                            ctx.strokeStyle = '#FFF';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.moveTo(obs.x + 20, obs.y + 20);
+                            ctx.lineTo(obs.x + 30, obs.y + 25);
+                            ctx.lineTo(obs.x + 20, obs.y + 30);
+                            ctx.stroke();
+                        }
                     }
+                    
+                    ctx.shadowBlur = 0;
+                    
                 } else if (obs.type === 'teleporter') {
-                    // Purple teleporter
-                    ctx.fillStyle = '#FF00FF';
-                    ctx.shadowColor = '#FF00FF';
-                    ctx.shadowBlur = 25;
+                    // Portal effect
+                    const pulse = Math.sin(Date.now() / 150);
+                    const portalRadius = 25 + pulse * 5;
+                    
+                    // Outer glow rings
+                    for (let i = 0; i < 3; i++) {
+                        const ringRadius = portalRadius + (i * 8) + pulse * 2;
+                        const ringAlpha = 0.3 - (i * 0.1);
+                        
+                        ctx.strokeStyle = `rgba(255, 0, 255, ${ringAlpha})`;
+                        ctx.lineWidth = 3;
+                        ctx.shadowColor = '#FF00FF';
+                        ctx.shadowBlur = 20;
+                        ctx.beginPath();
+                        ctx.arc(obs.x + 25, obs.y + 30, ringRadius, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                    
+                    // Portal body
+                    const portalGradient = ctx.createRadialGradient(
+                        obs.x + 25, obs.y + 30, 0,
+                        obs.x + 25, obs.y + 30, portalRadius
+                    );
+                    portalGradient.addColorStop(0, '#000');
+                    portalGradient.addColorStop(0.4, '#8B00FF');
+                    portalGradient.addColorStop(0.7, '#FF00FF');
+                    portalGradient.addColorStop(1, '#FF00FF');
+                    ctx.fillStyle = portalGradient;
                     ctx.beginPath();
-                    ctx.arc(obs.x + 25, obs.y + 30, 25, 0, Math.PI * 2);
+                    ctx.arc(obs.x + 25, obs.y + 30, portalRadius, 0, Math.PI * 2);
                     ctx.fill();
+                    
                     // Teleport symbol
                     ctx.strokeStyle = '#FFF';
                     ctx.lineWidth = 3;
+                    ctx.shadowBlur = 10;
                     ctx.beginPath();
-                    ctx.arc(obs.x + 25, obs.y + 30, 15, 0, Math.PI * 2);
+                    ctx.arc(obs.x + 25, obs.y + 30, 12, 0, Math.PI * 2);
                     ctx.stroke();
+                    
                     ctx.fillStyle = '#FFF';
-                    ctx.font = 'bold 16px Arial';
+                    ctx.font = 'bold 18px Arial';
                     ctx.textAlign = 'center';
-                    ctx.fillText('T', obs.x + 25, obs.y + 36);
+                    ctx.fillText('⚡', obs.x + 25, obs.y + 37);
+                    
+                    // Particle swirl
+                    for (let i = 0; i < 5; i++) {
+                        const angle = (Date.now() / 500 + i * (Math.PI * 2 / 5)) % (Math.PI * 2);
+                        const px = obs.x + 25 + Math.cos(angle) * 18;
+                        const py = obs.y + 30 + Math.sin(angle) * 18;
+                        
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                        ctx.beginPath();
+                        ctx.arc(px, py, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    ctx.shadowBlur = 0;
                 }
 
                 ctx.restore();
