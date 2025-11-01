@@ -1090,19 +1090,25 @@
             // Execute the attack based on type
             switch(type) {
                 case 'fire':
-                    // Shoot fireball at boss
-                    attackCooldown = 30; // 0.5 second cooldown
-                    attackProjectiles.push({
-                        type: 'fire',
-                        x: player.x + 15,
-                        y: player.y - 20,
-                        lane: player.lane,
-                        width: 30,
-                        height: 30,
-                        speed: -10
-                    });
-                    playSound('attack');
-                    showBuyMessage('🔥 FIRE PURCHASED!', cost);
+                    // Activate fire power-up (10 seconds of rapid fire)
+                    attackPowerUp = 'fire';
+                    fireballTimer = 600; // 10 seconds
+                    attackCooldown = 9; // Fast cooldown for rapid fire
+                    
+                    // Visual effect
+                    for (let i = 0; i < 20; i++) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: (Math.random() - 0.5) * 6,
+                            color: ['#FF4500', '#FF8800', '#FFD700'][Math.floor(Math.random() * 3)],
+                            life: 40
+                        });
+                    }
+                    
+                    playSound('powerup');
+                    showBuyMessage('🔥 FIRE POWER-UP! (10s)', cost);
                     break;
                     
                 case 'laser':
