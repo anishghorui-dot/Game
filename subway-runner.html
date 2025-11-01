@@ -3162,6 +3162,10 @@
                     const crateTop = obs.isMoving ? '#CD853F' : '#A0522D';
                     const crateSide = obs.isMoving ? '#8B4513' : '#704214';
                     
+                    // Glow effect for crate
+                    ctx.shadowColor = crateFront;
+                    ctx.shadowBlur = 10;
+                    
                     // Front face
                     const frontGradient = ctx.createLinearGradient(obs.x, obs.y, obs.x + obs.width, obs.y);
                     frontGradient.addColorStop(0, crateSide);
@@ -3204,6 +3208,8 @@
                     ctx.strokeStyle = '#5C2E0C';
                     ctx.lineWidth = 3;
                     ctx.strokeRect(obs.x + 3, obs.y + 3, obs.width - 6, obs.height - 6);
+                    
+                    ctx.shadowBlur = 0;
                     
                 } else if (obs.type === 'barrier') {
                     // Modern barrier with stripes
