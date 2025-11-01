@@ -4595,156 +4595,145 @@
                 ctx.translate(bullet.x, bullet.y);
                 ctx.rotate(bullet.rotation);
                 
-                // Enhanced glow effects for ALL bullet types
-                const glowIntensity = Math.sin(frameCount * 0.2) * 0.3 + 0.7;
-                
-                // Different visuals for different bullet types with STRONG GLOW
+                // Bullet-like visuals with black borders (NO GLOW)
                 switch(bullet.type) {
                     case 'spread':
-                        // Outer glow layers - make it super visible
-                        for (let i = 4; i > 0; i--) {
-                            const glowSize = (bullet.width / 2) + (i * 8);
-                            const glowAlpha = (0.4 - i * 0.08) * glowIntensity;
-                            ctx.fillStyle = `rgba(255, 69, 0, ${glowAlpha})`;
-                            ctx.beginPath();
-                            ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
-                        
-                        // Main bullet with bright center
-                        const spreadGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, bullet.width / 2);
-                        spreadGradient.addColorStop(0, '#FFFFFF');
-                        spreadGradient.addColorStop(0.3, '#FFFF00');
-                        spreadGradient.addColorStop(0.7, '#FF4500');
-                        spreadGradient.addColorStop(1, '#FF0000');
+                        // Round bullet - gradient fill
+                        const spreadGradient = ctx.createRadialGradient(-3, -3, 2, 0, 0, bullet.width / 2);
+                        spreadGradient.addColorStop(0, '#FFA500');
+                        spreadGradient.addColorStop(0.6, '#FF4500');
+                        spreadGradient.addColorStop(1, '#CC0000');
                         ctx.fillStyle = spreadGradient;
                         ctx.beginPath();
                         ctx.arc(0, 0, bullet.width / 2, 0, Math.PI * 2);
                         ctx.fill();
                         
-                        // Bright outline
-                        ctx.strokeStyle = '#FFFF00';
+                        // Black border
+                        ctx.strokeStyle = '#000000';
                         ctx.lineWidth = 3;
                         ctx.stroke();
+                        
+                        // Shine highlight
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                        ctx.beginPath();
+                        ctx.arc(-4, -4, 4, 0, Math.PI * 2);
+                        ctx.fill();
                         break;
                         
                     case 'lane':
-                        // Strong outer glow
-                        for (let i = 4; i > 0; i--) {
-                            const glowSize = i * 10;
-                            const glowAlpha = (0.5 - i * 0.1) * glowIntensity;
-                            ctx.fillStyle = `rgba(255, 0, 0, ${glowAlpha})`;
-                            ctx.fillRect(-bullet.width/2 - glowSize, -bullet.height/2 - glowSize, 
-                                        bullet.width + glowSize * 2, bullet.height + glowSize * 2);
-                        }
-                        
-                        // Main bullet with gradient
-                        const laneGradient = ctx.createLinearGradient(-bullet.width/2, -bullet.height/2, bullet.width/2, bullet.height/2);
-                        laneGradient.addColorStop(0, '#FFFF00');
-                        laneGradient.addColorStop(0.5, '#FF4500');
-                        laneGradient.addColorStop(1, '#FF0000');
+                        // Rectangular bullet - metallic look
+                        const laneGradient = ctx.createLinearGradient(-bullet.width/2, 0, bullet.width/2, 0);
+                        laneGradient.addColorStop(0, '#990000');
+                        laneGradient.addColorStop(0.5, '#FF0000');
+                        laneGradient.addColorStop(1, '#990000');
                         ctx.fillStyle = laneGradient;
                         ctx.fillRect(-bullet.width/2, -bullet.height/2, bullet.width, bullet.height);
                         
-                        // Bright border
-                        ctx.strokeStyle = '#FFFF00';
-                        ctx.lineWidth = 4;
+                        // Black border
+                        ctx.strokeStyle = '#000000';
+                        ctx.lineWidth = 3;
                         ctx.strokeRect(-bullet.width/2, -bullet.height/2, bullet.width, bullet.height);
+                        
+                        // Metal shine
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                        ctx.fillRect(-bullet.width/2 + 3, -bullet.height/2 + 3, bullet.width/3, bullet.height - 6);
                         break;
                         
                     case 'spiral':
-                        // Magical swirl glow
-                        for (let i = 5; i > 0; i--) {
-                            const glowAlpha = (0.5 - i * 0.08) * glowIntensity;
-                            ctx.fillStyle = `rgba(255, 0, 255, ${glowAlpha})`;
-                            ctx.beginPath();
-                            for (let j = 0; j < 5; j++) {
-                                const angle = (j / 5) * Math.PI * 2;
-                                const r = bullet.width / 3 + i * 6;
-                                ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
-                            }
-                            ctx.closePath();
-                            ctx.fill();
-                        }
-                        
-                        // Main spiral with bright gradient
+                        // Star-shaped bullet
                         const spiralGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, bullet.width / 2);
-                        spiralGradient.addColorStop(0, '#FFFFFF');
-                        spiralGradient.addColorStop(0.4, '#FF00FF');
-                        spiralGradient.addColorStop(1, '#8B00FF');
+                        spiralGradient.addColorStop(0, '#CC00CC');
+                        spiralGradient.addColorStop(0.6, '#8B00FF');
+                        spiralGradient.addColorStop(1, '#550088');
                         ctx.fillStyle = spiralGradient;
                         ctx.beginPath();
                         for (let i = 0; i < 5; i++) {
-                            const angle = (i / 5) * Math.PI * 2;
-                            const r = bullet.width / 3;
-                            ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                            const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+                            const r = bullet.width / 2.5;
+                            if (i === 0) {
+                                ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                            } else {
+                                ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                            }
+                            // Inner point
+                            const innerAngle = angle + Math.PI / 5;
+                            const innerR = r * 0.4;
+                            ctx.lineTo(Math.cos(innerAngle) * innerR, Math.sin(innerAngle) * innerR);
                         }
                         ctx.closePath();
                         ctx.fill();
                         
-                        // Bright outline
-                        ctx.strokeStyle = '#FFFF00';
+                        // Black border
+                        ctx.strokeStyle = '#000000';
                         ctx.lineWidth = 3;
                         ctx.stroke();
+                        
+                        // Center highlight
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 4, 0, Math.PI * 2);
+                        ctx.fill();
                         break;
                         
                     case 'homing':
-                        // Danger warning glow - pulsing
-                        for (let i = 5; i > 0; i--) {
-                            const glowSize = (bullet.width / 2) + (i * 10);
-                            const glowAlpha = (0.6 - i * 0.1) * glowIntensity;
-                            ctx.fillStyle = `rgba(255, 255, 0, ${glowAlpha})`;
-                            ctx.beginPath();
-                            ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
-                        
-                        // Homing missile with bright trail
-                        const homingGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, bullet.width/2);
-                        homingGradient.addColorStop(0, '#FFFFFF');
-                        homingGradient.addColorStop(0.3, '#FFFF00');
-                        homingGradient.addColorStop(0.6, '#FF8800');
-                        homingGradient.addColorStop(1, '#FF0000');
+                        // Missile-shaped bullet with fins
+                        const homingGradient = ctx.createLinearGradient(0, -bullet.width/2, 0, bullet.width/2);
+                        homingGradient.addColorStop(0, '#FFAA00');
+                        homingGradient.addColorStop(0.5, '#FF6600');
+                        homingGradient.addColorStop(1, '#CC3300');
                         ctx.fillStyle = homingGradient;
+                        
+                        // Main body (pointed)
                         ctx.beginPath();
-                        ctx.arc(0, 0, bullet.width / 2, 0, Math.PI * 2);
+                        ctx.moveTo(0, -bullet.width/2);
+                        ctx.lineTo(bullet.width/4, 0);
+                        ctx.lineTo(bullet.width/5, bullet.width/2);
+                        ctx.lineTo(-bullet.width/5, bullet.width/2);
+                        ctx.lineTo(-bullet.width/4, 0);
+                        ctx.closePath();
                         ctx.fill();
                         
-                        // Targeting reticle - animated
-                        ctx.strokeStyle = '#FFFF00';
+                        // Black border
+                        ctx.strokeStyle = '#000000';
                         ctx.lineWidth = 3;
-                        ctx.beginPath();
-                        ctx.arc(0, 0, bullet.width / 2 + 8 + Math.sin(frameCount * 0.3) * 3, 0, Math.PI * 2);
                         ctx.stroke();
                         
-                        // Warning cross
+                        // Fins
+                        ctx.fillStyle = '#AA2200';
                         ctx.beginPath();
-                        ctx.moveTo(-bullet.width, 0);
-                        ctx.lineTo(bullet.width, 0);
-                        ctx.moveTo(0, -bullet.width);
-                        ctx.lineTo(0, bullet.width);
+                        ctx.moveTo(-bullet.width/4, 0);
+                        ctx.lineTo(-bullet.width/2.5, bullet.width/4);
+                        ctx.lineTo(-bullet.width/4, bullet.width/3);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.strokeStyle = '#000000';
+                        ctx.lineWidth = 2;
                         ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(bullet.width/4, 0);
+                        ctx.lineTo(bullet.width/2.5, bullet.width/4);
+                        ctx.lineTo(bullet.width/4, bullet.width/3);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                        
+                        // Nose highlight
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                        ctx.beginPath();
+                        ctx.moveTo(0, -bullet.width/2);
+                        ctx.lineTo(3, -bullet.width/3);
+                        ctx.lineTo(-3, -bullet.width/3);
+                        ctx.closePath();
+                        ctx.fill();
                         break;
                         
                     case 'burst':
-                        // Ice blue glow
-                        for (let i = 4; i > 0; i--) {
-                            const glowAlpha = (0.5 - i * 0.1) * glowIntensity;
-                            ctx.fillStyle = `rgba(0, 255, 255, ${glowAlpha})`;
-                            ctx.beginPath();
-                            ctx.moveTo(0, -(bullet.width/2 + i * 8));
-                            ctx.lineTo(bullet.width/3 + i * 5, 0);
-                            ctx.lineTo(0, bullet.width/2 + i * 8);
-                            ctx.lineTo(-(bullet.width/3 + i * 5), 0);
-                            ctx.closePath();
-                            ctx.fill();
-                        }
-                        
-                        // Main burst with bright gradient
+                        // Diamond-shaped bullet
                         const burstGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, bullet.width / 2);
-                        burstGradient.addColorStop(0, '#FFFFFF');
-                        burstGradient.addColorStop(0.4, '#00FFFF');
-                        burstGradient.addColorStop(1, '#0088FF');
+                        burstGradient.addColorStop(0, '#00DDFF');
+                        burstGradient.addColorStop(0.6, '#0088FF');
+                        burstGradient.addColorStop(1, '#0044AA');
                         ctx.fillStyle = burstGradient;
                         ctx.beginPath();
                         ctx.moveTo(0, -bullet.width/2);
@@ -4754,10 +4743,20 @@
                         ctx.closePath();
                         ctx.fill();
                         
-                        // Bright outline
-                        ctx.strokeStyle = '#FFFF00';
+                        // Black border
+                        ctx.strokeStyle = '#000000';
                         ctx.lineWidth = 3;
                         ctx.stroke();
+                        
+                        // Diamond highlight
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                        ctx.beginPath();
+                        ctx.moveTo(0, -bullet.width/3);
+                        ctx.lineTo(bullet.width/6, 0);
+                        ctx.lineTo(0, bullet.width/6);
+                        ctx.lineTo(-bullet.width/6, 0);
+                        ctx.closePath();
+                        ctx.fill();
                         break;
                 }
                 
