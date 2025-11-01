@@ -192,10 +192,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
-                radial-gradient(circle at 20% 80%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(76, 175, 80, 0.1) 0%, transparent 50%);
-            animation: bgPulse 4s ease-in-out infinite;
+            background: none;
         }
 
         @keyframes bgPulse {
@@ -204,17 +201,11 @@
         }
 
         h1 {
-            font-size: 72px;
+            font-size: 60px;
             color: #FFD700;
-            text-shadow: 
-                0 0 10px #FFD700,
-                0 0 20px #FFD700,
-                0 0 40px #FFD700,
-                0 0 80px #FFA500,
-                0 5px 15px rgba(0,0,0,0.5);
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
             margin-bottom: 10px;
-            animation: titleGlow 2s ease-in-out infinite;
-            letter-spacing: 8px;
+            letter-spacing: 4px;
             font-weight: 900;
             position: relative;
             z-index: 1;
@@ -222,31 +213,21 @@
 
         @keyframes titleGlow {
             0%, 100% { 
-                text-shadow: 
-                    0 0 10px #FFD700,
-                    0 0 20px #FFD700,
-                    0 0 40px #FFD700,
-                    0 0 80px #FFA500,
-                    0 5px 15px rgba(0,0,0,0.5);
+                text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
                 transform: scale(1);
             }
             50% { 
-                text-shadow: 
-                    0 0 20px #FFD700,
-                    0 0 40px #FFD700,
-                    0 0 60px #FFD700,
-                    0 0 100px #FFA500,
-                    0 5px 20px rgba(0,0,0,0.5);
+                text-shadow: 2px 2px 12px rgba(0,0,0,0.8);
                 transform: scale(1.02);
             }
         }
 
         .subtitle {
-            font-size: 20px;
+            font-size: 18px;
             color: #4CAF50;
             text-transform: uppercase;
-            letter-spacing: 4px;
-            margin-bottom: 40px;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
             opacity: 0.9;
             position: relative;
             z-index: 1;
@@ -263,70 +244,56 @@
         }
 
         .feature-box {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.6);
             border: 2px solid rgba(255, 215, 0, 0.3);
-            border-radius: 15px;
-            padding: 15px 20px;
+            border-radius: 10px;
+            padding: 12px 18px;
             text-align: center;
-            min-width: 100px;
+            min-width: 90px;
             transition: all 0.3s;
         }
 
         .feature-box:hover {
-            background: rgba(255, 215, 0, 0.1);
+            background: rgba(0, 0, 0, 0.8);
             border-color: #FFD700;
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+            transform: translateY(-3px);
         }
 
         .feature-icon {
-            font-size: 36px;
+            font-size: 32px;
             margin-bottom: 5px;
         }
 
         .feature-text {
-            font-size: 12px;
+            font-size: 11px;
             color: #FFD700;
             font-weight: bold;
         }
 
         button {
-            padding: 18px 50px;
-            font-size: 24px;
-            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-            border: none;
-            color: #000;
+            padding: 15px 40px;
+            font-size: 20px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border: 3px solid #FFD700;
+            color: #fff;
             cursor: pointer;
             font-family: 'Arial Black', sans-serif;
-            border-radius: 50px;
+            border-radius: 10px;
             margin: 10px;
             transition: all 0.3s;
-            box-shadow: 
-                0 10px 30px rgba(255, 215, 0, 0.4),
-                inset 0 -3px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
             position: relative;
-            overflow: hidden;
             font-weight: 900;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             z-index: 1;
         }
 
         button::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
+            content: none;
         }
 
         button:hover::before {
-            width: 300px;
+            width: 0;
             height: 300px;
         }
 
@@ -1004,11 +971,11 @@
             // Remove flash after animation
             setTimeout(() => flash.remove(), 600);
             
-            // Create shockwave rings
-            for (let ring = 0; ring < 5; ring++) {
+            // Create shockwave rings (Reduced: 4 rings, 20 particles each)
+            for (let ring = 0; ring < 4; ring++) {
                 setTimeout(() => {
-                    for (let i = 0; i < 30; i++) {
-                        const angle = (Math.PI * 2 * i) / 30;
+                    for (let i = 0; i < 20; i++) {
+                        const angle = (Math.PI * 2 * i) / 20;
                         const speed = 8 + ring * 2;
                         particles.push({
                             x: canvas.width / 2,
@@ -1022,9 +989,9 @@
                 }, ring * 50);
             }
             
-            // Create massive explosion particles from center
-            for (let i = 0; i < 200; i++) {
-                const angle = (Math.PI * 2 * i) / 200;
+            // Create core explosion particles (Reduced: 80 particles)
+            for (let i = 0; i < 80; i++) {
+                const angle = (Math.PI * 2 * i) / 80;
                 const speed = 3 + Math.random() * 10;
                 particles.push({
                     x: canvas.width / 2,
@@ -1036,10 +1003,10 @@
                 });
             }
             
-            // Create fireballs shooting in 8 directions
+            // Create fireballs shooting in 8 directions (Reduced: 6 per direction)
             for (let i = 0; i < 8; i++) {
                 const angle = (Math.PI * 2 * i) / 8;
-                for (let j = 0; j < 10; j++) {
+                for (let j = 0; j < 6; j++) {
                     setTimeout(() => {
                         particles.push({
                             x: canvas.width / 2,
@@ -1053,8 +1020,8 @@
                 }
             }
             
-            // Random sparks and debris
-            for (let i = 0; i < 100; i++) {
+            // Random sparks and debris (Reduced: 50 particles)
+            for (let i = 0; i < 50; i++) {
                 particles.push({
                     x: canvas.width / 2 + (Math.random() - 0.5) * 100,
                     y: canvas.height / 2 + (Math.random() - 0.5) * 100,
@@ -1342,8 +1309,8 @@
                 boss.mouthOpenTimer = 120;
                 showMultiplier('💀 BOSS ENRAGED!');
                 
-                // Epic transformation particles
-                for (let i = 0; i < 100; i++) {
+                // Transformation particles (Reduced: 50 particles)
+                for (let i = 0; i < 50; i++) {
                     particles.push({
                         x: boss.x + boss.width / 2,
                         y: boss.y + boss.height / 2,
@@ -1354,11 +1321,11 @@
                     });
                 }
                 
-                // Shockwave effect
-                for (let ring = 0; ring < 3; ring++) {
+                // Shockwave effect (Reduced: 2 rings, 15 particles each)
+                for (let ring = 0; ring < 2; ring++) {
                     setTimeout(() => {
-                        for (let i = 0; i < 20; i++) {
-                            const angle = (Math.PI * 2 * i) / 20;
+                        for (let i = 0; i < 15; i++) {
+                            const angle = (Math.PI * 2 * i) / 15;
                             particles.push({
                                 x: boss.x + boss.width / 2,
                                 y: boss.y + boss.height / 2,
@@ -1525,7 +1492,7 @@
                         Math.abs(bullet.x - proj.x) < 35 && 
                         Math.abs(bullet.y - proj.y) < 35) {
                         
-                        // EPIC DESTRUCTION EFFECT!
+                        // EPIC DESTRUCTION EFFECT! (Optimized)
                         
                         // 1. Screen flash
                         const flash = document.createElement('div');
@@ -1544,9 +1511,9 @@
                         document.getElementById('gameContainer').appendChild(flash);
                         setTimeout(() => flash.remove(), 400);
                         
-                        // 2. Explosive particle burst
-                        for (let i = 0; i < 25; i++) {
-                            const angle = (Math.PI * 2 * i) / 25;
+                        // 2. Explosive particle burst (Reduced: 15 particles)
+                        for (let i = 0; i < 15; i++) {
+                            const angle = (Math.PI * 2 * i) / 15;
                             const speed = 3 + Math.random() * 5;
                             particles.push({
                                 x: bullet.x,
@@ -1558,11 +1525,11 @@
                             });
                         }
                         
-                        // 3. Shockwave rings
-                        for (let ring = 0; ring < 3; ring++) {
+                        // 3. Shockwave rings (Reduced: 2 rings, 8 particles each)
+                        for (let ring = 0; ring < 2; ring++) {
                             setTimeout(() => {
-                                for (let i = 0; i < 12; i++) {
-                                    const angle = (Math.PI * 2 * i) / 12;
+                                for (let i = 0; i < 8; i++) {
+                                    const angle = (Math.PI * 2 * i) / 8;
                                     const dist = 15 + ring * 10;
                                     particles.push({
                                         x: bullet.x + Math.cos(angle) * dist,
@@ -1576,8 +1543,8 @@
                             }, ring * 50);
                         }
                         
-                        // 4. Sparkles
-                        for (let i = 0; i < 15; i++) {
+                        // 4. Sparkles (Reduced: 8 particles)
+                        for (let i = 0; i < 8; i++) {
                             particles.push({
                                 x: bullet.x,
                                 y: bullet.y,
@@ -1598,7 +1565,7 @@
                 
                 // Check collision with laser beam
                 if (laserActive && Math.abs(bullet.x - lanes[laserLane] - 25) < 40) {
-                    // LASER DESTRUCTION - SUPER COOL!
+                    // LASER DESTRUCTION - SUPER COOL! (Optimized)
                     
                     // 1. Electric vaporization effect
                     const flash = document.createElement('div');
@@ -1617,24 +1584,24 @@
                     document.getElementById('gameContainer').appendChild(flash);
                     setTimeout(() => flash.remove(), 300);
                     
-                    // 2. Electric sparks shooting outward
-                    for (let i = 0; i < 30; i++) {
-                        const angle = (Math.PI * 2 * i) / 30;
+                    // 2. Electric sparks shooting outward (Reduced: 18 particles)
+                    for (let i = 0; i < 18; i++) {
+                        const angle = (Math.PI * 2 * i) / 18;
                         const speed = 4 + Math.random() * 8;
                         particles.push({
                             x: bullet.x,
                             y: bullet.y,
                             vx: Math.cos(angle) * speed,
                             vy: Math.sin(angle) * speed,
-                            color: ['#00FFFF', '#FFFFFF', '#00FFFF', '#FFFFFF'][i % 4],
+                            color: ['#00FFFF', '#FFFFFF'][i % 2],
                             life: 35
                         });
                     }
                     
-                    // 3. Electric arcs
-                    for (let i = 0; i < 8; i++) {
-                        const angle = (Math.PI * 2 * i) / 8;
-                        for (let j = 0; j < 5; j++) {
+                    // 3. Electric arcs (Reduced: 6 arcs, 4 particles each)
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (Math.PI * 2 * i) / 6;
+                        for (let j = 0; j < 4; j++) {
                             const dist = 10 + j * 8;
                             particles.push({
                                 x: bullet.x + Math.cos(angle) * dist,
@@ -1642,19 +1609,19 @@
                                 vx: Math.cos(angle) * 2,
                                 vy: Math.sin(angle) * 2,
                                 color: j % 2 === 0 ? '#00FFFF' : '#FFFFFF',
-                                life: 30 - j * 3
+                                life: 30 - j * 4
                             });
                         }
                     }
                     
-                    // 4. Vapor trail
-                    for (let i = 0; i < 20; i++) {
+                    // 4. Vapor trail (Reduced: 12 particles)
+                    for (let i = 0; i < 12; i++) {
                         particles.push({
                             x: bullet.x,
                             y: bullet.y,
                             vx: (Math.random() - 0.5) * 6,
                             vy: (Math.random() - 0.5) * 6 - 2,
-                            color: i % 3 === 0 ? '#FFFFFF' : '#00FFFF',
+                            color: i % 2 === 0 ? '#FFFFFF' : '#00FFFF',
                             life: 40
                         });
                     }
@@ -1679,9 +1646,9 @@
             boss.isRoaring = true;
             boss.mouthOpenTimer = 20;
             
-            // Enhanced hit particles with colors based on phase
+            // Hit particles (Reduced: 18 particles)
             const hitColor = bossPhase === 1 ? '#FF0000' : '#FF00FF';
-            for (let i = 0; i < 30; i++) {
+            for (let i = 0; i < 18; i++) {
                 particles.push({
                     x: boss.x + boss.width / 2 + (Math.random() - 0.5) * 50,
                     y: boss.y + boss.height / 2 + (Math.random() - 0.5) * 50,
@@ -1705,10 +1672,9 @@
                 });
             }
             
-            // Screen shake intensity based on damage
+            // Big hit extra particles (Reduced: 25 particles)
             if (damage >= 5) {
-                // Big hit - extra particles and effects
-                for (let i = 0; i < 50; i++) {
+                for (let i = 0; i < 25; i++) {
                     particles.push({
                         x: boss.x + boss.width / 2,
                         y: boss.y + boss.height / 2,
@@ -1770,11 +1736,11 @@
             document.getElementById('gameContainer').appendChild(bigFlash);
             setTimeout(() => bigFlash.remove(), 1000);
             
-            // 3. EXPANDING SHOCKWAVE RINGS (Multiple waves)
-            for (let wave = 0; wave < 8; wave++) {
+            // 3. EXPANDING SHOCKWAVE RINGS (Reduced: 5 waves, 20 particles each)
+            for (let wave = 0; wave < 5; wave++) {
                 setTimeout(() => {
-                    for (let i = 0; i < 30; i++) {
-                        const angle = (Math.PI * 2 * i) / 30;
+                    for (let i = 0; i < 20; i++) {
+                        const angle = (Math.PI * 2 * i) / 20;
                         const distance = 30 + wave * 40;
                         particles.push({
                             x: bossX + Math.cos(angle) * distance,
@@ -1788,9 +1754,9 @@
                 }, wave * 100);
             }
             
-            // 4. MASSIVE PARTICLE EXPLOSION (500 particles!)
-            for (let i = 0; i < 500; i++) {
-                const angle = (Math.PI * 2 * i) / 500;
+            // 4. CORE EXPLOSION (Reduced: 120 particles for visual impact)
+            for (let i = 0; i < 120; i++) {
+                const angle = (Math.PI * 2 * i) / 120;
                 const speed = 5 + Math.random() * 20;
                 particles.push({
                     x: bossX,
@@ -1802,11 +1768,11 @@
                 });
             }
             
-            // 5. ELECTRIC DISCHARGE BOLTS
-            for (let bolt = 0; bolt < 12; bolt++) {
+            // 5. ELECTRIC DISCHARGE BOLTS (Reduced: 8 bolts, 12 particles each)
+            for (let bolt = 0; bolt < 8; bolt++) {
                 setTimeout(() => {
-                    const angle = (Math.PI * 2 * bolt) / 12;
-                    for (let j = 0; j < 20; j++) {
+                    const angle = (Math.PI * 2 * bolt) / 8;
+                    for (let j = 0; j < 12; j++) {
                         const dist = j * 15;
                         particles.push({
                             x: bossX + Math.cos(angle) * dist,
@@ -1814,18 +1780,18 @@
                             vx: Math.cos(angle) * 8,
                             vy: Math.sin(angle) * 8,
                             color: j % 2 === 0 ? '#00FFFF' : '#FFFFFF',
-                            life: 50 - j
+                            life: 50 - j * 2
                         });
                     }
                 }, bolt * 50);
             }
             
-            // 6. FIRE SPIRAL ERUPTION
-            for (let spiral = 0; spiral < 5; spiral++) {
+            // 6. FIRE SPIRAL ERUPTION (Reduced: 3 spirals, 25 particles each)
+            for (let spiral = 0; spiral < 3; spiral++) {
                 setTimeout(() => {
-                    for (let i = 0; i < 40; i++) {
-                        const angle = (Math.PI * 2 * i) / 40 + spiral * 0.5;
-                        const radius = 20 + i * 3;
+                    for (let i = 0; i < 25; i++) {
+                        const angle = (Math.PI * 2 * i) / 25 + spiral * 0.5;
+                        const radius = 20 + i * 4;
                         particles.push({
                             x: bossX + Math.cos(angle) * radius,
                             y: bossY + Math.sin(angle) * radius,
@@ -1838,11 +1804,11 @@
                 }, spiral * 150);
             }
             
-            // 7. UPWARD ENERGY BEAMS
-            for (let beam = 0; beam < 8; beam++) {
+            // 7. UPWARD ENERGY BEAMS (Reduced: 6 beams, 20 particles each)
+            for (let beam = 0; beam < 6; beam++) {
                 setTimeout(() => {
                     const offsetX = (Math.random() - 0.5) * 100;
-                    for (let j = 0; j < 30; j++) {
+                    for (let j = 0; j < 20; j++) {
                         particles.push({
                             x: bossX + offsetX,
                             y: bossY - j * 10,
@@ -1855,8 +1821,8 @@
                 }, beam * 80);
             }
             
-            // 8. DEBRIS CHUNKS
-            for (let i = 0; i < 30; i++) {
+            // 8. DEBRIS CHUNKS (Reduced: 20 chunks)
+            for (let i = 0; i < 20; i++) {
                 setTimeout(() => {
                     particles.push({
                         x: bossX + (Math.random() - 0.5) * 100,
@@ -1866,11 +1832,11 @@
                         color: '#333333',
                         life: 100
                     });
-                }, i * 30);
+                }, i * 40);
             }
             
-            // 9. SPARKLE STARS
-            for (let star = 0; star < 100; star++) {
+            // 9. SPARKLE STARS (Reduced: 50 stars)
+            for (let star = 0; star < 50; star++) {
                 setTimeout(() => {
                     particles.push({
                         x: bossX + (Math.random() - 0.5) * 200,
@@ -1880,36 +1846,36 @@
                         color: '#FFFFFF',
                         life: 60
                     });
-                }, star * 20);
+                }, star * 30);
             }
             
-            // 10. VICTORY FIREWORKS
-            for (let fw = 0; fw < 5; fw++) {
+            // 10. VICTORY FIREWORKS (Reduced: 4 fireworks, 35 particles each)
+            for (let fw = 0; fw < 4; fw++) {
                 setTimeout(() => {
                     const fwX = canvas.width / 2 + (Math.random() - 0.5) * 200;
                     const fwY = 100 + Math.random() * 100;
-                    for (let i = 0; i < 50; i++) {
-                        const angle = (Math.PI * 2 * i) / 50;
+                    for (let i = 0; i < 35; i++) {
+                        const angle = (Math.PI * 2 * i) / 35;
                         particles.push({
                             x: fwX,
                             y: fwY,
                             vx: Math.cos(angle) * 8,
                             vy: Math.sin(angle) * 8,
-                            color: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF'][fw],
+                            color: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00'][fw],
                             life: 50
                         });
                     }
                 }, 1000 + fw * 300);
             }
             
-            // Guaranteed power-up drops with dramatic entrance
+            // Guaranteed power-up drops with entrance particles (Reduced: 12 particles each)
             for (let i = 0; i < 3; i++) {
                 setTimeout(() => {
                     const types = ['fire', 'laser', 'bomb', 'invincible'];
                     const type = types[Math.floor(Math.random() * types.length)];
                     
                     // Power-up entrance particles
-                    for (let j = 0; j < 20; j++) {
+                    for (let j = 0; j < 12; j++) {
                         particles.push({
                             x: lanes[i] + 20,
                             y: boss.y + 50,
