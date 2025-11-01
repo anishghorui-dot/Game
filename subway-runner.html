@@ -3205,11 +3205,6 @@
                     ctx.lineWidth = 3;
                     ctx.strokeRect(obs.x + 3, obs.y + 3, obs.width - 6, obs.height - 6);
                     
-                    // Red border
-                    ctx.strokeStyle = '#FF0000';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
-                    
                 } else if (obs.type === 'barrier') {
                     // Modern barrier with stripes
                     const barrierBase = obs.isMoving ? '#E53935' : '#C62828';
@@ -3247,10 +3242,13 @@
                         ctx.fill();
                     }
                     
-                    // Red border
-                    ctx.strokeStyle = '#FF0000';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+                    // Warning glow
+                    ctx.shadowColor = barrierBase;
+                    ctx.shadowBlur = 10;
+                    ctx.strokeStyle = barrierBase;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(obs.x + 8, obs.y + 15, 34, obs.height - 30);
+                    ctx.shadowBlur = 0;
                     
                 } else if (obs.type === 'cone') {
                     // Traffic cone with 3D depth
@@ -3282,18 +3280,11 @@
                     
                     // Reflective stripes
                     ctx.fillStyle = '#FFF';
+                    ctx.shadowColor = '#FFF';
+                    ctx.shadowBlur = 5;
                     ctx.fillRect(obs.x + 12, obs.y + 18, 26, 6);
                     ctx.fillRect(obs.x + 8, obs.y + 35, 34, 6);
-                    
-                    // Red border around cone
-                    ctx.strokeStyle = '#FF0000';
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.moveTo(obs.x + 25, obs.y + 5);
-                    ctx.lineTo(obs.x + 5, obs.y + obs.height - 5);
-                    ctx.lineTo(obs.x + 45, obs.y + obs.height - 5);
-                    ctx.closePath();
-                    ctx.stroke();
+                    ctx.shadowBlur = 0;
                     
                     // Highlight
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
