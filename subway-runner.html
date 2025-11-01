@@ -3688,63 +3688,333 @@
             powerUps.forEach(powerUp => {
                 ctx.save();
                 
-                ctx.translate(powerUp.x + 20, powerUp.y + 20);
-                ctx.rotate(powerUp.rotation || 0);
+                const centerX = powerUp.x + 20;
+                const centerY = powerUp.y + 20;
+                const time = Date.now() / 1000;
+                const float = Math.sin(time * 3 + powerUp.x * 0.1) * 3;
+                const rotation = time + powerUp.x * 0.01;
+                const pulse = Math.sin(time * 4) * 0.15;
                 
-                // Glow effect with different colors
-                const glowColors = {
-                    'heart': 'rgba(255, 105, 180, 0.6)',
-                    'shield': 'rgba(0, 191, 255, 0.5)',
-                    'magnet': 'rgba(138, 43, 226, 0.5)',
-                    'invincible': 'rgba(255, 215, 0, 0.5)',
-                    'boost': 'rgba(255, 107, 107, 0.5)',
-                    'fire': 'rgba(255, 69, 0, 0.5)',
-                    'laser': 'rgba(0, 255, 255, 0.5)',
-                    'bomb': 'rgba(255, 0, 0, 0.5)'
+                ctx.translate(centerX, centerY + float);
+                
+                // Power-up specific colors and effects
+                const powerUpStyles = {
+                    'heart': {
+                        glow: 'rgba(255, 20, 147, 0.8)',
+                        primary: '#FF1493',
+                        secondary: '#FF69B4',
+                        accent: '#FFB6C1',
+                        shine: '#FFF'
+                    },
+                    'shield': {
+                        glow: 'rgba(0, 191, 255, 0.8)',
+                        primary: '#00BFFF',
+                        secondary: '#1E90FF',
+                        accent: '#87CEEB',
+                        shine: '#E0FFFF'
+                    },
+                    'magnet': {
+                        glow: 'rgba(138, 43, 226, 0.8)',
+                        primary: '#8A2BE2',
+                        secondary: '#9370DB',
+                        accent: '#BA55D3',
+                        shine: '#E6E6FA'
+                    },
+                    'invincible': {
+                        glow: 'rgba(255, 215, 0, 0.9)',
+                        primary: '#FFD700',
+                        secondary: '#FFA500',
+                        accent: '#FFFF00',
+                        shine: '#FFFACD'
+                    },
+                    'boost': {
+                        glow: 'rgba(255, 69, 0, 0.8)',
+                        primary: '#FF4500',
+                        secondary: '#FF6347',
+                        accent: '#FF8C00',
+                        shine: '#FFA07A'
+                    },
+                    'fire': {
+                        glow: 'rgba(255, 69, 0, 0.9)',
+                        primary: '#FF4500',
+                        secondary: '#FF8C00',
+                        accent: '#FFD700',
+                        shine: '#FFFF00'
+                    },
+                    'laser': {
+                        glow: 'rgba(0, 255, 255, 0.9)',
+                        primary: '#00FFFF',
+                        secondary: '#00CED1',
+                        accent: '#AFEEEE',
+                        shine: '#F0FFFF'
+                    },
+                    'bomb': {
+                        glow: 'rgba(220, 20, 60, 0.9)',
+                        primary: '#DC143C',
+                        secondary: '#B22222',
+                        accent: '#FF4500',
+                        shine: '#FFA07A'
+                    }
                 };
                 
-                const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 25);
-                glowGradient.addColorStop(0, glowColors[powerUp.type] || 'rgba(0, 255, 0, 0.5)');
-                glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.fillStyle = glowGradient;
-                ctx.fillRect(-25, -25, 50, 50);
+                const style = powerUpStyles[powerUp.type] || powerUpStyles['invincible'];
                 
-                // Power-up box with different colors
-                const boxColors = {
-                    'heart': '#FF1493',
-                    'shield': '#00BFFF',
-                    'magnet': '#8A2BE2',
-                    'invincible': '#FFD700',
-                    'boost': '#FF6B6B',
-                    'fire': '#FF4500',
-                    'laser': '#00FFFF',
-                    'bomb': '#FF0000'
-                };
+                // Outer glow aura (pulsing)
+                const auraSize = 35 + pulse * 10;
+                const auraGradient = ctx.createRadialGradient(0, 0, 5, 0, 0, auraSize);
+                auraGradient.addColorStop(0, style.glow);
+                auraGradient.addColorStop(0.5, style.glow.replace(/[\d.]+\)$/g, '0.3)'));
+                auraGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = auraGradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, auraSize, 0, Math.PI * 2);
+                ctx.fill();
                 
-                ctx.fillStyle = boxColors[powerUp.type] || '#00FF00';
-                ctx.fillRect(-20, -20, 40, 40);
-                ctx.strokeStyle = '#FFF';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(-20, -20, 40, 40);
+                // Rotating energy ring
+                ctx.save();
+                ctx.rotate(rotation);
+                ctx.strokeStyle = style.accent;
+                ctx.lineWidth = 2;
+                ctx.shadowColor = style.glow;
+                ctx.shadowBlur = 10;
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2;
+                    const r = 28;
+                    ctx.beginPath();
+                    ctx.arc(Math.cos(angle) * r, Math.sin(angle) * r, 3, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                ctx.restore();
                 
-                // Icon
-                ctx.fillStyle = '#FFF';
-                ctx.font = 'bold 24px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
+                // 3D cube/sphere container
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = style.glow;
                 
-                const icons = {
-                    'heart': '❤️',
-                    'shield': '🛡️',
-                    'magnet': '🧲',
-                    'invincible': '⭐',
-                    'boost': '🚀',
-                    'fire': '🔥',
-                    'laser': '⚡',
-                    'bomb': '💣'
-                };
+                // Main body (3D effect with gradient)
+                const bodyGradient = ctx.createRadialGradient(-8, -8, 5, 0, 0, 25);
+                bodyGradient.addColorStop(0, style.shine);
+                bodyGradient.addColorStop(0.3, style.accent);
+                bodyGradient.addColorStop(0.7, style.primary);
+                bodyGradient.addColorStop(1, style.secondary);
+                ctx.fillStyle = bodyGradient;
                 
-                ctx.fillText(icons[powerUp.type], 0, 0);
+                // Different shapes for different power-ups
+                if (powerUp.type === 'heart') {
+                    // Heart shape
+                    ctx.beginPath();
+                    ctx.moveTo(0, -5);
+                    ctx.bezierCurveTo(-10, -15, -20, -5, -10, 5);
+                    ctx.lineTo(0, 15);
+                    ctx.lineTo(10, 5);
+                    ctx.bezierCurveTo(20, -5, 10, -15, 0, -5);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Heart pulse
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                } else if (powerUp.type === 'shield') {
+                    // Shield shape
+                    ctx.beginPath();
+                    ctx.moveTo(0, -18);
+                    ctx.lineTo(15, -10);
+                    ctx.lineTo(15, 8);
+                    ctx.lineTo(0, 18);
+                    ctx.lineTo(-15, 8);
+                    ctx.lineTo(-15, -10);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Shield emblem
+                    ctx.fillStyle = style.shine;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -10);
+                    ctx.lineTo(8, -5);
+                    ctx.lineTo(8, 5);
+                    ctx.lineTo(0, 10);
+                    ctx.lineTo(-8, 5);
+                    ctx.lineTo(-8, -5);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                } else if (powerUp.type === 'magnet') {
+                    // Horseshoe magnet shape
+                    ctx.lineWidth = 8;
+                    ctx.strokeStyle = bodyGradient;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 12, Math.PI * 0.8, Math.PI * 2.2);
+                    ctx.stroke();
+                    
+                    // Magnet ends (N/S poles)
+                    ctx.fillStyle = '#FF0000';
+                    ctx.fillRect(-15, 8, 8, 6);
+                    ctx.fillStyle = '#0000FF';
+                    ctx.fillRect(7, 8, 8, 6);
+                    
+                    // Magnetic field lines
+                    ctx.strokeStyle = style.accent;
+                    ctx.lineWidth = 1.5;
+                    for (let i = 0; i < 4; i++) {
+                        const offset = i * 5;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 18 + offset, Math.PI * 0.7, Math.PI * 2.3);
+                        ctx.globalAlpha = 0.5 - i * 0.1;
+                        ctx.stroke();
+                    }
+                    ctx.globalAlpha = 1;
+                    
+                } else if (powerUp.type === 'invincible') {
+                    // Star shape
+                    ctx.beginPath();
+                    for (let i = 0; i < 5; i++) {
+                        const angle = (i * Math.PI * 2) / 5 - Math.PI / 2;
+                        const x = Math.cos(angle) * 18;
+                        const y = Math.sin(angle) * 18;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                        
+                        const innerAngle = angle + Math.PI / 5;
+                        const innerX = Math.cos(innerAngle) * 8;
+                        const innerY = Math.sin(innerAngle) * 8;
+                        ctx.lineTo(innerX, innerY);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Star sparkle
+                    ctx.fillStyle = style.shine;
+                    ctx.font = 'bold 20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('⭐', 0, 0);
+                    
+                } else if (powerUp.type === 'boost') {
+                    // Rocket shape
+                    // Body
+                    ctx.beginPath();
+                    ctx.moveTo(0, -18);
+                    ctx.lineTo(8, 0);
+                    ctx.lineTo(5, 15);
+                    ctx.lineTo(-5, 15);
+                    ctx.lineTo(-8, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Nose cone
+                    ctx.fillStyle = style.shine;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -18);
+                    ctx.lineTo(6, -8);
+                    ctx.lineTo(-6, -8);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Flame effect
+                    const flameGradient = ctx.createLinearGradient(0, 15, 0, 25);
+                    flameGradient.addColorStop(0, '#FFD700');
+                    flameGradient.addColorStop(0.5, '#FF4500');
+                    flameGradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                    ctx.fillStyle = flameGradient;
+                    ctx.beginPath();
+                    ctx.moveTo(-5, 15);
+                    ctx.lineTo(0, 25 + Math.sin(time * 10) * 3);
+                    ctx.lineTo(5, 15);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                } else if (powerUp.type === 'fire') {
+                    // Flame shape
+                    ctx.beginPath();
+                    ctx.moveTo(0, -18);
+                    ctx.bezierCurveTo(-12, -12, -15, 0, -8, 12);
+                    ctx.bezierCurveTo(-5, 18, 5, 18, 8, 12);
+                    ctx.bezierCurveTo(15, 0, 12, -12, 0, -18);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Inner flame
+                    const innerFlameGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 12);
+                    innerFlameGradient.addColorStop(0, '#FFFF00');
+                    innerFlameGradient.addColorStop(0.5, '#FFA500');
+                    innerFlameGradient.addColorStop(1, 'rgba(255, 69, 0, 0)');
+                    ctx.fillStyle = innerFlameGradient;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -10);
+                    ctx.bezierCurveTo(-6, -6, -8, 2, -4, 8);
+                    ctx.bezierCurveTo(-2, 10, 2, 10, 4, 8);
+                    ctx.bezierCurveTo(8, 2, 6, -6, 0, -10);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                } else if (powerUp.type === 'laser') {
+                    // Lightning bolt shape
+                    ctx.beginPath();
+                    ctx.moveTo(-5, -18);
+                    ctx.lineTo(8, -5);
+                    ctx.lineTo(2, 0);
+                    ctx.lineTo(10, 18);
+                    ctx.lineTo(-3, 5);
+                    ctx.lineTo(3, 0);
+                    ctx.lineTo(-8, -18);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Electric glow
+                    ctx.strokeStyle = style.shine;
+                    ctx.lineWidth = 2;
+                    ctx.shadowBlur = 15;
+                    ctx.stroke();
+                    
+                    // Sparks
+                    for (let i = 0; i < 3; i++) {
+                        const angle = rotation + i * (Math.PI * 2 / 3);
+                        const dist = 20;
+                        ctx.fillStyle = style.shine;
+                        ctx.beginPath();
+                        ctx.arc(Math.cos(angle) * dist, Math.sin(angle) * dist, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                } else if (powerUp.type === 'bomb') {
+                    // Bomb sphere
+                    ctx.beginPath();
+                    ctx.arc(0, 3, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Shine highlight
+                    ctx.fillStyle = style.shine;
+                    ctx.beginPath();
+                    ctx.arc(-5, -2, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Fuse
+                    ctx.strokeStyle = '#8B4513';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(-3, -12);
+                    ctx.lineTo(-8, -18);
+                    ctx.stroke();
+                    
+                    // Fuse spark (animated)
+                    const sparkIntensity = Math.sin(time * 8) * 0.5 + 0.5;
+                    ctx.fillStyle = `rgba(255, 200, 0, ${sparkIntensity})`;
+                    ctx.shadowColor = '#FFD700';
+                    ctx.shadowBlur = 20;
+                    ctx.beginPath();
+                    ctx.arc(-8, -18, 3 + sparkIntensity * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.shadowBlur = 0;
+                
+                // Outer ring highlight
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, 22, 0, Math.PI * 2);
+                ctx.stroke();
                 
                 ctx.restore();
             });
@@ -3766,256 +4036,523 @@
             
             ctx.save();
             
-            // Warning phase - flashing warning message
+            // Warning phase - enhanced flashing warning with effects
             if (bossWarningTimer > 0) {
-                ctx.font = 'bold 40px Arial';
+                const flashIntensity = Math.sin(bossWarningTimer * 0.3) * 0.5 + 0.5;
+                
+                // Screen darkening
+                ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * flashIntensity})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Warning glow
+                const warningGlow = ctx.createRadialGradient(
+                    canvas.width / 2, canvas.height / 2, 0,
+                    canvas.width / 2, canvas.height / 2, 200
+                );
+                warningGlow.addColorStop(0, `rgba(255, 0, 0, ${flashIntensity * 0.8})`);
+                warningGlow.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                ctx.fillStyle = warningGlow;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Warning text with shadow
+                ctx.shadowColor = '#FF0000';
+                ctx.shadowBlur = 30;
+                ctx.font = 'bold 48px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillStyle = bossWarningTimer % 20 < 10 ? '#FF0000' : '#FFFF00';
                 ctx.fillText('⚠️ BOSS INCOMING! ⚠️', canvas.width / 2, canvas.height / 2);
+                
+                // Subtitle
+                ctx.font = 'bold 24px Arial';
+                ctx.fillStyle = '#FFF';
+                ctx.fillText('PREPARE FOR BATTLE!', canvas.width / 2, canvas.height / 2 + 50);
+                
                 ctx.restore();
                 return;
             }
             
-            // Apply shake effect when hit
+            const time = Date.now() / 1000;
             const drawX = boss.x + boss.shakeX;
             const drawY = boss.y + boss.shakeY;
+            const breathScale = 1 + Math.sin(boss.breathTimer * 0.05) * 0.03;
             
-            // Shadow effect - dark aura below boss
-            const shadowIntensity = 0.3 + Math.sin(boss.shadowPulse) * 0.1;
-            ctx.fillStyle = `rgba(0, 0, 0, ${shadowIntensity})`;
-            ctx.beginPath();
-            ctx.ellipse(drawX + boss.width / 2, drawY + boss.height + 10, 80, 20, 0, 0, Math.PI * 2);
-            ctx.fill();
+            // Dramatic shadow with pulsing effect
+            const shadowIntensity = 0.4 + Math.sin(boss.shadowPulse) * 0.15;
+            const shadowGradient = ctx.createRadialGradient(
+                drawX + boss.width / 2, drawY + boss.height + 15, 0,
+                drawX + boss.width / 2, drawY + boss.height + 15, 100
+            );
+            shadowGradient.addColorStop(0, `rgba(0, 0, 0, ${shadowIntensity})`);
+            shadowGradient.addColorStop(0.5, `rgba(0, 0, 0, ${shadowIntensity * 0.5})`);
+            shadowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = shadowGradient;
+            ctx.fillRect(drawX - 50, drawY + boss.height, boss.width + 100, 40);
             
-            // Electric energy crackling around boss in phase 2
+            // Phase-specific effects
+            const phaseColors = {
+                primary: bossPhase === 1 ? '#8B0000' : '#4B0082',
+                secondary: bossPhase === 1 ? '#FF0000' : '#8B00FF',
+                glow: bossPhase === 1 ? '#FF4500' : '#FF00FF',
+                energy: bossPhase === 1 ? '#FFA500' : '#DA70D6'
+            };
+            
+            // Electric crackling aura (phase 2)
             if (bossPhase === 2) {
-                for (let i = 0; i < 5; i++) {
-                    const angle = boss.electricCharge + i * (Math.PI * 2 / 5);
-                    const distance = 70 + Math.sin(boss.electricCharge * 2 + i) * 10;
+                for (let i = 0; i < 8; i++) {
+                    const angle = boss.electricCharge + i * (Math.PI / 4);
+                    const distance = 75 + Math.sin(boss.electricCharge * 3 + i) * 15;
                     const x = drawX + boss.width / 2 + Math.cos(angle) * distance;
                     const y = drawY + boss.height / 2 + Math.sin(angle) * distance;
                     
-                    ctx.strokeStyle = `rgba(138, 0, 255, ${0.5 + Math.sin(boss.electricCharge * 3) * 0.3})`;
-                    ctx.lineWidth = 2;
+                    // Lightning bolt with glow
+                    ctx.shadowColor = '#8B00FF';
+                    ctx.shadowBlur = 15;
+                    ctx.strokeStyle = `rgba(138, 0, 255, ${0.6 + Math.sin(boss.electricCharge * 5 + i) * 0.4})`;
+                    ctx.lineWidth = 3;
                     ctx.beginPath();
                     ctx.moveTo(drawX + boss.width / 2, drawY + boss.height / 2);
+                    
+                    // Jagged lightning path
+                    const midX = (drawX + boss.width / 2 + x) / 2 + Math.sin(time * 10 + i) * 10;
+                    const midY = (drawY + boss.height / 2 + y) / 2 + Math.cos(time * 10 + i) * 10;
+                    ctx.lineTo(midX, midY);
                     ctx.lineTo(x, y);
                     ctx.stroke();
                     
-                    // Lightning bolt ends
+                    // Lightning bolt ends with glow
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, Math.PI * 2);
+                    ctx.fill();
                     ctx.fillStyle = '#8B00FF';
                     ctx.beginPath();
-                    ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    ctx.arc(x, y, 6, 0, Math.PI * 2);
+                    ctx.globalAlpha = 0.5;
                     ctx.fill();
+                    ctx.globalAlpha = 1;
                 }
+                ctx.shadowBlur = 0;
             }
             
-            // Rotating aura rings with enhanced colors
-            for (let i = 0; i < 3; i++) {
-                const ringColor = bossPhase === 1 ? 
-                    `rgba(255, ${100 - i * 30}, ${100 - i * 30}, ${0.4 - i * 0.1})` :
-                    `rgba(${200 - i * 40}, 0, 255, ${0.5 - i * 0.1})`;
-                ctx.strokeStyle = ringColor;
-                ctx.lineWidth = 3;
+            // Rotating energy rings with 3D depth
+            for (let i = 0; i < 4; i++) {
+                const ringRadius = 85 + i * 20 + Math.sin(boss.auraRotation + i) * 10;
+                const ringAlpha = 0.6 - i * 0.12;
+                const ringWidth = 4 - i * 0.5;
+                
+                // Ring glow
+                ctx.shadowColor = phaseColors.glow;
+                ctx.shadowBlur = 12;
+                ctx.strokeStyle = `rgba(${bossPhase === 1 ? '255, 69, 0' : '138, 0, 255'}, ${ringAlpha})`;
+                ctx.lineWidth = ringWidth;
                 ctx.beginPath();
-                const radius = 80 + i * 15 + Math.sin(boss.auraRotation + i) * 8;
-                ctx.arc(drawX + boss.width / 2, drawY + boss.height / 2, radius, 0, Math.PI * 2);
+                ctx.arc(drawX + boss.width / 2, drawY + boss.height / 2, ringRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Ring highlights (partial arcs)
+                ctx.strokeStyle = `rgba(255, 255, 255, ${ringAlpha * 0.5})`;
+                ctx.lineWidth = ringWidth * 0.5;
+                ctx.beginPath();
+                ctx.arc(drawX + boss.width / 2, drawY + boss.height / 2, ringRadius, 
+                    -Math.PI / 4 + boss.auraRotation * (i + 1), 
+                    Math.PI / 4 + boss.auraRotation * (i + 1));
                 ctx.stroke();
             }
+            ctx.shadowBlur = 0;
             
-            // Pulsing glow - more intense in phase 2
-            const glowSize = 70 + Math.sin(boss.glowPhase) * (bossPhase === 2 ? 30 : 20);
+            // Massive pulsing aura
+            const glowSize = 90 + Math.sin(boss.glowPhase) * (bossPhase === 2 ? 40 : 25);
             const bossGlow = ctx.createRadialGradient(
                 drawX + boss.width / 2, drawY + boss.height / 2, 0,
                 drawX + boss.width / 2, drawY + boss.height / 2, glowSize
             );
-            bossGlow.addColorStop(0, bossPhase === 1 ? 'rgba(255, 0, 0, 0.6)' : 'rgba(255, 0, 255, 0.8)');
-            bossGlow.addColorStop(0.5, bossPhase === 1 ? 'rgba(255, 100, 0, 0.3)' : 'rgba(138, 0, 255, 0.4)');
+            bossGlow.addColorStop(0, bossPhase === 1 ? 'rgba(255, 69, 0, 0.7)' : 'rgba(138, 0, 255, 0.8)');
+            bossGlow.addColorStop(0.4, bossPhase === 1 ? 'rgba(255, 0, 0, 0.4)' : 'rgba(186, 85, 211, 0.5)');
             bossGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
             ctx.fillStyle = bossGlow;
-            ctx.fillRect(drawX - 50, drawY - 50, boss.width + 100, boss.height + 100);
+            ctx.fillRect(drawX - 70, drawY - 70, boss.width + 140, boss.height + 140);
             
-            // Angry pulse effect when damaged
+            // Angry pulse (phase 2, when damaged)
             if (boss.angryPulse > 0 && bossPhase === 2) {
+                const angryIntensity = Math.sin(boss.angryPulse) * 0.4;
                 const angryGlow = ctx.createRadialGradient(
                     drawX + boss.width / 2, drawY + boss.height / 2, 0,
-                    drawX + boss.width / 2, drawY + boss.height / 2, 100
+                    drawX + boss.width / 2, drawY + boss.height / 2, 120
                 );
-                angryGlow.addColorStop(0, `rgba(255, 0, 0, ${Math.sin(boss.angryPulse) * 0.3})`);
+                angryGlow.addColorStop(0, `rgba(255, 0, 0, ${angryIntensity})`);
+                angryGlow.addColorStop(0.5, `rgba(255, 0, 0, ${angryIntensity * 0.5})`);
                 angryGlow.addColorStop(1, 'rgba(255, 0, 0, 0)');
                 ctx.fillStyle = angryGlow;
-                ctx.fillRect(drawX - 60, drawY - 60, boss.width + 120, boss.height + 120);
+                ctx.fillRect(drawX - 80, drawY - 80, boss.width + 160, boss.height + 160);
             }
             
-            // Main boss body - menacing skull-like shape
-            ctx.fillStyle = bossPhase === 1 ? '#8B0000' : '#4B0082';
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 3;
+            // === BOSS BODY RENDERING (3D Premium Design) ===
             
-            // Head with breathing effect
-            const breathScale = 1 + Math.sin(boss.breathTimer * 0.05) * 0.03;
+            // Neck/Body connection with armor plates
+            const bodyGradient = ctx.createLinearGradient(
+                drawX + 30, drawY + 100, drawX + 120, drawY + 100
+            );
+            bodyGradient.addColorStop(0, phaseColors.primary);
+            bodyGradient.addColorStop(0.5, phaseColors.secondary);
+            bodyGradient.addColorStop(1, phaseColors.primary);
+            ctx.fillStyle = bodyGradient;
+            
+            // Main body armor (3 layered plates)
+            for (let i = 0; i < 3; i++) {
+                const plateY = drawY + 105 + i * 18;
+                const plateWidth = 95 - i * 15;
+                const plateX = drawX + 27 + i * 7.5;
+                
+                // Plate shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.fillRect(plateX + 2, plateY + 2, plateWidth, 14);
+                
+                // Plate gradient
+                const plateGradient = ctx.createLinearGradient(plateX, plateY, plateX, plateY + 14);
+                plateGradient.addColorStop(0, phaseColors.secondary);
+                plateGradient.addColorStop(0.5, phaseColors.primary);
+                plateGradient.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
+                ctx.fillStyle = plateGradient;
+                ctx.fillRect(plateX, plateY, plateWidth, 14);
+                
+                // Plate edges
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(plateX, plateY, plateWidth, 14);
+                
+                // Plate highlight
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(plateX + 5, plateY + 2);
+                ctx.lineTo(plateX + plateWidth - 5, plateY + 2);
+                ctx.stroke();
+                
+                // Energy rivets
+                if (bossPhase === 2) {
+                    ctx.fillStyle = phaseColors.energy;
+                    for (let j = 0; j < 3; j++) {
+                        const rivetX = plateX + (j + 1) * (plateWidth / 4);
+                        ctx.beginPath();
+                        ctx.arc(rivetX, plateY + 7, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+            
+            // Energy core (pulsing heart)
+            const coreSize = 18 + Math.sin(boss.glowPhase * 2) * 3;
+            const coreGlow = ctx.createRadialGradient(
+                drawX + boss.width / 2, drawY + 120, 0,
+                drawX + boss.width / 2, drawY + 120, coreSize
+            );
+            coreGlow.addColorStop(0, '#FFFFFF');
+            coreGlow.addColorStop(0.3, phaseColors.glow);
+            coreGlow.addColorStop(0.6, phaseColors.secondary);
+            coreGlow.addColorStop(1, phaseColors.primary);
+            
+            ctx.shadowColor = phaseColors.glow;
+            ctx.shadowBlur = 25;
+            ctx.fillStyle = coreGlow;
             ctx.beginPath();
-            ctx.arc(drawX + boss.width / 2, drawY + 60, 60 * breathScale, 0, Math.PI * 2);
+            ctx.arc(drawX + boss.width / 2, drawY + 120, coreSize, 0, Math.PI * 2);
             ctx.fill();
+            
+            // Core ring
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            
+            // Core energy particles
+            for (let i = 0; i < 6; i++) {
+                const particleAngle = time * 2 + i * (Math.PI / 3);
+                const particleDist = 25 + Math.sin(time * 3 + i) * 5;
+                const px = drawX + boss.width / 2 + Math.cos(particleAngle) * particleDist;
+                const py = drawY + 120 + Math.sin(particleAngle) * particleDist;
+                
+                ctx.fillStyle = phaseColors.energy;
+                ctx.beginPath();
+                ctx.arc(px, py, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // === HEAD (Menacing 3D Skull) ===
+            
+            // Head main sphere with depth gradient
+            const headGradient = ctx.createRadialGradient(
+                drawX + boss.width / 2 - 20, drawY + 50, 10,
+                drawX + boss.width / 2, drawY + 60, 70 * breathScale
+            );
+            headGradient.addColorStop(0, phaseColors.secondary);
+            headGradient.addColorStop(0.4, phaseColors.primary);
+            headGradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+            
+            ctx.fillStyle = headGradient;
+            ctx.beginPath();
+            ctx.arc(drawX + boss.width / 2, drawY + 60, 65 * breathScale, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Head outline
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.lineWidth = 3;
             ctx.stroke();
             
-            // Horns with glowing tips
+            // Skull texture lines
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(drawX + 40 + i * 15, drawY + 30);
+                ctx.lineTo(drawX + 45 + i * 15, drawY + 90);
+                ctx.stroke();
+            }
+            
+            // === HORNS (Menacing curved horns with glow) ===
             const hornGlowIntensity = Math.sin(boss.hornGlow) * 0.5 + 0.5;
             
-            // Left horn with glow
-            if (bossPhase === 2) {
-                const hornGlow = ctx.createRadialGradient(drawX, drawY + 10, 0, drawX, drawY + 10, 20);
-                hornGlow.addColorStop(0, `rgba(138, 0, 255, ${hornGlowIntensity})`);
-                hornGlow.addColorStop(1, 'rgba(138, 0, 255, 0)');
-                ctx.fillStyle = hornGlow;
-                ctx.fillRect(drawX - 20, drawY - 10, 40, 40);
-            }
+            // Left horn
+            ctx.save();
+            ctx.shadowColor = bossPhase === 2 ? '#8B00FF' : '#FF4500';
+            ctx.shadowBlur = 15 * hornGlowIntensity;
             
-            ctx.fillStyle = bossPhase === 1 ? '#000000' : '#4B0082';
+            const leftHornGradient = ctx.createLinearGradient(drawX, drawY + 10, drawX + 35, drawY + 50);
+            leftHornGradient.addColorStop(0, phaseColors.energy);
+            leftHornGradient.addColorStop(0.5, phaseColors.secondary);
+            leftHornGradient.addColorStop(1, phaseColors.primary);
+            ctx.fillStyle = leftHornGradient;
+            
             ctx.beginPath();
-            ctx.moveTo(drawX + 20, drawY + 40);
-            ctx.lineTo(drawX, drawY + 10);
-            ctx.lineTo(drawX + 35, drawY + 50);
+            ctx.moveTo(drawX + 25, drawY + 40);
+            ctx.quadraticCurveTo(drawX - 10, drawY + 15, drawX, drawY + 5);
+            ctx.lineTo(drawX + 5, drawY + 10);
+            ctx.quadraticCurveTo(drawX + 5, drawY + 25, drawX + 32, drawY + 48);
             ctx.closePath();
             ctx.fill();
-            ctx.strokeStyle = '#000000';
+            
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
             ctx.lineWidth = 2;
             ctx.stroke();
             
-            // Right horn with glow
-            if (bossPhase === 2) {
-                const hornGlow2 = ctx.createRadialGradient(drawX + 150, drawY + 10, 0, drawX + 150, drawY + 10, 20);
-                hornGlow2.addColorStop(0, `rgba(138, 0, 255, ${hornGlowIntensity})`);
-                hornGlow2.addColorStop(1, 'rgba(138, 0, 255, 0)');
-                ctx.fillStyle = hornGlow2;
-                ctx.fillRect(drawX + 130, drawY - 10, 40, 40);
-            }
-            
-            ctx.fillStyle = bossPhase === 1 ? '#000000' : '#4B0082';
+            // Horn tip glow
+            ctx.fillStyle = bossPhase === 2 ? '#FF00FF' : '#FFD700';
             ctx.beginPath();
-            ctx.moveTo(drawX + 130, drawY + 40);
-            ctx.lineTo(drawX + 150, drawY + 10);
-            ctx.lineTo(drawX + 115, drawY + 50);
+            ctx.arc(drawX, drawY + 5, 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Right horn
+            const rightHornGradient = ctx.createLinearGradient(drawX + 150, drawY + 10, drawX + 115, drawY + 50);
+            rightHornGradient.addColorStop(0, phaseColors.energy);
+            rightHornGradient.addColorStop(0.5, phaseColors.secondary);
+            rightHornGradient.addColorStop(1, phaseColors.primary);
+            ctx.fillStyle = rightHornGradient;
+            
+            ctx.beginPath();
+            ctx.moveTo(drawX + 125, drawY + 40);
+            ctx.quadraticCurveTo(drawX + 160, drawY + 15, drawX + 150, drawY + 5);
+            ctx.lineTo(drawX + 145, drawY + 10);
+            ctx.quadraticCurveTo(drawX + 145, drawY + 25, drawX + 118, drawY + 48);
             ctx.closePath();
             ctx.fill();
-            ctx.strokeStyle = '#000000';
+            
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
             ctx.lineWidth = 2;
             ctx.stroke();
             
-            // Eyes - glowing and menacing with enhanced effects
-            const eyeGlow = boss.isBlinking ? 0 : Math.sin(boss.glowPhase * 2) * 0.3 + 0.7;
+            // Horn tip glow
+            ctx.fillStyle = bossPhase === 2 ? '#FF00FF' : '#FFD700';
+            ctx.beginPath();
+            ctx.arc(drawX + 150, drawY + 5, 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+            
+            // === EYES (Glowing menacing eyes with depth) ===
+            const eyeGlowIntensity = boss.isBlinking ? 0 : Math.sin(boss.glowPhase * 2) * 0.3 + 0.7;
             const eyeColor = bossPhase === 1 ? [255, 0, 0] : [255, 0, 255];
             
             if (!boss.isBlinking) {
-                // Left eye glow - enhanced
-                const leftEyeGlow = ctx.createRadialGradient(drawX + 45, drawY + 55, 0, drawX + 45, drawY + 55, 25);
-                leftEyeGlow.addColorStop(0, `rgba(${eyeColor[0]}, ${eyeColor[1]}, ${eyeColor[2]}, ${eyeGlow})`);
-                leftEyeGlow.addColorStop(0.5, `rgba(${eyeColor[0]}, ${eyeColor[1]}, ${eyeColor[2]}, ${eyeGlow * 0.5})`);
-                leftEyeGlow.addColorStop(1, 'rgba(255, 0, 0, 0)');
-                ctx.fillStyle = leftEyeGlow;
-                ctx.fillRect(drawX + 20, drawY + 30, 50, 50);
+                // Eye sockets (depth)
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.beginPath();
+                ctx.ellipse(drawX + 50, drawY + 58, 18, 20, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(drawX + 100, drawY + 58, 18, 20, 0, 0, Math.PI * 2);
+                ctx.fill();
                 
-                // Right eye glow - enhanced
-                const rightEyeGlow = ctx.createRadialGradient(drawX + 105, drawY + 55, 0, drawX + 105, drawY + 55, 25);
-                rightEyeGlow.addColorStop(0, `rgba(${eyeColor[0]}, ${eyeColor[1]}, ${eyeColor[2]}, ${eyeGlow})`);
-                rightEyeGlow.addColorStop(0.5, `rgba(${eyeColor[0]}, ${eyeColor[1]}, ${eyeColor[2]}, ${eyeGlow * 0.5})`);
-                rightEyeGlow.addColorStop(1, 'rgba(255, 0, 0, 0)');
-                ctx.fillStyle = rightEyeGlow;
-                ctx.fillRect(drawX + 80, drawY + 30, 50, 50);
+                // Left eye glow with layers
+                for (let i = 3; i > 0; i--) {
+                    const glowRadius = 25 * i / 3;
+                    const glowAlpha = eyeGlowIntensity * (1 - i / 4);
+                    const leftEyeGlow = ctx.createRadialGradient(
+                        drawX + 50, drawY + 58, 0,
+                        drawX + 50, drawY + 58, glowRadius
+                    );
+                    leftEyeGlow.addColorStop(0, `rgba(${eyeColor[0]}, ${eyeColor[1]}, ${eyeColor[2]}, ${glowAlpha})`);
+                    leftEyeGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                    ctx.fillStyle = leftEyeGlow;
+                    ctx.fillRect(drawX + 25, drawY + 33, 50, 50);
+                }
                 
-                // Eye light beams when angry
+                // Right eye glow with layers
+                for (let i = 3; i > 0; i--) {
+                    const glowRadius = 25 * i / 3;
+                    const glowAlpha = eyeGlowIntensity * (1 - i / 4);
+                    const rightEyeGlow = ctx.createRadialGradient(
+                        drawX + 100, drawY + 58, 0,
+                        drawX + 100, drawY + 58, glowRadius
+                    );
+                    rightEyeGlow.addColorStop(0, `rgba(${eyeColor[0]}, ${eyeColor[1]}, ${eyeColor[2]}, ${glowAlpha})`);
+                    rightEyeGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                    ctx.fillStyle = rightEyeGlow;
+                    ctx.fillRect(drawX + 75, drawY + 33, 50, 50);
+                }
+                
+                // Eye laser beams (phase 2, when angry)
                 if (bossPhase === 2 && Math.sin(boss.angryPulse) > 0.5) {
-                    ctx.strokeStyle = `rgba(255, 0, 255, ${Math.sin(boss.angryPulse) * 0.4})`;
-                    ctx.lineWidth = 8;
+                    const beamAlpha = Math.sin(boss.angryPulse) * 0.5;
+                    
+                    // Beam glow
+                    for (let i = 0; i < 2; i++) {
+                        const eyeX = i === 0 ? drawX + 50 : drawX + 100;
+                        const beamGradient = ctx.createLinearGradient(
+                            eyeX, drawY + 65, eyeX, canvas.height
+                        );
+                        beamGradient.addColorStop(0, `rgba(255, 0, 255, ${beamAlpha})`);
+                        beamGradient.addColorStop(1, 'rgba(255, 0, 255, 0)');
+                        ctx.fillStyle = beamGradient;
+                        ctx.fillRect(eyeX - 6, drawY + 65, 12, canvas.height - drawY - 65);
+                    }
+                    
+                    // Beam core
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${beamAlpha})`;
+                    ctx.lineWidth = 3;
                     ctx.beginPath();
-                    ctx.moveTo(drawX + 45, drawY + 65);
-                    ctx.lineTo(drawX + 45, canvas.height);
+                    ctx.moveTo(drawX + 50, drawY + 65);
+                    ctx.lineTo(drawX + 50, canvas.height);
                     ctx.stroke();
                     ctx.beginPath();
-                    ctx.moveTo(drawX + 105, drawY + 65);
-                    ctx.lineTo(drawX + 105, canvas.height);
+                    ctx.moveTo(drawX + 100, drawY + 65);
+                    ctx.lineTo(drawX + 100, canvas.height);
                     ctx.stroke();
                 }
             }
             
-            // Eyes
-            ctx.fillStyle = boss.isBlinking ? (bossPhase === 1 ? '#8B0000' : '#4B0082') : (bossPhase === 1 ? '#FF0000' : '#FF00FF');
-            ctx.fillRect(drawX + 35, drawY + 45, 20, boss.isBlinking ? 3 : 20);
-            ctx.fillRect(drawX + 95, drawY + 45, 20, boss.isBlinking ? 3 : 20);
+            // Eyes (main spheres)
+            const eyeHeight = boss.isBlinking ? 4 : 22;
+            const eyeY = boss.isBlinking ? drawY + 55 : drawY + 48;
+            
+            const leftEyeGradient = ctx.createRadialGradient(
+                drawX + 45, eyeY + 5, 5,
+                drawX + 50, eyeY + 11, 12
+            );
+            leftEyeGradient.addColorStop(0, `rgba(${eyeColor[0]}, ${eyeColor[1]}, ${eyeColor[2]}, 1)`);
+            leftEyeGradient.addColorStop(1, boss.isBlinking ? phaseColors.primary : `rgba(${eyeColor[0] * 0.5}, 0, ${eyeColor[2] * 0.5}, 1)`);
+            ctx.fillStyle = leftEyeGradient;
+            ctx.fillRect(drawX + 38, eyeY, 24, eyeHeight);
+            
+            const rightEyeGradient = ctx.createRadialGradient(
+                drawX + 95, eyeY + 5, 5,
+                drawX + 100, eyeY + 11, 12
+            );
+            rightEyeGradient.addColorStop(0, `rgba(${eyeColor[0]}, ${eyeColor[1]}, ${eyeColor[2]}, 1)`);
+            rightEyeGradient.addColorStop(1, boss.isBlinking ? phaseColors.primary : `rgba(${eyeColor[0] * 0.5}, 0, ${eyeColor[2] * 0.5}, 1)`);
+            ctx.fillStyle = rightEyeGradient;
+            ctx.fillRect(drawX + 88, eyeY, 24, eyeHeight);
             
             if (!boss.isBlinking) {
-                // Eye pupils with glow
+                // Eye pupils (animated, tracking)
+                const pupilOffset = Math.sin(time * 0.5) * 2;
                 ctx.fillStyle = '#000000';
-                ctx.fillRect(drawX + 42, drawY + 52, 6, 10);
-                ctx.fillRect(drawX + 102, drawY + 52, 6, 10);
-                
-                // Eye highlights
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(drawX + 38, drawY + 48, 3, 3);
-                ctx.fillRect(drawX + 98, drawY + 48, 3, 3);
-            }
-            
-            // Mouth - changes based on roaring with animated jaw
-            const mouthOpenAmount = boss.isRoaring ? Math.min(boss.mouthOpenTimer / 10, 20) : 0;
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(drawX + 40, drawY + 85);
-            for (let i = 0; i < 6; i++) {
-                ctx.lineTo(drawX + 40 + i * 14, drawY + 85 + (i % 2 === 0 ? 10 + mouthOpenAmount : mouthOpenAmount));
-            }
-            ctx.stroke();
-            
-            // Open mouth interior when roaring
-            if (boss.isRoaring && mouthOpenAmount > 5) {
-                ctx.fillStyle = bossPhase === 1 ? '#660000' : '#4B0082';
                 ctx.beginPath();
-                ctx.moveTo(drawX + 45, drawY + 88);
-                for (let i = 0; i < 5; i++) {
-                    ctx.lineTo(drawX + 45 + i * 14, drawY + 88 + (i % 2 === 0 ? 8 + mouthOpenAmount : mouthOpenAmount));
-                }
-                ctx.closePath();
+                ctx.ellipse(drawX + 48 + pupilOffset, drawY + 58, 4, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(drawX + 98 + pupilOffset, drawY + 58, 4, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eye highlights (3D shine)
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.beginPath();
+                ctx.arc(drawX + 44, drawY + 52, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(drawX + 94, drawY + 52, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Secondary highlights
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.beginPath();
+                ctx.arc(drawX + 54, drawY + 62, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(drawX + 104, drawY + 62, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // === MOUTH (Animated jaw with teeth) ===
+            const mouthOpenAmount = boss.isRoaring ? Math.min(boss.mouthOpenTimer / 10, 25) : 0;
+            
+            // Mouth cavity (when open)
+            if (boss.isRoaring && mouthOpenAmount > 5) {
+                const mouthGradient = ctx.createRadialGradient(
+                    drawX + boss.width / 2, drawY + 95, 0,
+                    drawX + boss.width / 2, drawY + 95 + mouthOpenAmount, 40
+                );
+                mouthGradient.addColorStop(0, 'rgba(0, 0, 0, 0.9)');
+                mouthGradient.addColorStop(0.5, phaseColors.primary);
+                mouthGradient.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
+                ctx.fillStyle = mouthGradient;
+                ctx.beginPath();
+                ctx.ellipse(drawX + boss.width / 2, drawY + 95, 40, mouthOpenAmount, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
                 // Glowing energy in mouth
-                const mouthGlow = ctx.createRadialGradient(
-                    drawX + boss.width / 2, drawY + 95, 0,
-                    drawX + boss.width / 2, drawY + 95, 30
+                const energyGlow = ctx.createRadialGradient(
+                    drawX + boss.width / 2, drawY + 98, 0,
+                    drawX + boss.width / 2, drawY + 98, 35
                 );
-                mouthGlow.addColorStop(0, bossPhase === 1 ? 'rgba(255, 100, 0, 0.8)' : 'rgba(138, 0, 255, 0.8)');
-                mouthGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-                ctx.fillStyle = mouthGlow;
-                ctx.fillRect(drawX + 40, drawY + 85, 80, mouthOpenAmount + 15);
+                energyGlow.addColorStop(0, bossPhase === 1 ? 'rgba(255, 200, 0, 0.9)' : 'rgba(138, 0, 255, 0.9)');
+                energyGlow.addColorStop(0.6, bossPhase === 1 ? 'rgba(255, 100, 0, 0.5)' : 'rgba(186, 85, 211, 0.5)');
+                energyGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = energyGlow;
+                ctx.fillRect(drawX + 35, drawY + 88, 80, mouthOpenAmount + 20);
             }
             
-            // Body segments with armor plates and glow
-            ctx.fillStyle = bossPhase === 1 ? '#660000' : '#330066';
-            for (let i = 0; i < 2; i++) {
-                // Armor plate glow
-                if (bossPhase === 2) {
-                    ctx.shadowColor = '#8B00FF';
-                    ctx.shadowBlur = 10;
-                }
-                ctx.fillRect(drawX + 30 + i * 10, drawY + 110 + i * 20, 90 - i * 20, 15);
-                ctx.shadowBlur = 0;
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(drawX + 30 + i * 10, drawY + 110 + i * 20, 90 - i * 20, 15);
+            // Teeth (upper jaw - fixed)
+            ctx.fillStyle = '#FFFFFF';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 7; i++) {
+                ctx.beginPath();
+                ctx.moveTo(drawX + 45 + i * 10, drawY + 85);
+                ctx.lineTo(drawX + 42 + i * 10, drawY + 92);
+                ctx.lineTo(drawX + 48 + i * 10, drawY + 92);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
             }
             
-            // Energy core
-            const coreGlow = ctx.createRadialGradient(
-                drawX + boss.width / 2, drawY + 120, 0,
-                drawX + boss.width / 2, drawY + 120, 15
-            );
-            coreGlow.addColorStop(0, bossPhase === 1 ? '#FF0000' : '#FF00FF');
-            coreGlow.addColorStop(1, bossPhase === 1 ? '#FF6600' : '#8B00FF');
-            ctx.fillStyle = coreGlow;
+            // Teeth (lower jaw - moves with roar)
+            for (let i = 0; i < 6; i++) {
+                ctx.beginPath();
+                ctx.moveTo(drawX + 50 + i * 10, drawY + 93 + mouthOpenAmount);
+                ctx.lineTo(drawX + 53 + i * 10, drawY + 86 + mouthOpenAmount);
+                ctx.lineTo(drawX + 47 + i * 10, drawY + 86 + mouthOpenAmount);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+            
+            // Mouth outline
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.lineWidth = 3;
             ctx.beginPath();
-            ctx.arc(drawX + boss.width / 2, drawY + 120, 12, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#FFD700';
-            ctx.lineWidth = 2;
+            ctx.moveTo(drawX + 40, drawY + 85);
+            for (let i = 0; i < 7; i++) {
+                ctx.lineTo(drawX + 40 + i * 12, drawY + 85 + (i % 2 === 0 ? 0 : -3));
+            }
             ctx.stroke();
             
             ctx.restore();
