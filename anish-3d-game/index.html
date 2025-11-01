@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ANISH: Cyber Runner 3D</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+
+        body {
+            font-family: 'Orbitron', 'Arial Black', sans-serif;
+            background: #000;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Splash Screen */
+        #splash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+
+        #splash.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .logo {
+            font-size: 80px;
+            font-weight: 900;
+            background: linear-gradient(45deg, #00ff88, #00ccff, #ff00ff, #00ff88);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient 3s ease infinite, glow 2s ease-in-out infinite;
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+            margin-bottom: 20px;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: drop-shadow(0 0 20px #00ff88); }
+            50% { filter: drop-shadow(0 0 40px #00ccff); }
+        }
+
+        .subtitle {
+            font-size: 24px;
+            color: #00ccff;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+        }
+
+        #start-btn {
+            padding: 20px 60px;
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00ff88, #00ccff);
+            border: none;
+            border-radius: 50px;
+            color: #000;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.5);
+            transition: all 0.3s;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        #start-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 50px rgba(0, 255, 136, 0.8);
+        }
+
+        /* UI Overlay */
+        #ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            color: #00ff88;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88;
+            z-index: 100;
+            display: none;
+        }
+
+        #ui.active {
+            display: block;
+        }
+
+        .score-display {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px 30px;
+            border-radius: 20px;
+            border: 2px solid #00ff88;
+            display: inline-block;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+        }
+
+        #name-display {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 36px;
+            font-weight: 900;
+            color: #00ff88;
+            text-shadow: 0 0 20px #00ff88, 0 0 40px #00ccff;
+            z-index: 100;
+            display: none;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        #name-display.active {
+            display: block;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+        }
+
+        /* Touch Controls */
+        #controls {
+            position: fixed;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            display: none;
+            justify-content: space-around;
+            padding: 0 40px;
+            z-index: 100;
+        }
+
+        #controls.active {
+            display: flex;
+        }
+
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(0, 255, 136, 0.3);
+            border: 3px solid #00ff88;
+            border-radius: 50%;
+            color: #00ff88;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .control-btn:active {
+            background: rgba(0, 255, 136, 0.6);
+            transform: scale(0.95);
+        }
+
+        /* Game Over */
+        #game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        #game-over.active {
+            display: flex;
+        }
+
+        .game-over-title {
+            font-size: 60px;
+            color: #ff0066;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px #ff0066;
+        }
+
+        .final-score {
+            font-size: 36px;
+            color: #00ff88;
+            margin-bottom: 40px;
+        }
+
+        #restart-btn {
+            padding: 15px 50px;
+            font-size: 20px;
+            background: linear-gradient(45deg, #ff0066, #ff6600);
+            border: none;
+            border-radius: 50px;
+            color: #fff;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 10px 30px rgba(255, 0, 102, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .logo { font-size: 50px; }
+            .subtitle { font-size: 18px; }
+            #start-btn { font-size: 18px; padding: 15px 40px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+
+    <!-- Splash Screen -->
+    <div id="splash">
+        <div class="logo">ANISH</div>
+        <div class="subtitle">Cyber Runner 3D</div>
+        <button id="start-btn">▶ START GAME</button>
+        <p style="color: #666; margin-top: 30px; font-size: 14px;">Created by ANISH</p>
+    </div>
+
+    <!-- Game UI -->
+    <div id="ui">
+        <div class="score-display">
+            <span>SCORE: </span><span id="score">0</span>
+        </div>
+    </div>
+
+    <div id="name-display">ANISH</div>
+
+    <!-- Touch Controls -->
+    <div id="controls">
+        <div class="control-btn" id="left-btn">◀</div>
+        <div class="control-btn" id="jump-btn">↑</div>
+        <div class="control-btn" id="right-btn">▶</div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over">
+        <div class="game-over-title">GAME OVER</div>
+        <div class="final-score">FINAL SCORE: <span id="final-score">0</span></div>
+        <div style="color: #00ccff; font-size: 24px; margin-bottom: 30px;">By ANISH</div>
+        <button id="restart-btn">🔄 RESTART</button>
+    </div>
+
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // Game Variables
+        let scene, camera, renderer;
+        let player, ground;
+        let obstacles = [];
+        let collectibles = [];
+        let score = 0;
+        let gameSpeed = 0.1;
+        let isJumping = false;
+        let jumpVelocity = 0;
+        let gravity = 0.02;
+        let gameRunning = false;
+        let particles = [];
+        const anishLetters = ['A', 'N', 'I', 'S', 'H'];
+        let collectedLetters = [];
+
+        // DOM Elements
+        const splash = document.getElementById('splash');
+        const startBtn = document.getElementById('start-btn');
+        const ui = document.getElementById('ui');
+        const scoreDisplay = document.getElementById('score');
+        const nameDisplay = document.getElementById('name-display');
+        const controls = document.getElementById('controls');
+        const gameOver = document.getElementById('game-over');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const restartBtn = document.getElementById('restart-btn');
+        const gameContainer = document.getElementById('game-container');
+
+        // Initialize Three.js
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x000000, 10, 100);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, 10);
+            camera.lookAt(0, 2, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            gameContainer.appendChild(renderer.domElement);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0x00ffff, 1);
+            directionalLight.position.set(10, 20, 10);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+
+            // Point lights for neon effect
+            const pointLight1 = new THREE.PointLight(0x00ff88, 2, 50);
+            pointLight1.position.set(-10, 10, 0);
+            scene.add(pointLight1);
+
+            const pointLight2 = new THREE.PointLight(0xff0066, 2, 50);
+            pointLight2.position.set(10, 10, 0);
+            scene.add(pointLight2);
+
+            // Ground
+            const groundGeometry = new THREE.PlaneGeometry(20, 200);
+            const groundMaterial = new THREE.MeshStandardMaterial({
+                color: 0x111111,
+                emissive: 0x00ff88,
+                emissiveIntensity: 0.2,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+            ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Grid lines
+            for (let i = -100; i < 100; i += 5) {
+                const lineGeometry = new THREE.BufferGeometry();
+                const points = [];
+                points.push(new THREE.Vector3(-10, 0.1, i));
+                points.push(new THREE.Vector3(10, 0.1, i));
+                lineGeometry.setFromPoints(points);
+                const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff88 });
+                const line = new THREE.Line(lineGeometry, lineMaterial);
+                scene.add(line);
+            }
+
+            // Player
+            const playerGeometry = new THREE.BoxGeometry(1, 2, 1);
+            const playerMaterial = new THREE.MeshStandardMaterial({
+                color: 0x00ccff,
+                emissive: 0x00ccff,
+                emissiveIntensity: 0.5,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+            player = new THREE.Mesh(playerGeometry, playerMaterial);
+            player.position.set(0, 1, 0);
+            player.castShadow = true;
+            scene.add(player);
+
+            // Add glow to player
+            const glowGeometry = new THREE.BoxGeometry(1.2, 2.2, 1.2);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ccff,
+                transparent: true,
+                opacity: 0.3
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            player.add(glow);
+
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Create Obstacle
+        function createObstacle() {
+            const geometries = [
+                new THREE.BoxGeometry(2, 3, 2),
+                new THREE.ConeGeometry(1, 3, 4),
+                new THREE.OctahedronGeometry(1.5)
+            ];
+            const geometry = geometries[Math.floor(Math.random() * geometries.length)];
+            
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xff0066,
+                emissive: 0xff0066,
+                emissiveIntensity: 0.5,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+            
+            const obstacle = new THREE.Mesh(geometry, material);
+            const lane = Math.floor(Math.random() * 3) - 1; // -1, 0, or 1
+            obstacle.position.set(lane * 3, 1.5, -50);
+            obstacle.castShadow = true;
+            obstacle.userData = { speed: gameSpeed };
+            
+            scene.add(obstacle);
+            obstacles.push(obstacle);
+        }
+
+        // Create Collectible (ANISH Letters)
+        function createCollectible() {
+            const letter = anishLetters[Math.floor(Math.random() * anishLetters.length)];
+            
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xffff00,
+                emissive: 0xffff00,
+                emissiveIntensity: 0.8,
+                metalness: 0.9,
+                roughness: 0.1
+            });
+            
+            const collectible = new THREE.Mesh(geometry, material);
+            const lane = Math.floor(Math.random() * 3) - 1;
+            collectible.position.set(lane * 3, 2, -50);
+            collectible.userData = { letter: letter, speed: gameSpeed };
+            
+            scene.add(collectible);
+            collectibles.push(collectible);
+        }
+
+        // Create Particle Effect
+        function createParticles(x, y, z, color) {
+            for (let i = 0; i < 20; i++) {
+                const geometry = new THREE.SphereGeometry(0.1, 8, 8);
+                const material = new THREE.MeshBasicMaterial({ color: color });
+                const particle = new THREE.Mesh(geometry, material);
+                
+                particle.position.set(x, y, z);
+                particle.userData = {
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.3,
+                        Math.random() * 0.3,
+                        (Math.random() - 0.5) * 0.3
+                    ),
+                    life: 30
+                };
+                
+                scene.add(particle);
+                particles.push(particle);
+            }
+        }
+
+        // Player Movement
+        let playerLane = 0;
+        const keys = {};
+
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            if (gameRunning) {
+                if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft();
+                if (e.key === 'ArrowRight' || e.key === 'd') moveRight();
+                if (e.key === 'ArrowUp' || e.key === ' ' || e.key === 'w') jump();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Touch Controls
+        document.getElementById('left-btn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            moveLeft();
+        });
+
+        document.getElementById('right-btn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            moveRight();
+        });
+
+        document.getElementById('jump-btn').addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        });
+
+        function moveLeft() {
+            if (playerLane > -1) {
+                playerLane--;
+                player.position.x = playerLane * 3;
+            }
+        }
+
+        function moveRight() {
+            if (playerLane < 1) {
+                playerLane++;
+                player.position.x = playerLane * 3;
+            }
+        }
+
+        function jump() {
+            if (!isJumping) {
+                isJumping = true;
+                jumpVelocity = 0.3;
+            }
+        }
+
+        // Update Game
+        function update() {
+            if (!gameRunning) return;
+
+            // Update player jump
+            if (isJumping) {
+                player.position.y += jumpVelocity;
+                jumpVelocity -= gravity;
+                
+                if (player.position.y <= 1) {
+                    player.position.y = 1;
+                    isJumping = false;
+                    jumpVelocity = 0;
+                }
+            }
+
+            // Move obstacles
+            obstacles.forEach((obstacle, index) => {
+                obstacle.position.z += obstacle.userData.speed;
+                obstacle.rotation.y += 0.05;
+                
+                // Check collision
+                if (Math.abs(obstacle.position.z - player.position.z) < 1.5 &&
+                    Math.abs(obstacle.position.x - player.position.x) < 1.5 &&
+                    Math.abs(obstacle.position.y - player.position.y) < 2) {
+                    endGame();
+                }
+                
+                // Remove if behind player
+                if (obstacle.position.z > 10) {
+                    scene.remove(obstacle);
+                    obstacles.splice(index, 1);
+                    score += 10;
+                    scoreDisplay.textContent = score;
+                }
+            });
+
+            // Move collectibles
+            collectibles.forEach((collectible, index) => {
+                collectible.position.z += collectible.userData.speed;
+                collectible.rotation.y += 0.1;
+                
+                // Check collection
+                if (Math.abs(collectible.position.z - player.position.z) < 1 &&
+                    Math.abs(collectible.position.x - player.position.x) < 1 &&
+                    Math.abs(collectible.position.y - player.position.y) < 2) {
+                    
+                    const letter = collectible.userData.letter;
+                    if (!collectedLetters.includes(letter)) {
+                        collectedLetters.push(letter);
+                        nameDisplay.textContent = collectedLetters.join('');
+                        
+                        if (collectedLetters.length === 5) {
+                            score += 500;
+                            collectedLetters = [];
+                            nameDisplay.textContent = '🎉 +500 BONUS! 🎉';
+                            setTimeout(() => {
+                                nameDisplay.textContent = 'ANISH';
+                            }, 2000);
+                        }
+                    }
+                    
+                    score += 50;
+                    scoreDisplay.textContent = score;
+                    createParticles(collectible.position.x, collectible.position.y, collectible.position.z, 0xffff00);
+                    scene.remove(collectible);
+                    collectibles.splice(index, 1);
+                }
+                
+                // Remove if behind player
+                if (collectible.position.z > 10) {
+                    scene.remove(collectible);
+                    collectibles.splice(index, 1);
+                }
+            });
+
+            // Update particles
+            particles.forEach((particle, index) => {
+                particle.position.add(particle.userData.velocity);
+                particle.userData.velocity.y -= 0.01;
+                particle.userData.life--;
+                particle.material.opacity = particle.userData.life / 30;
+                
+                if (particle.userData.life <= 0) {
+                    scene.remove(particle);
+                    particles.splice(index, 1);
+                }
+            });
+
+            // Spawn obstacles and collectibles
+            if (Math.random() < 0.02) createObstacle();
+            if (Math.random() < 0.03) createCollectible();
+
+            // Increase difficulty
+            gameSpeed += 0.00001;
+
+            // Camera follow
+            camera.position.z = player.position.z + 10;
+            camera.lookAt(player.position);
+        }
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+            renderer.render(scene, camera);
+        }
+
+        // Start Game
+        function startGame() {
+            splash.classList.add('hidden');
+            ui.classList.add('active');
+            nameDisplay.classList.add('active');
+            nameDisplay.textContent = 'ANISH';
+            
+            // Show touch controls on mobile
+            if ('ontouchstart' in window) {
+                controls.classList.add('active');
+            }
+            
+            gameRunning = true;
+            score = 0;
+            gameSpeed = 0.1;
+            collectedLetters = [];
+            scoreDisplay.textContent = score;
+            
+            // Clear scene
+            obstacles.forEach(obs => scene.remove(obs));
+            collectibles.forEach(col => scene.remove(col));
+            particles.forEach(par => scene.remove(par));
+            obstacles = [];
+            collectibles = [];
+            particles = [];
+            
+            player.position.set(0, 1, 0);
+            playerLane = 0;
+        }
+
+        function endGame() {
+            gameRunning = false;
+            finalScoreDisplay.textContent = score;
+            gameOver.classList.add('active');
+            ui.classList.remove('active');
+            nameDisplay.classList.remove('active');
+            controls.classList.remove('active');
+        }
+
+        // Event Listeners
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', () => {
+            gameOver.classList.remove('active');
+            startGame();
+        });
+
+        // Initialize and start
+        init();
+        animate();
+    </script>
+</body>
+</html>
