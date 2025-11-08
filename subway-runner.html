@@ -654,11 +654,13 @@
         // Player
         const player = {
             lane: 1, // 0=left, 1=center, 2=right
+            targetLane: 1, // Target lane for smooth animation
             x: 0,
             y: 500,
             width: 50,
             height: 70,
-            lives: 3 // Hearts/lives system
+            lives: 3, // Hearts/lives system
+            laneSpeed: 15 // Speed of lane transition (higher = faster)
         };
 
         // Lane positions
@@ -722,24 +724,24 @@
             if (!gameRunning) return;
             
             // Arrow keys (Desktop)
-            if (e.key === 'ArrowLeft' && player.lane > 0) {
-                player.lane--;
+            if (e.key === 'ArrowLeft' && player.targetLane > 0) {
+                player.targetLane--;
                 playSound('swipe');
             }
-            if (e.key === 'ArrowRight' && player.lane < 2) {
-                player.lane++;
+            if (e.key === 'ArrowRight' && player.targetLane < 2) {
+                player.targetLane++;
                 playSound('swipe');
             }
             
             // Keypad phone support - Number keys
             // 4 or 2 = Move Left
-            if ((e.key === '4' || e.key === '2') && player.lane > 0) {
-                player.lane--;
+            if ((e.key === '4' || e.key === '2') && player.targetLane > 0) {
+                player.targetLane--;
                 playSound('swipe');
             }
             // 6 or 8 = Move Right
-            if ((e.key === '6' || e.key === '8') && player.lane < 2) {
-                player.lane++;
+            if ((e.key === '6' || e.key === '8') && player.targetLane < 2) {
+                player.targetLane++;
                 playSound('swipe');
             }
             // 5 or 0 = Attack
@@ -759,7 +761,7 @@
             keys[e.key] = false;
         });
 
-        // Touch controls - Smooth and responsive swipe gestures
+        // Touch controls - Both swipe gestures AND tap controls
         let touchStartX = 0;
         let touchStartY = 0;
         let touchEndX = 0;
@@ -769,6 +771,8 @@
         const minSwipeDistance = 20; // Reduced for more responsive controls
         const maxSwipeTime = 500; // Maximum time for a swipe (ms)
         const swipeVelocityThreshold = 0.1; // Minimum velocity for swipe detection
+        const tapMaxDistance = 15; // Maximum movement for a tap
+        const tapMaxTime = 200; // Maximum time for a tap (ms)
 
         canvas.addEventListener('touchstart', (e) => {
             if (!gameRunning) return;
@@ -796,13 +800,13 @@
             // If user has moved enough and hasn't swiped yet, trigger immediate lane change
             if (!isSwiping && absDeltaX > minSwipeDistance && absDeltaX > absDeltaY) {
                 isSwiping = true;
-                if (deltaX > 0 && player.lane < 2) {
+                if (deltaX > 0 && player.targetLane < 2) {
                     // Swipe right
-                    player.lane++;
+                    player.targetLane++;
                     playSound('swipe');
-                } else if (deltaX < 0 && player.lane > 0) {
+                } else if (deltaX < 0 && player.targetLane > 0) {
                     // Swipe left
-                    player.lane--;
+                    player.targetLane--;
                     playSound('swipe');
                 }
             }
@@ -812,17 +816,40 @@
             if (!gameRunning) return;
             e.preventDefault();
             
-            // Only process if swipe wasn't already handled in touchmove
-            if (!isSwiping) {
-                const touch = e.changedTouches[0];
-                touchEndX = touch.clientX;
-                touchEndY = touch.clientY;
-                const swipeTime = Date.now() - touchStartTime;
+            const touch = e.changedTouches[0];
+            touchEndX = touch.clientX;
+            touchEndY = touch.clientY;
+            const touchEndTime = Date.now();
+            const touchDuration = touchEndTime - touchStartTime;
+            
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const absDeltaX = Math.abs(deltaX);
+            const absDeltaY = Math.abs(deltaY);
+            
+            // Check if it's a tap (quick touch with minimal movement)
+            if (!isSwiping && touchDuration < tapMaxTime && absDeltaX < tapMaxDistance && absDeltaY < tapMaxDistance) {
+                // TAP CONTROLS: Left/right side of screen
+                const canvasWidth = canvas.offsetWidth;
+                const tapX = touchEndX;
                 
-                // Only process if swipe was quick enough
-                if (swipeTime < maxSwipeTime) {
-                    handleSwipe();
+                if (tapX < canvasWidth / 2) {
+                    // Tap left side - move left
+                    if (player.targetLane > 0) {
+                        player.targetLane--;
+                        playSound('swipe');
+                    }
+                } else {
+                    // Tap right side - move right
+                    if (player.targetLane < 2) {
+                        player.targetLane++;
+                        playSound('swipe');
+                    }
                 }
+            }
+            // If not a tap and swipe wasn't already handled, process swipe in touchend
+            else if (!isSwiping && touchDuration < maxSwipeTime) {
+                handleSwipe();
             }
             
             isSwiping = false;
@@ -845,14 +872,14 @@
             if (absDeltaX > absDeltaY && absDeltaX > effectiveMinDistance) {
                 if (deltaX > 0) {
                     // Swipe right
-                    if (player.lane < 2) {
-                        player.lane++;
+                    if (player.targetLane < 2) {
+                        player.targetLane++;
                         playSound('swipe');
                     }
                 } else {
                     // Swipe left
-                    if (player.lane > 0) {
-                        player.lane--;
+                    if (player.targetLane > 0) {
+                        player.targetLane--;
                         playSound('swipe');
                     }
                 }
@@ -2318,13 +2345,19 @@
         }
 
         function updatePlayer() {
-            // Smooth lane transition with easing (faster response, smoother feel)
-            const targetX = lanes[player.lane];
+            // Smooth lane transition with linear interpolation for instant response
+            const targetX = lanes[player.targetLane];
             const distance = targetX - player.x;
             
-            // Ease-out cubic interpolation for smooth deceleration
-            const easeSpeed = 0.35;
-            player.x += distance * easeSpeed;
+            if (Math.abs(distance) > 1) {
+                // Move towards target with constant speed (more responsive)
+                const moveStep = Math.min(player.laneSpeed, Math.abs(distance));
+                player.x += distance > 0 ? moveStep : -moveStep;
+            } else {
+                // Snap to target when very close
+                player.x = targetX;
+                player.lane = player.targetLane;
+            }
             
             // Snap to target when very close to prevent jittering
             if (Math.abs(distance) < 0.5) {
