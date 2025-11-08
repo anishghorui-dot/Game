@@ -759,58 +759,68 @@
             keys[e.key] = false;
         });
 
-        // Touch controls - Screen tap zones and double tap
-        let lastTapTime = 0;
-        let tapCount = 0;
-        let tapTimeout = null;
+        // Touch controls - Swipe gestures
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        const minSwipeDistance = 30; // Minimum distance for swipe detection
 
         canvas.addEventListener('touchstart', (e) => {
             if (!gameRunning) return;
-            
             e.preventDefault();
             const touch = e.touches[0];
-            const touchX = touch.clientX;
-            const canvasWidth = canvas.offsetWidth;
-            const currentTime = Date.now();
-            
-            // Calculate screen thirds for median lane detection
-            const leftThird = canvasWidth / 3;
-            const rightThird = (canvasWidth * 2) / 3;
-            const isInMedianLane = touchX >= leftThird && touchX <= rightThird;
-            
-            // Double tap detection for attack (only in median/middle lane)
-            if (currentTime - lastTapTime < 300 && isInMedianLane) {
-                tapCount++;
-                if (tapCount === 1 && attackPowerUp && attackCooldown === 0) {
-                    useAttackPowerUp();
-                    tapCount = 0;
-                    clearTimeout(tapTimeout);
-                    lastTapTime = currentTime;
-                    return; // Exit early to prevent movement
-                }
-            }
-            
-            // Movement logic (works for single tap and double tap on left/right)
-            tapCount = 0;
-            if (touchX < canvasWidth / 2) {
-                // Left side tap - move left
-                if (player.lane > 0) {
-                    player.lane--;
-                    playSound('swipe');
-                }
-            } else {
-                // Right side tap - move right
-                if (player.lane < 2) {
-                    player.lane++;
-                    playSound('swipe');
-                }
-            }
-            
-            lastTapTime = currentTime;
-            tapTimeout = setTimeout(() => {
-                tapCount = 0;
-            }, 300);
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
         });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!gameRunning) return;
+            e.preventDefault();
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (!gameRunning) return;
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            touchEndX = touch.clientX;
+            touchEndY = touch.clientY;
+            
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const absDeltaX = Math.abs(deltaX);
+            const absDeltaY = Math.abs(deltaY);
+            
+            // Check if it's a horizontal swipe (more horizontal than vertical)
+            if (absDeltaX > absDeltaY && absDeltaX > minSwipeDistance) {
+                if (deltaX > 0) {
+                    // Swipe right
+                    if (player.lane < 2) {
+                        player.lane++;
+                        playSound('swipe');
+                    }
+                } else {
+                    // Swipe left
+                    if (player.lane > 0) {
+                        player.lane--;
+                        playSound('swipe');
+                    }
+                }
+            }
+            // Check if it's a vertical swipe for attack
+            else if (absDeltaY > absDeltaX && absDeltaY > minSwipeDistance) {
+                if (deltaY < 0) {
+                    // Swipe up - attack
+                    if (attackPowerUp && attackCooldown === 0) {
+                        useAttackPowerUp();
+                    }
+                }
+            }
+        }
 
         // Attack button control (kept as requested)
         document.getElementById('attackBtn').addEventListener('touchstart', (e) => {
