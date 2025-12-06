@@ -660,7 +660,7 @@
             width: 50,
             height: 70,
             lives: 3, // Hearts/lives system
-            laneSpeed: 15 // Speed of lane transition (higher = faster)
+            laneSpeed: 25 // Speed of lane transition (higher = faster, increased for more responsiveness)
         };
 
         // Lane positions
@@ -761,18 +761,16 @@
             keys[e.key] = false;
         });
 
-        // Touch controls - Both swipe gestures AND tap controls
+        // Touch controls - Swipe gestures only (ultra-responsive)
         let touchStartX = 0;
         let touchStartY = 0;
         let touchEndX = 0;
         let touchEndY = 0;
         let touchStartTime = 0;
         let isSwiping = false;
-        const minSwipeDistance = 20; // Reduced for more responsive controls
-        const maxSwipeTime = 500; // Maximum time for a swipe (ms)
-        const swipeVelocityThreshold = 0.1; // Minimum velocity for swipe detection
-        const tapMaxDistance = 15; // Maximum movement for a tap
-        const tapMaxTime = 200; // Maximum time for a tap (ms)
+        const minSwipeDistance = 15; // Very low threshold for instant response
+        const maxSwipeTime = 600; // Maximum time for a swipe (ms)
+        const swipeVelocityThreshold = 0.05; // Lower threshold for easier detection
 
         canvas.addEventListener('touchstart', (e) => {
             if (!gameRunning) return;
@@ -822,33 +820,8 @@
             const touchEndTime = Date.now();
             const touchDuration = touchEndTime - touchStartTime;
             
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            const absDeltaX = Math.abs(deltaX);
-            const absDeltaY = Math.abs(deltaY);
-            
-            // Check if it's a tap (quick touch with minimal movement)
-            if (!isSwiping && touchDuration < tapMaxTime && absDeltaX < tapMaxDistance && absDeltaY < tapMaxDistance) {
-                // TAP CONTROLS: Left/right side of screen
-                const canvasWidth = canvas.offsetWidth;
-                const tapX = touchEndX;
-                
-                if (tapX < canvasWidth / 2) {
-                    // Tap left side - move left
-                    if (player.targetLane > 0) {
-                        player.targetLane--;
-                        playSound('swipe');
-                    }
-                } else {
-                    // Tap right side - move right
-                    if (player.targetLane < 2) {
-                        player.targetLane++;
-                        playSound('swipe');
-                    }
-                }
-            }
-            // If not a tap and swipe wasn't already handled, process swipe in touchend
-            else if (!isSwiping && touchDuration < maxSwipeTime) {
+            // If swipe wasn't already handled in touchmove, process it here
+            if (!isSwiping && touchDuration < maxSwipeTime) {
                 handleSwipe();
             }
             
@@ -865,8 +838,8 @@
             // Calculate velocity (distance / time)
             const velocity = Math.max(absDeltaX, absDeltaY) / swipeTime;
             
-            // Quick tap or slow swipe - be more lenient with distance
-            const effectiveMinDistance = velocity > swipeVelocityThreshold ? minSwipeDistance / 2 : minSwipeDistance;
+            // Very lenient distance threshold - even slower swipes work
+            const effectiveMinDistance = velocity > swipeVelocityThreshold ? minSwipeDistance * 0.6 : minSwipeDistance;
             
             // Check if it's a horizontal swipe (more horizontal than vertical)
             if (absDeltaX > absDeltaY && absDeltaX > effectiveMinDistance) {
