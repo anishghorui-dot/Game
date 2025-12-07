@@ -3726,16 +3726,25 @@
                 lightningChainTimer--;
                 
                 if (frameCount % 15 === 0) { // Zap every 15 frames
-                    // Find nearby enemies to chain
-                    lightningChainTargets = [];
+                    // Find nearby enemies to chain (LIMIT TO 5 FOR PERFORMANCE)
+                    const potentialTargets = [];
                     obstacles.forEach(obs => {
                         if (!obs.destroyed && obs.y > 0 && obs.y < canvas.height) {
-                            const dist = Math.abs(obs.y - player.y);
-                            if (dist < 200) {
-                                lightningChainTargets.push({ x: obs.x + obs.width / 2, y: obs.y + obs.height / 2, ref: obs });
+                            const dist = Math.sqrt(Math.pow(obs.x - player.x, 2) + Math.pow(obs.y - player.y, 2));
+                            if (dist < 250) {
+                                potentialTargets.push({ 
+                                    x: obs.x + obs.width / 2, 
+                                    y: obs.y + obs.height / 2, 
+                                    ref: obs,
+                                    dist: dist
+                                });
                             }
                         }
                     });
+                    
+                    // Sort by distance and take only closest 5 targets
+                    potentialTargets.sort((a, b) => a.dist - b.dist);
+                    lightningChainTargets = potentialTargets.slice(0, 5);
                     
                     // Damage all targets in chain
                     lightningChainTargets.forEach(target => {
@@ -7200,28 +7209,16 @@
                 ctx.restore();
             }
             
-            // Lightning Chain - electric arcs (OPTIMIZED)
+            // Lightning Chain - electric arcs (OPTIMIZED - SINGLE PASS)
             if (lightningChainActive && lightningChainTargets.length > 0) {
                 ctx.save();
                 
-                // Limit targets for performance (max 5)
-                const maxTargets = Math.min(5, lightningChainTargets.length);
+                // Draw simplified lightning to max 5 targets (already limited in update)
+                ctx.strokeStyle = 'rgba(255, 255, 100, 0.9)';
+                ctx.lineWidth = 3;
                 
-                // Draw lightning from player to each target
-                for (let t = 0; t < maxTargets; t++) {
+                for (let t = 0; t < lightningChainTargets.length; t++) {
                     const target = lightningChainTargets[t];
-                    
-                    // Simplified lightning - direct line with glow effect
-                    ctx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
-                    ctx.lineWidth = 4;
-                    ctx.beginPath();
-                    ctx.moveTo(player.x + 25, player.y + 35);
-                    ctx.lineTo(target.x, target.y);
-                    ctx.stroke();
-                    
-                    // Bright core
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-                    ctx.lineWidth = 2;
                     ctx.beginPath();
                     ctx.moveTo(player.x + 25, player.y + 35);
                     ctx.lineTo(target.x, target.y);
