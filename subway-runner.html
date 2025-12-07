@@ -897,10 +897,6 @@
         let tankProjectiles = [];
         let tankShootTimer = 0;
         
-        // Auto-Pilot Power-up
-        let autoPilotActive = false;
-        let autoPilotTimer = 0;
-        
         // Helicopter Enemy
         let helicopters = [];
         let helicopterBombs = [];
@@ -1202,7 +1198,7 @@
             if (Math.random() < 0.2) {
                 type = 'heart';
             } else {
-                const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb', 'tank', 'autopilot'];
+                const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb', 'tank'];
                 type = types[Math.floor(Math.random() * types.length)];
             }
             
@@ -1225,7 +1221,7 @@
                 if (Math.random() < 0.2) {
                     type = 'heart';
                 } else {
-                    const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb', 'tank', 'autopilot'];
+                    const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb', 'tank'];
                     type = types[Math.floor(Math.random() * types.length)];
                 }
                 
@@ -2437,25 +2433,6 @@
                         });
                     }
                     break;
-                    
-                case 'autopilot':
-                    autoPilotActive = true;
-                    autoPilotTimer = 300; // 5 seconds at 60fps
-                    activePowerUp = 'autopilot';
-                    powerUpTimer = 300;
-                    showMultiplier('🤖 AUTO-PILOT ENGAGED!');
-                    // Futuristic hologram effect
-                    for (let i = 0; i < 40; i++) {
-                        particles.push({
-                            x: player.x + 25 + (Math.random() - 0.5) * 60,
-                            y: player.y + 35 + (Math.random() - 0.5) * 80,
-                            vx: (Math.random() - 0.5) * 2,
-                            vy: -Math.random() * 3,
-                            color: ['#00FF00', '#32CD32', '#00FF7F', '#7FFF00', '#ADFF2F'][Math.floor(Math.random() * 5)],
-                            life: 50
-                        });
-                    }
-                    break;
             }
         }
 
@@ -2467,8 +2444,6 @@
             tankActive = false;
             tankProjectiles = [];
             tankTimer = 0;
-            autoPilotActive = false;
-            autoPilotTimer = 0;
             
             if (speedBoostActive) {
                 // Reset to base game speed (accounts for difficulty level)
@@ -2496,8 +2471,7 @@
                     'magnet': '🧲',
                     'invincible': '⭐',
                     'boost': '🚀',
-                    'tank': '⚡',
-                    'autopilot': '🎮'
+                    'tank': '⚡'
                 };
                 
                 const names = {
@@ -2505,8 +2479,7 @@
                     'magnet': 'MAGNET',
                     'invincible': 'INVINCIBLE',
                     'boost': 'SPEED BOOST',
-                    'tank': 'THUNDER TANK',
-                    'autopilot': 'AUTO-PILOT'
+                    'tank': 'THUNDER TANK'
                 };
                 
                 icon.textContent = icons[activePowerUp];
@@ -2571,90 +2544,6 @@
         }
 
         function updatePlayer() {
-            // Auto-Pilot AI Control
-            if (autoPilotActive) {
-                autoPilotTimer--;
-                
-                if (autoPilotTimer <= 0) {
-                    autoPilotActive = false;
-                    showMultiplier('🤖 AUTO-PILOT OFF');
-                } else {
-                    // AI scans for threats and chooses safest lane
-                    let laneDanger = [0, 0, 0]; // Danger score for each lane
-                    
-                    // Check obstacles
-                    obstacles.forEach(obs => {
-                        if (obs.y > 200 && obs.y < player.y + 100) {
-                            const threatLevel = 1 - (obs.y / player.y); // Closer = more danger
-                            laneDanger[obs.lane] += threatLevel * 10;
-                        }
-                    });
-                    
-                    // Check helicopter bombs
-                    helicopterBombs.forEach(bomb => {
-                        if (bomb.y > 200 && bomb.y < player.y + 100) {
-                            const bombLane = bomb.x < lanes[1] - 40 ? 0 : (bomb.x > lanes[1] + 40 ? 2 : 1);
-                            laneDanger[bombLane] += 15;
-                        }
-                    });
-                    
-                    // Check boss bullets
-                    if (bossActive) {
-                        bossBullets.forEach(bullet => {
-                            if (bullet.y > 300 && bullet.y < player.y + 50) {
-                                const bulletLane = bullet.x < lanes[1] - 40 ? 0 : (bullet.x > lanes[1] + 40 ? 2 : 1);
-                                laneDanger[bulletLane] += 20;
-                            }
-                        });
-                    }
-                    
-                    // Prefer coins
-                    coinItems.forEach(coin => {
-                        if (coin.y > 300 && coin.y < player.y) {
-                            // Calculate which lane the coin is in based on dynamic lane positions
-                            let coinLane = 1;
-                            if (coin.x < (lanes[0] + lanes[1]) / 2) coinLane = 0;
-                            else if (coin.x > (lanes[1] + lanes[2]) / 2) coinLane = 2;
-                            if (coinLane >= 0 && coinLane <= 2) {
-                                laneDanger[coinLane] -= 3; // Coins reduce "danger" (attract)
-                            }
-                        }
-                    });
-                    
-                    // Find safest lane
-                    let safestLane = player.targetLane;
-                    let lowestDanger = laneDanger[player.targetLane];
-                    
-                    for (let i = 0; i < 3; i++) {
-                        if (laneDanger[i] < lowestDanger) {
-                            lowestDanger = laneDanger[i];
-                            safestLane = i;
-                        }
-                    }
-                    
-                    // Move towards safest lane (one step at a time)
-                    if (safestLane < player.targetLane && player.targetLane > 0) {
-                        player.targetLane--;
-                        playSound('swipe');
-                    } else if (safestLane > player.targetLane && player.targetLane < 2) {
-                        player.targetLane++;
-                        playSound('swipe');
-                    }
-                    
-                    // Auto-pilot visual effect - scanning lines
-                    if (frameCount % 10 === 0) {
-                        particles.push({
-                            x: player.x + 25,
-                            y: player.y - 20,
-                            vx: 0,
-                            vy: -8,
-                            color: '#00FF00',
-                            life: 30
-                        });
-                    }
-                }
-            }
-            
             // Smooth lane transition with linear interpolation for instant response
             const targetX = lanes[player.targetLane];
             const distance = targetX - player.x;
@@ -4429,13 +4318,6 @@
                         secondary: '#FFA500',
                         accent: '#FFFF00',
                         shine: '#FFFFFF'
-                    },
-                    'autopilot': {
-                        glow: 'rgba(0, 255, 128, 0.9)',
-                        primary: '#00FF80',
-                        secondary: '#00CC66',
-                        accent: '#66FFAA',
-                        shine: '#AAFFCC'
                     }
                 };
                 
@@ -6052,91 +5934,6 @@
                 ctx.restore();
             });
         }
-        
-        // Draw Auto-Pilot HUD overlay
-        function drawAutoPilotHUD() {
-            if (!autoPilotActive) return;
-            
-            ctx.save();
-            
-            // Scanning grid effect
-            ctx.strokeStyle = 'rgba(0, 255, 0, 0.2)';
-            ctx.lineWidth = 1;
-            
-            // Horizontal scan lines
-            for (let y = 0; y < canvas.height; y += 40) {
-                ctx.beginPath();
-                ctx.moveTo(50, y);
-                ctx.lineTo(350, y);
-                ctx.stroke();
-            }
-            
-            // Vertical scan lines
-            for (let i = 0; i < 3; i++) {
-                ctx.beginPath();
-                ctx.moveTo(lanes[i] + 25, 0);
-                ctx.lineTo(lanes[i] + 25, canvas.height);
-                ctx.stroke();
-            }
-            
-            // Targeting box around player
-            ctx.strokeStyle = '#00FF00';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10);
-            
-            // Corner brackets
-            const bSize = 10;
-            ctx.lineWidth = 3;
-            // Top-left
-            ctx.beginPath();
-            ctx.moveTo(player.x - 10, player.y - 10 + bSize);
-            ctx.lineTo(player.x - 10, player.y - 10);
-            ctx.lineTo(player.x - 10 + bSize, player.y - 10);
-            ctx.stroke();
-            // Top-right
-            ctx.beginPath();
-            ctx.moveTo(player.x + player.width + 10 - bSize, player.y - 10);
-            ctx.lineTo(player.x + player.width + 10, player.y - 10);
-            ctx.lineTo(player.x + player.width + 10, player.y - 10 + bSize);
-            ctx.stroke();
-            // Bottom-left
-            ctx.beginPath();
-            ctx.moveTo(player.x - 10, player.y + player.height + 10 - bSize);
-            ctx.lineTo(player.x - 10, player.y + player.height + 10);
-            ctx.lineTo(player.x - 10 + bSize, player.y + player.height + 10);
-            ctx.stroke();
-            // Bottom-right
-            ctx.beginPath();
-            ctx.moveTo(player.x + player.width + 10 - bSize, player.y + player.height + 10);
-            ctx.lineTo(player.x + player.width + 10, player.y + player.height + 10);
-            ctx.lineTo(player.x + player.width + 10, player.y + player.height + 10 - bSize);
-            ctx.stroke();
-            
-            // "AUTO-PILOT" text
-            ctx.font = 'bold 14px monospace';
-            ctx.fillStyle = '#00FF00';
-            ctx.textAlign = 'center';
-            ctx.fillText('AUTO-PILOT ACTIVE', canvas.width / 2, 30);
-            ctx.fillText(`${Math.ceil(autoPilotTimer / 60)}s`, canvas.width / 2, 50);
-            
-            // Threat indicators on obstacles
-            obstacles.forEach(obs => {
-                if (obs.y > 0 && obs.y < player.y) {
-                    ctx.strokeStyle = '#FF0000';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(obs.x + obs.width/2, obs.y + obs.height/2, 25, 0, Math.PI * 2);
-                    ctx.stroke();
-                    
-                    ctx.font = '10px monospace';
-                    ctx.fillStyle = '#FF0000';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('THREAT', obs.x + obs.width/2, obs.y - 10);
-                }
-            });
-            
-            ctx.restore();
-        }
 
         function draw() {
             drawBackground();
@@ -6150,7 +5947,6 @@
             drawTank();
             drawParticles();
             drawPlayer();
-            drawAutoPilotHUD();
             drawBossUI();
         }
 
@@ -6204,10 +6000,6 @@
             tankTimer = 0;
             tankProjectiles = [];
             tankShootTimer = 0;
-            
-            // Reset auto-pilot
-            autoPilotActive = false;
-            autoPilotTimer = 0;
             
             // Reset helicopters
             helicopters = [];
