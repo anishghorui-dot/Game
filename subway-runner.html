@@ -3974,11 +3974,13 @@
             const newDifficultyLevel = Math.floor(distance / 500) + 1;
             if (newDifficultyLevel > difficultyLevel) {
                 difficultyLevel = newDifficultyLevel;
-                // Speed increase disabled - keeps constant speed
-                // baseGameSpeed = Math.min(12, 5 + (difficultyLevel - 1) * 0.7);
-                // if (!speedBoostActive) {
-                //     gameSpeed = baseGameSpeed;
-                // }
+                // Speed increases until level 3, then stays constant
+                if (difficultyLevel <= 3) {
+                    baseGameSpeed = Math.min(12, 5 + (difficultyLevel - 1) * 0.7);
+                    if (!speedBoostActive) {
+                        gameSpeed = baseGameSpeed;
+                    }
+                }
                 
                 // Show level up with new enemy and power-up announcements
                 let levelMessage = `🔥 LEVEL ${difficultyLevel}!`;
