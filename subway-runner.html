@@ -3713,7 +3713,7 @@
                             obs.destroyed = true;
                             score += 50;
                             dropPowerUpFromEnemy(obs.x, obs.y);
-                            createExplosionParticles(obs.x + obs.width / 2, obs.y + obs.height / 2);
+                            createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#87CEEB');
                         }
                     }
                 });
@@ -3752,7 +3752,7 @@
                             target.ref.destroyed = true;
                             score += 50;
                             dropPowerUpFromEnemy(target.ref.x, target.ref.y);
-                            createExplosionParticles(target.x, target.y);
+                            createParticle(target.x, target.y, '#FFFF00');
                         }
                     });
                 }
@@ -3814,7 +3814,7 @@
                                     obs.destroyed = true;
                                     score += 50;
                                     dropPowerUpFromEnemy(obs.x, obs.y);
-                                    createExplosionParticles(obs.x + obs.width / 2, obs.y + obs.height / 2);
+                                    createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#FFD700');
                                 }
                             }
                         });
@@ -3872,7 +3872,7 @@
                                 obs.destroyed = true;
                                 score += 50;
                                 dropPowerUpFromEnemy(obs.x, obs.y);
-                                createExplosionParticles(obs.x + obs.width / 2, obs.y + obs.height / 2);
+                                createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#FFD700');
                             }
                         }
                     });
@@ -3907,7 +3907,7 @@
                                 obs.destroyed = true;
                                 score += 50;
                                 dropPowerUpFromEnemy(obs.x, obs.y);
-                                createExplosionParticles(obs.x + obs.width / 2, obs.y + obs.height / 2);
+                                createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#00CED1');
                             }
                         }
                     });
@@ -3956,7 +3956,7 @@
                                 obs.destroyed = true;
                                 score += 50;
                                 dropPowerUpFromEnemy(obs.x, obs.y);
-                                createExplosionParticles(obs.x + obs.width / 2, obs.y + obs.height / 2);
+                                createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#00FFFF');
                             }
                         }
                     });
