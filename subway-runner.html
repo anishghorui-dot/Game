@@ -842,19 +842,21 @@
             lanes[1] = ROAD_LEFT + LANE_WIDTH * 1.5;
             lanes[2] = ROAD_LEFT + LANE_WIDTH * 2.5;
             
-            // Update player position
-            player.x = lanes[player.lane];
-            player.y = screenHeight - 200;
-            
-            // Scale player size based on screen
-            player.width = Math.max(40, Math.min(60, LANE_WIDTH * 0.5));
-            player.height = player.width * 1.4;
+            // Update player position (only if player exists)
+            if (typeof player !== 'undefined') {
+                player.x = lanes[player.lane];
+                player.y = screenHeight - 200;
+                
+                // Scale player size based on screen
+                player.width = Math.max(40, Math.min(60, LANE_WIDTH * 0.5));
+                player.height = player.width * 1.4;
+            }
             
             // Clear cached gradients so they get recreated
             roadGradientCached = null;
         }
         
-        // Initial resize and listen for window resize
+        // Initial resize (player position set later after player is defined)
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
         
@@ -907,8 +909,8 @@
             laneSpeed: 25 // Speed of lane transition (higher = faster, increased for more responsiveness)
         };
 
-        // Lane positions set by resizeCanvas()
-        player.x = lanes[player.lane];
+        // Initialize player position after player is defined
+        resizeCanvas();
 
         // Arrays
         let obstacles = [];
