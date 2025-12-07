@@ -181,7 +181,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(180deg, #1a0a2e 0%, #0f0520 50%, #050210 100%);
+            background: linear-gradient(180deg, #0a0e27 0%, #16213e 50%, #0f3460 100%);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -200,7 +200,7 @@
             text-align: center;
         }
 
-        /* Anime-style animated background */
+        /* Aggressive animated background */
         #startScreen::before {
             content: '';
             position: absolute;
@@ -209,9 +209,9 @@
             width: 100%;
             height: 100%;
             background: 
-                radial-gradient(ellipse at 50% 0%, rgba(255, 100, 200, 0.15) 0%, transparent 50%),
-                radial-gradient(ellipse at 0% 100%, rgba(100, 200, 255, 0.1) 0%, transparent 40%),
-                radial-gradient(ellipse at 100% 100%, rgba(255, 200, 100, 0.1) 0%, transparent 40%);
+                radial-gradient(ellipse at 50% 0%, rgba(0, 200, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 0% 100%, rgba(0, 100, 255, 0.1) 0%, transparent 40%),
+                radial-gradient(ellipse at 100% 100%, rgba(255, 100, 0, 0.1) 0%, transparent 40%);
             animation: bgPulse 4s ease-in-out infinite;
         }
         
@@ -262,17 +262,17 @@
             50% { opacity: 1; }
         }
         
-        /* Anime-style title */
+        /* Bold masculine title */
         h1 {
             font-size: 52px;
             color: #fff;
             text-shadow: 
-                0 0 10px #ff6b9d,
-                0 0 20px #ff6b9d,
-                0 0 40px #c44569,
-                0 4px 0 #c44569,
-                0 5px 0 #a13d5a,
-                0 6px 0 #7f3050,
+                0 0 10px #00d4ff,
+                0 0 20px #00d4ff,
+                0 0 40px #0099ff,
+                0 4px 0 #0066cc,
+                0 5px 0 #004499,
+                0 6px 0 #003366,
                 0 10px 20px rgba(0,0,0,0.5);
             margin-bottom: 5px;
             animation: titleAnime 3s ease-in-out infinite;
@@ -283,14 +283,14 @@
             font-family: 'Arial Black', Impact, sans-serif;
         }
         
-        /* Japanese-style decorative text */
+        /* Bold decorative text */
         .title-jp {
             font-size: 14px;
-            color: #ff6b9d;
+            color: #00d4ff;
             letter-spacing: 8px;
             margin-bottom: 20px;
             opacity: 0.8;
-            text-shadow: 0 0 10px #ff6b9d;
+            text-shadow: 0 0 10px #00d4ff;
         }
 
         @keyframes titleAnime {
@@ -336,7 +336,7 @@
 
         .subtitle {
             font-size: 16px;
-            color: #64ffda;
+            color: #ff6600;
             text-transform: uppercase;
             letter-spacing: 6px;
             margin-bottom: 25px;
@@ -344,14 +344,14 @@
             position: relative;
             z-index: 1;
             padding: 8px 25px;
-            border: 1px solid rgba(100, 255, 218, 0.3);
-            background: rgba(100, 255, 218, 0.05);
+            border: 1px solid rgba(255, 102, 0, 0.3);
+            background: rgba(255, 102, 0, 0.05);
             animation: subtitlePulse 2s ease-in-out infinite;
         }
         
         @keyframes subtitlePulse {
-            0%, 100% { border-color: rgba(100, 255, 218, 0.3); }
-            50% { border-color: rgba(100, 255, 218, 0.7); }
+            0%, 100% { border-color: rgba(255, 102, 0, 0.3); }
+            50% { border-color: rgba(255, 102, 0, 0.7); }
         }
 
         .game-features {
@@ -365,9 +365,9 @@
         }
 
         .feature-box {
-            background: linear-gradient(135deg, rgba(255, 107, 157, 0.1) 0%, rgba(100, 200, 255, 0.1) 100%);
+            background: linear-gradient(135deg, rgba(0, 150, 255, 0.1) 0%, rgba(255, 100, 0, 0.1) 100%);
             backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 107, 157, 0.4);
+            border: 2px solid rgba(0, 150, 255, 0.4);
             border-radius: 10px;
             padding: 12px 18px;
             text-align: center;
@@ -395,10 +395,10 @@
         }
 
         .feature-box:hover {
-            background: linear-gradient(135deg, rgba(255, 107, 157, 0.2) 0%, rgba(100, 200, 255, 0.2) 100%);
-            border-color: #ff6b9d;
+            background: linear-gradient(135deg, rgba(0, 150, 255, 0.2) 0%, rgba(255, 100, 0, 0.2) 100%);
+            border-color: #00d4ff;
             transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 10px 30px rgba(255, 107, 157, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.5);
         }
 
         .feature-icon {
@@ -408,7 +408,7 @@
 
         .feature-text {
             font-size: 11px;
-            color: #ff6b9d;
+            color: #00d4ff;
             font-weight: bold;
             letter-spacing: 1px;
         }
@@ -416,7 +416,7 @@
         button {
             padding: 16px 45px;
             font-size: 22px;
-            background: linear-gradient(135deg, #ff6b9d 0%, #c44569 50%, #ff6b9d 100%);
+            background: linear-gradient(135deg, #0099ff 0%, #0066cc 50%, #0099ff 100%);
             background-size: 200% 100%;
             border: none;
             color: #fff;
@@ -426,9 +426,9 @@
             margin: 15px;
             transition: all 0.3s;
             box-shadow: 
-                0 5px 20px rgba(255, 107, 157, 0.5),
+                0 5px 20px rgba(0, 150, 255, 0.5),
                 inset 0 -2px 10px rgba(0, 0, 0, 0.2),
-                0 0 0 2px rgba(255, 107, 157, 0.3);
+                0 0 0 2px rgba(0, 150, 255, 0.3);
             position: relative;
             overflow: hidden;
             font-weight: 900;
@@ -464,14 +464,14 @@
         button:hover {
             transform: translateY(-3px);
             box-shadow: 
-                0 15px 40px rgba(255, 107, 157, 0.6),
-                0 0 0 3px rgba(255, 107, 157, 0.5);
+                0 15px 40px rgba(0, 150, 255, 0.6),
+                0 0 0 3px rgba(0, 200, 255, 0.5);
         }
 
         button:active {
             transform: translateY(0);
             box-shadow: 
-                0 5px 20px rgba(255, 107, 157, 0.4),
+                0 5px 20px rgba(0, 150, 255, 0.4),
                 inset 0 3px 10px rgba(0, 0, 0, 0.3);
         }
 
@@ -494,19 +494,19 @@
             padding: 6px 12px;
             background: rgba(255, 255, 255, 0.02);
             border-radius: 5px;
-            border-left: 2px solid rgba(100, 255, 218, 0.3);
+            border-left: 2px solid rgba(255, 150, 0, 0.5);
         }
 
         .anish-highlight {
             font-size: 16px;
-            color: #ff6b9d;
+            color: #00d4ff;
             font-weight: 900;
             margin: 15px 0;
             padding: 12px 25px;
-            background: linear-gradient(135deg, rgba(255, 107, 157, 0.1) 0%, rgba(100, 200, 255, 0.1) 100%);
-            border: 2px solid rgba(255, 107, 157, 0.4);
+            background: linear-gradient(135deg, rgba(0, 150, 255, 0.1) 0%, rgba(255, 100, 0, 0.1) 100%);
+            border: 2px solid rgba(0, 150, 255, 0.4);
             border-radius: 10px;
-            text-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
             animation: anishPulse 2s ease-in-out infinite;
             position: relative;
             z-index: 1;
@@ -514,12 +514,12 @@
 
         @keyframes anishPulse {
             0%, 100% { 
-                box-shadow: 0 0 20px rgba(255, 107, 157, 0.3);
-                border-color: rgba(255, 107, 157, 0.4);
+                box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+                border-color: rgba(0, 150, 255, 0.4);
             }
             50% { 
-                box-shadow: 0 0 40px rgba(255, 107, 157, 0.6);
-                border-color: rgba(255, 107, 157, 0.7);
+                box-shadow: 0 0 40px rgba(0, 212, 255, 0.6);
+                border-color: rgba(0, 212, 255, 0.7);
             }
         }
         
@@ -591,15 +591,15 @@
             letter-spacing: 2px;
             z-index: 1;
             padding: 8px 15px;
-            border: 1px solid rgba(255, 107, 157, 0.2);
+            border: 1px solid rgba(0, 150, 255, 0.3);
             background: rgba(0, 0, 0, 0.2);
             border-radius: 20px;
         }
 
         .creator-tag span {
-            color: #ff6b9d;
+            color: #00d4ff;
             font-weight: bold;
-            text-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
         }
 
         /* Touch Controls */
@@ -735,7 +735,7 @@
                 🚗
             </div>
             
-            <div class="subtitle">⚔️ ENDLESS ADVENTURE ⚔️</div>
+            <div class="subtitle">⚡ EXTREME RACING ⚡</div>
             
             <div class="game-features">
                 <div class="feature-box">
