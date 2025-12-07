@@ -542,6 +542,33 @@
             z-index: 10;
             font-weight: bold;
         }
+        
+        @keyframes screenShake {
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-3px, -2px); }
+            20% { transform: translate(3px, 2px); }
+            30% { transform: translate(-2px, 3px); }
+            40% { transform: translate(2px, -3px); }
+            50% { transform: translate(-3px, 2px); }
+            60% { transform: translate(3px, -2px); }
+            70% { transform: translate(-2px, -3px); }
+            80% { transform: translate(2px, 3px); }
+            90% { transform: translate(-3px, -2px); }
+        }
+        
+        .shake {
+            animation: screenShake 0.3s ease-out;
+        }
+        
+        @keyframes comboPopIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .combo-pop {
+            animation: comboPopIn 0.2s ease-out;
+        }
     </style>
 </head>
 <body>
@@ -553,6 +580,8 @@
             <div>COINS: 🪙 <span id="coins">0</span></div>
             <div>DISTANCE: <span id="distance">0</span>m</div>
             <div id="livesDisplay">LIVES: <span id="lives">❤️❤️❤️</span></div>
+            <div id="highScoreDisplay" style="color: #FFD700;">🏆 BEST: <span id="highScore">0</span></div>
+            <div id="comboDisplay" style="display: none; color: #00FF00;">🔥 COMBO: <span id="comboCount">0</span>x</div>
         </div>
 
         <div id="powerUpBar">
@@ -603,6 +632,8 @@
             <h1>GAME OVER</h1>
             <p id="finalScore" style="font-size: 32px; margin: 20px; color: #FFD700;"></p>
             <p id="finalCoins" style="font-size: 24px; margin: 10px; color: #FFD700;"></p>
+            <p id="newHighScore" style="font-size: 28px; margin: 10px; color: #00FF00; display: none;">🏆 NEW HIGH SCORE! 🏆</p>
+            <p id="bestScoreDisplay" style="font-size: 20px; margin: 10px; color: #fff;">Best: <span id="bestScore">0</span></p>
             <button id="restartBtn">PLAY AGAIN</button>
         </div>
 
@@ -639,6 +670,72 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+
+        // ============ PERFORMANCE-OPTIMIZED UPGRADES ============
+        
+        // High Score System (localStorage - no performance impact)
+        let highScore = parseInt(localStorage.getItem('anishRunnerHighScore')) || 0;
+        document.getElementById('highScore').textContent = highScore;
+        
+        // Haptic Feedback (uses native API - no performance impact)
+        function vibrate(ms) {
+            if ('vibrate' in navigator) {
+                navigator.vibrate(ms);
+            }
+        }
+        
+        // Combo System (lightweight counter)
+        let comboCount = 0;
+        let comboTimer = 0;
+        const COMBO_TIMEOUT = 60; // frames (~1 second to maintain combo)
+        
+        function addCombo() {
+            comboCount++;
+            comboTimer = COMBO_TIMEOUT;
+            
+            const comboDisplay = document.getElementById('comboDisplay');
+            const comboCountEl = document.getElementById('comboCount');
+            
+            comboDisplay.style.display = 'block';
+            comboCountEl.textContent = comboCount;
+            comboDisplay.classList.remove('combo-pop');
+            void comboDisplay.offsetWidth; // Trigger reflow
+            comboDisplay.classList.add('combo-pop');
+            
+            // Bonus points for combos
+            if (comboCount >= 5) {
+                score += comboCount * 2;
+            }
+            
+            // Light haptic for combo
+            vibrate(10);
+        }
+        
+        function updateCombo() {
+            if (comboTimer > 0) {
+                comboTimer--;
+            } else if (comboCount > 0) {
+                comboCount = 0;
+                document.getElementById('comboDisplay').style.display = 'none';
+            }
+        }
+        
+        function resetCombo() {
+            comboCount = 0;
+            comboTimer = 0;
+            document.getElementById('comboDisplay').style.display = 'none';
+        }
+        
+        // Screen Shake (CSS-based, GPU accelerated)
+        function screenShake() {
+            const container = document.getElementById('gameContainer');
+            container.classList.remove('shake');
+            void container.offsetWidth; // Trigger reflow
+            container.classList.add('shake');
+            vibrate([50, 30, 50]); // Haptic feedback on damage
+        }
+        
+        // ============ END UPGRADES ============
 
         // Game variables
         let gameRunning = false;
@@ -798,6 +895,7 @@
             // If user has moved enough and hasn't swiped yet, trigger immediate lane change
             if (!isSwiping && absDeltaX > minSwipeDistance && absDeltaX > absDeltaY) {
                 isSwiping = true;
+                vibrate(8); // Quick haptic on swipe
                 if (deltaX > 0 && player.targetLane < 2) {
                     // Swipe right
                     player.targetLane++;
@@ -2501,6 +2599,10 @@
             player.lives--;
             invincibilityFrames = 120; // 2 seconds of invincibility
             
+            // Screen shake and haptic feedback
+            screenShake();
+            resetCombo(); // Reset combo on damage
+            
             // Visual feedback
             createParticle(player.x + 25, player.y + 35, '#FF0000');
             showMultiplier(`💔 ${player.lives} LIVES LEFT!`);
@@ -2553,6 +2655,7 @@
                     score += (10 * scoreMultiplier);
                     createParticle(coin.x + 15, coin.y + 15, '#FFD700');
                     playSound('coin');
+                    addCombo(); // Combo system
                     return false;
                 }
 
@@ -5107,6 +5210,7 @@
             if (!gameRunning) return;
 
             update();
+            updateCombo(); // Combo timer update
             draw();
 
             requestAnimationFrame(gameLoop);
@@ -5136,6 +5240,9 @@
             powerUps = [];
             particles = [];
             groundLines = [];
+            
+            // Reset combo
+            resetCombo();
             
             // Reset power-ups
             deactivatePowerUp();
@@ -5170,10 +5277,27 @@
         function gameOver() {
             gameRunning = false;
             stopMusic(); // Stop background music
+            
+            // High Score System
+            const isNewHighScore = score > highScore;
+            if (isNewHighScore) {
+                highScore = score;
+                localStorage.setItem('anishRunnerHighScore', highScore.toString());
+                document.getElementById('highScore').textContent = highScore;
+                document.getElementById('newHighScore').style.display = 'block';
+                vibrate([100, 50, 100, 50, 200]); // Celebration vibration
+            } else {
+                document.getElementById('newHighScore').style.display = 'none';
+            }
+            
             document.getElementById('finalScore').textContent = `Score: ${score}`;
             document.getElementById('finalCoins').textContent = `Coins: 🪙 ${coins}`;
+            document.getElementById('bestScore').textContent = highScore;
             document.getElementById('gameOverScreen').classList.remove('hidden');
             playSound('gameover');
+            
+            // Reset combo
+            resetCombo();
         }
 
         function restartGame() {
