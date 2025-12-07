@@ -891,6 +891,12 @@
         let laserLane = -1; // Track which lane the laser is in
         let attackProjectiles = [];
         
+        // Military Tank Power-up
+        let tankActive = false;
+        let tankTimer = 0;
+        let tankProjectiles = [];
+        let tankShootTimer = 0;
+        
         // Boss Battle System
         let bossActive = false;
         let bossDefeated = false;
@@ -1188,7 +1194,7 @@
             if (Math.random() < 0.2) {
                 type = 'heart';
             } else {
-                const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb'];
+                const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb', 'tank'];
                 type = types[Math.floor(Math.random() * types.length)];
             }
             
@@ -1211,7 +1217,7 @@
                 if (Math.random() < 0.2) {
                     type = 'heart';
                 } else {
-                    const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb'];
+                    const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb', 'tank'];
                     type = types[Math.floor(Math.random() * types.length)];
                 }
                 
@@ -2402,6 +2408,26 @@
                         });
                     }
                     break;
+                    
+                case 'tank':
+                    tankActive = true;
+                    tankTimer = 300; // 5 seconds at 60fps
+                    tankProjectiles = [];
+                    activePowerUp = 'tank';
+                    powerUpTimer = 300;
+                    showMultiplier('🛡️ MILITARY TANK!');
+                    // Tank arrival effect - green military particles
+                    for (let i = 0; i < 40; i++) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 80,
+                            vx: (Math.random() - 0.5) * 8,
+                            vy: (Math.random() - 0.5) * 4,
+                            color: ['#2E7D32', '#4CAF50', '#81C784', '#FFD700'][Math.floor(Math.random() * 4)],
+                            life: 40
+                        });
+                    }
+                    break;
             }
         }
 
@@ -2410,6 +2436,9 @@
             isInvincible = false;
             hasShield = false;
             magnetActive = false;
+            tankActive = false;
+            tankProjectiles = [];
+            tankTimer = 0;
             
             if (speedBoostActive) {
                 // Reset to base game speed (accounts for difficulty level)
@@ -2436,14 +2465,16 @@
                     'shield': '🛡️',
                     'magnet': '🧲',
                     'invincible': '⭐',
-                    'boost': '🚀'
+                    'boost': '🚀',
+                    'tank': '🛡️'
                 };
                 
                 const names = {
                     'shield': 'SHIELD',
                     'magnet': 'MAGNET',
                     'invincible': 'INVINCIBLE',
-                    'boost': 'SPEED BOOST'
+                    'boost': 'SPEED BOOST',
+                    'tank': 'TANK ESCORT'
                 };
                 
                 icon.textContent = icons[activePowerUp];
@@ -2906,6 +2937,167 @@
             });
         }
 
+        // Military Tank Update - Auto-attacks enemies, boss, and bullets
+        function updateTank() {
+            if (!tankActive) return;
+            
+            // Update tank timer
+            tankTimer--;
+            if (tankTimer <= 0) {
+                tankActive = false;
+                tankProjectiles = [];
+                showMultiplier('🛡️ TANK LEFT!');
+                return;
+            }
+            
+            // Tank auto-shoots every 10 frames (6 shots per second)
+            tankShootTimer++;
+            if (tankShootTimer >= 10) {
+                tankShootTimer = 0;
+                
+                // Find nearest target (obstacle, boss bullet, or boss)
+                let targetX = player.x + 25;
+                let targetY = 0;
+                let hasTarget = false;
+                
+                // Check for boss bullets first (priority)
+                if (bossActive && bossBullets.length > 0) {
+                    let nearestBullet = null;
+                    let nearestDist = Infinity;
+                    bossBullets.forEach(bullet => {
+                        const dist = Math.abs(bullet.y - player.y);
+                        if (dist < nearestDist && bullet.y < player.y) {
+                            nearestDist = dist;
+                            nearestBullet = bullet;
+                        }
+                    });
+                    if (nearestBullet) {
+                        targetX = nearestBullet.x;
+                        targetY = nearestBullet.y;
+                        hasTarget = true;
+                    }
+                }
+                
+                // Check for obstacles
+                if (!hasTarget && obstacles.length > 0) {
+                    let nearestObs = null;
+                    let nearestDist = Infinity;
+                    obstacles.forEach(obs => {
+                        const dist = Math.abs(obs.y - player.y);
+                        if (dist < nearestDist && obs.y < player.y) {
+                            nearestDist = dist;
+                            nearestObs = obs;
+                        }
+                    });
+                    if (nearestObs) {
+                        targetX = nearestObs.x + nearestObs.width / 2;
+                        targetY = nearestObs.y;
+                        hasTarget = true;
+                    }
+                }
+                
+                // Check for boss
+                if (!hasTarget && bossActive && boss && !bossDefeated) {
+                    targetX = boss.x + boss.width / 2;
+                    targetY = boss.y + boss.height / 2;
+                    hasTarget = true;
+                }
+                
+                // Shoot at target (or straight up if no target)
+                const tankX = player.x + 25;
+                const tankY = player.y + 90;
+                const angle = hasTarget ? Math.atan2(targetY - tankY, targetX - tankX) : -Math.PI / 2;
+                
+                tankProjectiles.push({
+                    x: tankX,
+                    y: tankY,
+                    vx: Math.cos(angle) * 12,
+                    vy: Math.sin(angle) * 12,
+                    width: 8,
+                    height: 8
+                });
+                
+                // Muzzle flash particles
+                for (let i = 0; i < 5; i++) {
+                    particles.push({
+                        x: tankX,
+                        y: tankY,
+                        vx: Math.cos(angle) * (3 + Math.random() * 2) + (Math.random() - 0.5) * 2,
+                        vy: Math.sin(angle) * (3 + Math.random() * 2) + (Math.random() - 0.5) * 2,
+                        color: ['#FFD700', '#FFA500', '#FF4500'][Math.floor(Math.random() * 3)],
+                        life: 15
+                    });
+                }
+            }
+            
+            // Update tank projectiles
+            tankProjectiles = tankProjectiles.filter(proj => {
+                proj.x += proj.vx;
+                proj.y += proj.vy;
+                
+                // Check collision with boss bullets
+                if (bossActive && bossBullets.length > 0) {
+                    let bulletHit = false;
+                    bossBullets = bossBullets.filter(bullet => {
+                        if (!bulletHit &&
+                            proj.x > bullet.x - bullet.width &&
+                            proj.x < bullet.x + bullet.width &&
+                            proj.y > bullet.y - bullet.height &&
+                            proj.y < bullet.y + bullet.height) {
+                            
+                            // Destruction effect
+                            for (let i = 0; i < 15; i++) {
+                                particles.push({
+                                    x: bullet.x,
+                                    y: bullet.y,
+                                    vx: (Math.random() - 0.5) * 6,
+                                    vy: (Math.random() - 0.5) * 6,
+                                    color: ['#00FF00', '#32CD32', '#ADFF2F'][Math.floor(Math.random() * 3)],
+                                    life: 25
+                                });
+                            }
+                            playSound('destroy');
+                            bulletHit = true;
+                            return false;
+                        }
+                        return true;
+                    });
+                    if (bulletHit) return false;
+                }
+                
+                // Check collision with boss
+                if (bossActive && boss && !bossDefeated && bossIntroTimer === 0) {
+                    if (proj.x > boss.x && proj.x < boss.x + boss.width &&
+                        proj.y > boss.y && proj.y < boss.y + boss.height) {
+                        damageBoss(1);
+                        return false;
+                    }
+                }
+                
+                // Check collision with obstacles
+                let hitObstacle = false;
+                obstacles = obstacles.filter((obs, index) => {
+                    if (!hitObstacle &&
+                        proj.x < obs.x + obs.width &&
+                        proj.x > obs.x &&
+                        proj.y < obs.y + obs.height &&
+                        proj.y > obs.y) {
+                        
+                        createParticle(obs.x + 25, obs.y + 30, '#00FF00');
+                        dropPowerUpFromEnemy(obs.x, obs.y);
+                        score += 100;
+                        hitObstacle = true;
+                        return false;
+                    }
+                    return true;
+                });
+                if (hitObstacle) return false;
+                
+                // Remove if out of bounds
+                return proj.x > 0 && proj.x < canvas.width && proj.y > -50 && proj.y < canvas.height + 50;
+            });
+        }
+
         function updateGround() {
             // Create moving ground lines for speed effect
             if (frameCount % 20 === 0) {
@@ -2972,6 +3164,7 @@
             updateParticles();
             updateGround();
             updateAttackProjectiles();
+            updateTank();
 
             // Power-up timer
             if (powerUpTimer > 0) {
@@ -5274,6 +5467,101 @@
                 ctx.restore();
             }
         }
+        
+        // Draw Military Tank
+        function drawTank() {
+            if (!tankActive) return;
+            
+            const tankX = player.x - 5;
+            const tankY = player.y + 75;
+            
+            ctx.save();
+            
+            // Tank body shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.fillRect(tankX + 3, tankY + 3, 60, 30);
+            
+            // Tank body - military green
+            const bodyGradient = ctx.createLinearGradient(tankX, tankY, tankX, tankY + 30);
+            bodyGradient.addColorStop(0, '#4a7c23');
+            bodyGradient.addColorStop(0.5, '#3d6b1c');
+            bodyGradient.addColorStop(1, '#2d5015');
+            ctx.fillStyle = bodyGradient;
+            ctx.fillRect(tankX, tankY, 60, 30);
+            
+            // Tank tracks
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(tankX - 3, tankY + 25, 66, 10);
+            
+            // Track details
+            ctx.fillStyle = '#333';
+            for (let i = 0; i < 6; i++) {
+                ctx.fillRect(tankX + i * 10, tankY + 27, 6, 6);
+            }
+            
+            // Tank turret
+            ctx.fillStyle = '#3d6b1c';
+            ctx.beginPath();
+            ctx.arc(tankX + 30, tankY + 10, 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Tank cannon - pointing up
+            ctx.fillStyle = '#2d5015';
+            ctx.fillRect(tankX + 27, tankY - 20, 6, 30);
+            
+            // Cannon tip
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(tankX + 25, tankY - 25, 10, 8);
+            
+            // Muzzle flash when shooting
+            if (tankShootTimer < 3) {
+                ctx.fillStyle = 'rgba(255, 200, 0, 0.8)';
+                ctx.beginPath();
+                ctx.arc(tankX + 30, tankY - 28, 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Tank star emblem
+            ctx.fillStyle = '#FFD700';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('★', tankX + 30, tankY + 15);
+            
+            // Timer indicator
+            const timerPercent = tankTimer / 300;
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+            ctx.fillRect(tankX, tankY + 38, 60 * timerPercent, 4);
+            ctx.strokeStyle = '#00FF00';
+            ctx.strokeRect(tankX, tankY + 38, 60, 4);
+            
+            ctx.restore();
+            
+            // Draw tank projectiles
+            tankProjectiles.forEach(proj => {
+                ctx.save();
+                
+                // Green tracer bullet
+                const bulletGradient = ctx.createRadialGradient(
+                    proj.x, proj.y, 0,
+                    proj.x, proj.y, 8
+                );
+                bulletGradient.addColorStop(0, '#ADFF2F');
+                bulletGradient.addColorStop(0.5, '#32CD32');
+                bulletGradient.addColorStop(1, 'rgba(0, 100, 0, 0)');
+                ctx.fillStyle = bulletGradient;
+                ctx.beginPath();
+                ctx.arc(proj.x, proj.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Core
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(proj.x, proj.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            });
+        }
 
         function draw() {
             drawBackground();
@@ -5283,6 +5571,7 @@
             drawBoss();
             drawBossBullets();
             drawAttackProjectiles();
+            drawTank();
             drawParticles();
             drawPlayer();
             drawBossUI();
@@ -5332,6 +5621,12 @@
             attackCooldown = 0;
             fireballTimer = 0;
             attackProjectiles = [];
+            
+            // Reset tank
+            tankActive = false;
+            tankTimer = 0;
+            tankProjectiles = [];
+            tankShootTimer = 0;
             
             // Reset boss battle
             bossActive = false;
