@@ -897,6 +897,14 @@
         let tankProjectiles = [];
         let tankShootTimer = 0;
         
+        // Auto-Pilot Power-up
+        let autoPilotActive = false;
+        let autoPilotTimer = 0;
+        
+        // Helicopter Enemy
+        let helicopters = [];
+        let helicopterBombs = [];
+        
         // Boss Battle System
         let bossActive = false;
         let bossDefeated = false;
@@ -1194,7 +1202,7 @@
             if (Math.random() < 0.2) {
                 type = 'heart';
             } else {
-                const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb', 'tank'];
+                const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb', 'tank', 'autopilot'];
                 type = types[Math.floor(Math.random() * types.length)];
             }
             
@@ -1217,7 +1225,7 @@
                 if (Math.random() < 0.2) {
                     type = 'heart';
                 } else {
-                    const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb', 'tank'];
+                    const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb', 'tank', 'autopilot'];
                     type = types[Math.floor(Math.random() * types.length)];
                 }
                 
@@ -2429,6 +2437,25 @@
                         });
                     }
                     break;
+                    
+                case 'autopilot':
+                    autoPilotActive = true;
+                    autoPilotTimer = 300; // 5 seconds at 60fps
+                    activePowerUp = 'autopilot';
+                    powerUpTimer = 300;
+                    showMultiplier('🤖 AUTO-PILOT ENGAGED!');
+                    // Futuristic hologram effect
+                    for (let i = 0; i < 40; i++) {
+                        particles.push({
+                            x: player.x + 25 + (Math.random() - 0.5) * 60,
+                            y: player.y + 35 + (Math.random() - 0.5) * 80,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: -Math.random() * 3,
+                            color: ['#00FF00', '#32CD32', '#00FF7F', '#7FFF00', '#ADFF2F'][Math.floor(Math.random() * 5)],
+                            life: 50
+                        });
+                    }
+                    break;
             }
         }
 
@@ -2440,6 +2467,8 @@
             tankActive = false;
             tankProjectiles = [];
             tankTimer = 0;
+            autoPilotActive = false;
+            autoPilotTimer = 0;
             
             if (speedBoostActive) {
                 // Reset to base game speed (accounts for difficulty level)
@@ -2467,7 +2496,8 @@
                     'magnet': '🧲',
                     'invincible': '⭐',
                     'boost': '🚀',
-                    'tank': '⚡'
+                    'tank': '⚡',
+                    'autopilot': '🤖'
                 };
                 
                 const names = {
@@ -2475,7 +2505,8 @@
                     'magnet': 'MAGNET',
                     'invincible': 'INVINCIBLE',
                     'boost': 'SPEED BOOST',
-                    'tank': 'THUNDER TANK'
+                    'tank': 'THUNDER TANK',
+                    'autopilot': 'AUTO-PILOT'
                 };
                 
                 icon.textContent = icons[activePowerUp];
@@ -2540,6 +2571,87 @@
         }
 
         function updatePlayer() {
+            // Auto-Pilot AI Control
+            if (autoPilotActive) {
+                autoPilotTimer--;
+                
+                if (autoPilotTimer <= 0) {
+                    autoPilotActive = false;
+                    showMultiplier('🤖 AUTO-PILOT OFF');
+                } else {
+                    // AI scans for threats and chooses safest lane
+                    let laneDanger = [0, 0, 0]; // Danger score for each lane
+                    
+                    // Check obstacles
+                    obstacles.forEach(obs => {
+                        if (obs.y > 200 && obs.y < player.y + 100) {
+                            const threatLevel = 1 - (obs.y / player.y); // Closer = more danger
+                            laneDanger[obs.lane] += threatLevel * 10;
+                        }
+                    });
+                    
+                    // Check helicopter bombs
+                    helicopterBombs.forEach(bomb => {
+                        if (bomb.y > 200 && bomb.y < player.y + 100) {
+                            const bombLane = bomb.x < lanes[1] - 40 ? 0 : (bomb.x > lanes[1] + 40 ? 2 : 1);
+                            laneDanger[bombLane] += 15;
+                        }
+                    });
+                    
+                    // Check boss bullets
+                    if (bossActive) {
+                        bossBullets.forEach(bullet => {
+                            if (bullet.y > 300 && bullet.y < player.y + 50) {
+                                const bulletLane = bullet.x < lanes[1] - 40 ? 0 : (bullet.x > lanes[1] + 40 ? 2 : 1);
+                                laneDanger[bulletLane] += 20;
+                            }
+                        });
+                    }
+                    
+                    // Prefer coins
+                    coinItems.forEach(coin => {
+                        if (coin.y > 300 && coin.y < player.y) {
+                            const coinLane = Math.floor((coin.x - 65) / 85);
+                            if (coinLane >= 0 && coinLane <= 2) {
+                                laneDanger[coinLane] -= 3; // Coins reduce "danger" (attract)
+                            }
+                        }
+                    });
+                    
+                    // Find safest lane
+                    let safestLane = player.targetLane;
+                    let lowestDanger = laneDanger[player.targetLane];
+                    
+                    for (let i = 0; i < 3; i++) {
+                        if (laneDanger[i] < lowestDanger) {
+                            lowestDanger = laneDanger[i];
+                            safestLane = i;
+                        }
+                    }
+                    
+                    // Move towards safest lane (one step at a time)
+                    if (safestLane < player.targetLane && player.targetLane > 0) {
+                        player.targetLane--;
+                        playSound('swipe');
+                    } else if (safestLane > player.targetLane && player.targetLane < 2) {
+                        player.targetLane++;
+                        playSound('swipe');
+                    }
+                    
+                    // Auto-pilot visual effect - scanning lines
+                    if (frameCount % 10 === 0) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y - 20,
+                            vx: 0,
+                            vy: -8,
+                            color: '#00FF00',
+                            life: 30
+                        });
+                    }
+                }
+            }
+            
             // Smooth lane transition with linear interpolation for instant response
             const targetX = lanes[player.targetLane];
             const distance = targetX - player.x;
@@ -2987,6 +3099,26 @@
                     }
                 }
                 
+                // Check for helicopter bombs (high priority)
+                if (!hasTarget && helicopterBombs.length > 0) {
+                    let nearestBomb = null;
+                    let nearestDist = Infinity;
+                    helicopterBombs.forEach(bomb => {
+                        const dist = Math.abs(bomb.y - player.y);
+                        if (dist < nearestDist && bomb.y < player.y && bomb.y > minVisibleY) {
+                            nearestDist = dist;
+                            nearestBomb = bomb;
+                        }
+                    });
+                    if (nearestBomb) {
+                        targetX = nearestBomb.x + 10;
+                        targetY = nearestBomb.y + 12;
+                        hasTarget = true;
+                        targetType = 'bomb';
+                        targetRef = nearestBomb;
+                    }
+                }
+                
                 // Check for obstacles - must be visible on screen
                 if (!hasTarget && obstacles.length > 0) {
                     let nearestObs = null;
@@ -3087,10 +3219,106 @@
                         if (bossActive && boss && !bossDefeated && bossIntroTimer === 0) {
                             damageBoss(2); // Double damage to boss
                         }
+                    } else if (proj.targetType === 'bomb') {
+                        // Destroy helicopter bomb
+                        const bombIndex = helicopterBombs.indexOf(proj.targetRef);
+                        if (bombIndex > -1) {
+                            helicopterBombs.splice(bombIndex, 1);
+                            score += 50;
+                        }
                     }
                 }
                 
                 return proj.life > 0;
+            });
+        }
+
+        // Helicopter Enemy System
+        function spawnHelicopter() {
+            const side = Math.random() > 0.5 ? 'left' : 'right';
+            helicopters.push({
+                x: side === 'left' ? -80 : canvas.width + 80,
+                y: 80 + Math.random() * 100,
+                width: 70,
+                height: 40,
+                direction: side === 'left' ? 1 : -1,
+                speed: 1.5 + Math.random(),
+                bombTimer: 60 + Math.floor(Math.random() * 60),
+                propellerAngle: 0,
+                health: 2
+            });
+        }
+        
+        function updateHelicopters() {
+            // Update helicopters
+            helicopters = helicopters.filter(heli => {
+                // Move horizontally
+                heli.x += heli.direction * heli.speed;
+                
+                // Animate propeller
+                heli.propellerAngle += 0.5;
+                
+                // Drop bombs
+                heli.bombTimer--;
+                if (heli.bombTimer <= 0) {
+                    heli.bombTimer = 90 + Math.floor(Math.random() * 60);
+                    
+                    // Drop bomb
+                    helicopterBombs.push({
+                        x: heli.x + 35,
+                        y: heli.y + 40,
+                        vy: 3,
+                        width: 20,
+                        height: 25,
+                        rotation: 0
+                    });
+                    
+                    playSound('destroy');
+                }
+                
+                // Remove if off screen
+                return heli.x > -100 && heli.x < canvas.width + 100;
+            });
+            
+            // Update bombs
+            helicopterBombs = helicopterBombs.filter(bomb => {
+                bomb.y += bomb.vy;
+                bomb.vy += 0.15; // Gravity
+                bomb.rotation += 0.1;
+                
+                // Check collision with player
+                if (!isInvincible && invincibilityFrames === 0) {
+                    if (player.x < bomb.x + bomb.width &&
+                        player.x + player.width > bomb.x &&
+                        player.y < bomb.y + bomb.height &&
+                        player.y + player.height > bomb.y) {
+                        
+                        // Explosion effect
+                        for (let i = 0; i < 30; i++) {
+                            const angle = (Math.PI * 2 * i) / 30;
+                            particles.push({
+                                x: bomb.x + 10,
+                                y: bomb.y + 12,
+                                vx: Math.cos(angle) * (3 + Math.random() * 4),
+                                vy: Math.sin(angle) * (3 + Math.random() * 4),
+                                color: ['#FF4500', '#FFA500', '#FFD700', '#FF0000'][Math.floor(Math.random() * 4)],
+                                life: 35
+                            });
+                        }
+                        
+                        if (hasShield) {
+                            hasShield = false;
+                            showMultiplier('💣 SHIELD BLOCKED BOMB!');
+                        } else {
+                            takeDamage();
+                            showMultiplier('💥 BOMB HIT!');
+                        }
+                        return false;
+                    }
+                }
+                
+                // Remove if off screen
+                return bomb.y < canvas.height + 50;
             });
         }
 
@@ -3161,6 +3389,7 @@
             updateGround();
             updateAttackProjectiles();
             updateTank();
+            updateHelicopters();
 
             // Power-up timer
             if (powerUpTimer > 0) {
@@ -3209,6 +3438,14 @@
             const powerUpSpawnRate = Math.max(120, 180 - (difficultyLevel - 1) * 10); // 180, 170, 160... down to 120
             if (frameCount % powerUpSpawnRate === 0) {
                 spawnPowerUp();
+            }
+            
+            // Spawn helicopters at higher difficulty levels (level 3+)
+            if (difficultyLevel >= 3 && !bossActive && helicopters.length < 2) {
+                const heliSpawnRate = Math.max(300, 600 - (difficultyLevel - 3) * 50);
+                if (frameCount % heliSpawnRate === 0 && Math.random() < 0.5) {
+                    spawnHelicopter();
+                }
             }
 
             // Increase difficulty
@@ -5665,9 +5902,228 @@
                 ctx.restore();
             });
         }
+        
+        // Draw Helicopters and Bombs
+        function drawHelicopters() {
+            const time = Date.now() / 100;
+            
+            helicopters.forEach(heli => {
+                ctx.save();
+                
+                // Helicopter shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(heli.x + 35, canvas.height - 50, 30, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Main body - military gray
+                const bodyGradient = ctx.createLinearGradient(heli.x, heli.y, heli.x, heli.y + 40);
+                bodyGradient.addColorStop(0, '#5a5a5a');
+                bodyGradient.addColorStop(0.5, '#404040');
+                bodyGradient.addColorStop(1, '#2a2a2a');
+                ctx.fillStyle = bodyGradient;
+                
+                // Body shape
+                ctx.beginPath();
+                ctx.ellipse(heli.x + 35, heli.y + 20, 30, 18, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Cockpit glass
+                ctx.fillStyle = '#87CEEB';
+                ctx.beginPath();
+                ctx.ellipse(heli.x + 50 * heli.direction + 35, heli.y + 15, 12, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Tail
+                ctx.fillStyle = '#404040';
+                ctx.fillRect(heli.x + (heli.direction > 0 ? 0 : 50), heli.y + 15, 25, 8);
+                
+                // Tail rotor
+                ctx.fillStyle = '#666';
+                ctx.save();
+                ctx.translate(heli.x + (heli.direction > 0 ? 5 : 65), heli.y + 19);
+                ctx.rotate(heli.propellerAngle * 2);
+                ctx.fillRect(-8, -2, 16, 4);
+                ctx.restore();
+                
+                // Main rotor
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                ctx.save();
+                ctx.translate(heli.x + 35, heli.y);
+                ctx.rotate(heli.propellerAngle);
+                ctx.beginPath();
+                ctx.moveTo(-35, 0);
+                ctx.lineTo(35, 0);
+                ctx.stroke();
+                ctx.rotate(Math.PI / 2);
+                ctx.beginPath();
+                ctx.moveTo(-35, 0);
+                ctx.lineTo(35, 0);
+                ctx.stroke();
+                ctx.restore();
+                
+                // Rotor hub
+                ctx.fillStyle = '#222';
+                ctx.beginPath();
+                ctx.arc(heli.x + 35, heli.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Landing skids
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(heli.x + 15, heli.y + 35);
+                ctx.lineTo(heli.x + 15, heli.y + 42);
+                ctx.lineTo(heli.x + 55, heli.y + 42);
+                ctx.lineTo(heli.x + 55, heli.y + 35);
+                ctx.stroke();
+                
+                // Warning light
+                const flashOn = Math.sin(time * 3) > 0;
+                if (flashOn) {
+                    ctx.fillStyle = '#FF0000';
+                    ctx.shadowColor = '#FF0000';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(heli.x + 35, heli.y + 5, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+                
+                ctx.restore();
+            });
+            
+            // Draw bombs
+            helicopterBombs.forEach(bomb => {
+                ctx.save();
+                ctx.translate(bomb.x + 10, bomb.y + 12);
+                ctx.rotate(bomb.rotation);
+                
+                // Bomb body
+                const bombGradient = ctx.createLinearGradient(-10, 0, 10, 0);
+                bombGradient.addColorStop(0, '#1a1a1a');
+                bombGradient.addColorStop(0.5, '#333');
+                bombGradient.addColorStop(1, '#1a1a1a');
+                ctx.fillStyle = bombGradient;
+                
+                // Main body
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 8, 12, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Fins
+                ctx.fillStyle = '#444';
+                ctx.fillRect(-12, -8, 6, 4);
+                ctx.fillRect(6, -8, 6, 4);
+                ctx.fillRect(-12, 4, 6, 4);
+                ctx.fillRect(6, 4, 6, 4);
+                
+                // Danger stripe
+                ctx.fillStyle = '#FF4500';
+                ctx.fillRect(-6, 8, 12, 4);
+                
+                // Fuse glow
+                ctx.fillStyle = '#FF0000';
+                ctx.shadowColor = '#FF4500';
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.arc(0, 12, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                
+                ctx.restore();
+            });
+        }
+        
+        // Draw Auto-Pilot HUD overlay
+        function drawAutoPilotHUD() {
+            if (!autoPilotActive) return;
+            
+            ctx.save();
+            
+            // Scanning grid effect
+            ctx.strokeStyle = 'rgba(0, 255, 0, 0.2)';
+            ctx.lineWidth = 1;
+            
+            // Horizontal scan lines
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(50, y);
+                ctx.lineTo(350, y);
+                ctx.stroke();
+            }
+            
+            // Vertical scan lines
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(lanes[i] + 25, 0);
+                ctx.lineTo(lanes[i] + 25, canvas.height);
+                ctx.stroke();
+            }
+            
+            // Targeting box around player
+            ctx.strokeStyle = '#00FF00';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10);
+            
+            // Corner brackets
+            const bSize = 10;
+            ctx.lineWidth = 3;
+            // Top-left
+            ctx.beginPath();
+            ctx.moveTo(player.x - 10, player.y - 10 + bSize);
+            ctx.lineTo(player.x - 10, player.y - 10);
+            ctx.lineTo(player.x - 10 + bSize, player.y - 10);
+            ctx.stroke();
+            // Top-right
+            ctx.beginPath();
+            ctx.moveTo(player.x + player.width + 10 - bSize, player.y - 10);
+            ctx.lineTo(player.x + player.width + 10, player.y - 10);
+            ctx.lineTo(player.x + player.width + 10, player.y - 10 + bSize);
+            ctx.stroke();
+            // Bottom-left
+            ctx.beginPath();
+            ctx.moveTo(player.x - 10, player.y + player.height + 10 - bSize);
+            ctx.lineTo(player.x - 10, player.y + player.height + 10);
+            ctx.lineTo(player.x - 10 + bSize, player.y + player.height + 10);
+            ctx.stroke();
+            // Bottom-right
+            ctx.beginPath();
+            ctx.moveTo(player.x + player.width + 10 - bSize, player.y + player.height + 10);
+            ctx.lineTo(player.x + player.width + 10, player.y + player.height + 10);
+            ctx.lineTo(player.x + player.width + 10, player.y + player.height + 10 - bSize);
+            ctx.stroke();
+            
+            // "AUTO-PILOT" text
+            ctx.font = 'bold 14px monospace';
+            ctx.fillStyle = '#00FF00';
+            ctx.textAlign = 'center';
+            ctx.fillText('AUTO-PILOT ACTIVE', canvas.width / 2, 30);
+            ctx.fillText(`${Math.ceil(autoPilotTimer / 60)}s`, canvas.width / 2, 50);
+            
+            // Threat indicators on obstacles
+            obstacles.forEach(obs => {
+                if (obs.y > 0 && obs.y < player.y) {
+                    ctx.strokeStyle = '#FF0000';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(obs.x + obs.width/2, obs.y + obs.height/2, 25, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    ctx.font = '10px monospace';
+                    ctx.fillStyle = '#FF0000';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('THREAT', obs.x + obs.width/2, obs.y - 10);
+                }
+            });
+            
+            ctx.restore();
+        }
 
         function draw() {
             drawBackground();
+            drawHelicopters();
             drawObstacles();
             drawCoins();
             drawPowerUps();
@@ -5677,6 +6133,7 @@
             drawTank();
             drawParticles();
             drawPlayer();
+            drawAutoPilotHUD();
             drawBossUI();
         }
 
@@ -5730,6 +6187,14 @@
             tankTimer = 0;
             tankProjectiles = [];
             tankShootTimer = 0;
+            
+            // Reset auto-pilot
+            autoPilotActive = false;
+            autoPilotTimer = 0;
+            
+            // Reset helicopters
+            helicopters = [];
+            helicopterBombs = [];
             
             // Reset boss battle
             bossActive = false;
