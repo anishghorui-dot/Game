@@ -39,11 +39,12 @@
         }
 
         #gameContainer {
-            position: relative;
-            width: 400px;
-            height: 700px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             border: none;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
             background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 100%);
             overflow: hidden;
         }
@@ -687,7 +688,7 @@
 </head>
 <body>
     <div id="gameContainer">
-        <canvas id="gameCanvas" width="400" height="700"></canvas>
+        <canvas id="gameCanvas"></canvas>
         
         <div id="ui">
             <div>SCORE: <span id="score">0</span></div>
@@ -803,6 +804,60 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
+        // ============ DYNAMIC SCREEN SIZING ============
+        
+        // Game world dimensions - will be set based on screen size
+        let GAME_WIDTH = 400;
+        let GAME_HEIGHT = 700;
+        let ROAD_LEFT = 50;
+        let ROAD_RIGHT = 350;
+        let ROAD_WIDTH = 300;
+        let LANE_WIDTH = 100;
+        let SIDEWALK_WIDTH = 50;
+        
+        // Dynamic lane positions
+        let lanes = [90, 175, 260];
+        
+        function resizeCanvas() {
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+            
+            // Set canvas to full screen size
+            canvas.width = screenWidth;
+            canvas.height = screenHeight;
+            
+            // Update game dimensions
+            GAME_WIDTH = screenWidth;
+            GAME_HEIGHT = screenHeight;
+            
+            // Calculate road dimensions - road takes up center 75% of width
+            SIDEWALK_WIDTH = Math.floor(screenWidth * 0.125);
+            ROAD_LEFT = SIDEWALK_WIDTH;
+            ROAD_WIDTH = screenWidth - (SIDEWALK_WIDTH * 2);
+            ROAD_RIGHT = ROAD_LEFT + ROAD_WIDTH;
+            LANE_WIDTH = ROAD_WIDTH / 3;
+            
+            // Update lane positions (center of each lane)
+            lanes[0] = ROAD_LEFT + LANE_WIDTH * 0.5;
+            lanes[1] = ROAD_LEFT + LANE_WIDTH * 1.5;
+            lanes[2] = ROAD_LEFT + LANE_WIDTH * 2.5;
+            
+            // Update player position
+            player.x = lanes[player.lane];
+            player.y = screenHeight - 200;
+            
+            // Scale player size based on screen
+            player.width = Math.max(40, Math.min(60, LANE_WIDTH * 0.5));
+            player.height = player.width * 1.4;
+            
+            // Clear cached gradients so they get recreated
+            roadGradientCached = null;
+        }
+        
+        // Initial resize and listen for window resize
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
         // ============ PERFORMANCE-OPTIMIZED UPGRADES ============
         
         // High Score System (localStorage - no performance impact)
@@ -852,8 +907,7 @@
             laneSpeed: 25 // Speed of lane transition (higher = faster, increased for more responsiveness)
         };
 
-        // Lane positions
-        const lanes = [90, 175, 260];
+        // Lane positions set by resizeCanvas()
         player.x = lanes[player.lane];
 
         // Arrays
@@ -2611,7 +2665,10 @@
                     // Prefer coins
                     coinItems.forEach(coin => {
                         if (coin.y > 300 && coin.y < player.y) {
-                            const coinLane = Math.floor((coin.x - 65) / 85);
+                            // Calculate which lane the coin is in based on dynamic lane positions
+                            let coinLane = 1;
+                            if (coin.x < (lanes[0] + lanes[1]) / 2) coinLane = 0;
+                            else if (coin.x > (lanes[1] + lanes[2]) / 2) coinLane = 2;
                             if (coinLane >= 0 && coinLane <= 2) {
                                 laneDanger[coinLane] -= 3; // Coins reduce "danger" (attract)
                             }
@@ -4302,20 +4359,21 @@
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Road with depth gradient - cached for performance
-            if (!roadGradientCached) {
-                roadGradientCached = ctx.createLinearGradient(50, 0, 350, 0);
+            // Road with depth gradient - recreate if dimensions changed
+            if (!roadGradientCached || roadGradientCached._roadLeft !== ROAD_LEFT) {
+                roadGradientCached = ctx.createLinearGradient(ROAD_LEFT, 0, ROAD_RIGHT, 0);
                 roadGradientCached.addColorStop(0, '#3a3a3a');
                 roadGradientCached.addColorStop(0.5, '#555555');
                 roadGradientCached.addColorStop(1, '#3a3a3a');
+                roadGradientCached._roadLeft = ROAD_LEFT;
             }
             ctx.fillStyle = roadGradientCached;
-            ctx.fillRect(50, 0, 300, canvas.height);
+            ctx.fillRect(ROAD_LEFT, 0, ROAD_WIDTH, canvas.height);
             
             // Road edge highlights
             ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-            ctx.fillRect(50, 0, 5, canvas.height);
-            ctx.fillRect(345, 0, 5, canvas.height);
+            ctx.fillRect(ROAD_LEFT, 0, 5, canvas.height);
+            ctx.fillRect(ROAD_RIGHT - 5, 0, 5, canvas.height);
 
             // Animated lane lines - optimized (reduced shadow blur)
             ctx.lineWidth = 4;
@@ -4323,15 +4381,19 @@
             ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
             ctx.shadowBlur = 3;
             
+            // Lane divider positions (between lanes)
+            const laneDivider1 = ROAD_LEFT + LANE_WIDTH;
+            const laneDivider2 = ROAD_LEFT + LANE_WIDTH * 2;
+            
             groundLines.forEach(line => {
                 const lineOpacity = 0.7 + Math.sin(time * 2 + line.y * 0.01) * 0.3;
                 ctx.strokeStyle = `rgba(255, 255, 255, ${lineOpacity})`;
                 
                 ctx.beginPath();
-                ctx.moveTo(140, line.y);
-                ctx.lineTo(140, line.y + 40);
-                ctx.moveTo(225, line.y);
-                ctx.lineTo(225, line.y + 40);
+                ctx.moveTo(laneDivider1, line.y);
+                ctx.lineTo(laneDivider1, line.y + 40);
+                ctx.moveTo(laneDivider2, line.y);
+                ctx.lineTo(laneDivider2, line.y + 40);
                 ctx.stroke();
             });
             
@@ -4340,8 +4402,8 @@
 
             // Sidewalks
             ctx.fillStyle = '#999';
-            ctx.fillRect(0, 0, 50, canvas.height);
-            ctx.fillRect(350, 0, 50, canvas.height);
+            ctx.fillRect(0, 0, SIDEWALK_WIDTH, canvas.height);
+            ctx.fillRect(ROAD_RIGHT, 0, SIDEWALK_WIDTH, canvas.height);
         }
 
         function drawPowerUps() {
@@ -6162,7 +6224,7 @@
             scoreMultiplier = 1;
             player.lane = 1;
             player.x = lanes[1];
-            player.y = 500;
+            player.y = GAME_HEIGHT - 200;
             player.lives = 3;
             invincibilityFrames = 0;
             obstacles = [];
