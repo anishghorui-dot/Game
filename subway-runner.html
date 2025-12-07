@@ -967,9 +967,10 @@
         let touchEndY = 0;
         let touchStartTime = 0;
         let isSwiping = false;
-        const minSwipeDistance = 15; // Very low threshold for instant response
-        const maxSwipeTime = 600; // Maximum time for a swipe (ms)
-        const swipeVelocityThreshold = 0.05; // Lower threshold for easier detection
+        let lastSwipeTime = 0;
+        const minSwipeDistance = 10; // Very low threshold for instant response
+        const maxSwipeTime = 1000; // Maximum time for a swipe (ms)
+        const swipeCooldown = 100; // Minimum time between swipes (ms)
 
         canvas.addEventListener('touchstart', (e) => {
             if (!gameRunning) return;
@@ -988,15 +989,14 @@
             // Real-time swipe detection for immediate response
             const touch = e.touches[0];
             const currentX = touch.clientX;
-            const currentY = touch.clientY;
             const deltaX = currentX - touchStartX;
-            const deltaY = currentY - touchStartY;
             const absDeltaX = Math.abs(deltaX);
-            const absDeltaY = Math.abs(deltaY);
+            const now = Date.now();
             
-            // If user has moved enough and hasn't swiped yet, trigger immediate lane change
-            if (!isSwiping && absDeltaX > minSwipeDistance && absDeltaX > absDeltaY) {
+            // If user has moved enough horizontally and hasn't swiped yet
+            if (!isSwiping && absDeltaX > minSwipeDistance && (now - lastSwipeTime) > swipeCooldown) {
                 isSwiping = true;
+                lastSwipeTime = now;
                 vibrate(8); // Quick haptic on swipe
                 if (deltaX > 0 && player.targetLane < 2) {
                     // Swipe right
@@ -1007,6 +1007,8 @@
                     player.targetLane--;
                     playSound('swipe');
                 }
+                // Reset start position for continuous swiping
+                touchStartX = currentX;
             }
         });
 
@@ -1030,19 +1032,12 @@
 
         function handleSwipe() {
             const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
             const absDeltaX = Math.abs(deltaX);
-            const absDeltaY = Math.abs(deltaY);
-            const swipeTime = Date.now() - touchStartTime;
+            const now = Date.now();
             
-            // Calculate velocity (distance / time)
-            const velocity = Math.max(absDeltaX, absDeltaY) / swipeTime;
-            
-            // Very lenient distance threshold - even slower swipes work
-            const effectiveMinDistance = velocity > swipeVelocityThreshold ? minSwipeDistance * 0.6 : minSwipeDistance;
-            
-            // Check if it's a horizontal swipe (more horizontal than vertical)
-            if (absDeltaX > absDeltaY && absDeltaX > effectiveMinDistance) {
+            // Simple horizontal swipe detection - any horizontal movement counts
+            if (absDeltaX > minSwipeDistance && (now - lastSwipeTime) > swipeCooldown) {
+                lastSwipeTime = now;
                 if (deltaX > 0) {
                     // Swipe right
                     if (player.targetLane < 2) {
@@ -1054,15 +1049,6 @@
                     if (player.targetLane > 0) {
                         player.targetLane--;
                         playSound('swipe');
-                    }
-                }
-            }
-            // Check if it's a vertical swipe for attack
-            else if (absDeltaY > absDeltaX && absDeltaY > effectiveMinDistance) {
-                if (deltaY < 0) {
-                    // Swipe up - attack
-                    if (attackPowerUp && attackCooldown === 0) {
-                        useAttackPowerUp();
                     }
                 }
             }
