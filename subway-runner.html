@@ -3005,7 +3005,7 @@
                 
                 // Shoot at target (or straight up if no target)
                 const tankX = player.x + 25;
-                const tankY = player.y + 90;
+                const tankY = player.y - 75; // Above player (cannon tip position)
                 const angle = hasTarget ? Math.atan2(targetY - tankY, targetX - tankX) : -Math.PI / 2;
                 
                 tankProjectiles.push({
@@ -5468,12 +5468,12 @@
             }
         }
         
-        // Draw Military Tank
+        // Draw Military Tank - positioned above player as shield
         function drawTank() {
             if (!tankActive) return;
             
             const tankX = player.x - 5;
-            const tankY = player.y + 75;
+            const tankY = player.y - 50; // Above the player
             
             ctx.save();
             
@@ -5527,12 +5527,12 @@
             ctx.textAlign = 'center';
             ctx.fillText('★', tankX + 30, tankY + 15);
             
-            // Timer indicator
+            // Timer indicator - above the tank
             const timerPercent = tankTimer / 300;
             ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
-            ctx.fillRect(tankX, tankY + 38, 60 * timerPercent, 4);
+            ctx.fillRect(tankX, tankY - 35, 60 * timerPercent, 4);
             ctx.strokeStyle = '#00FF00';
-            ctx.strokeRect(tankX, tankY + 38, 60, 4);
+            ctx.strokeRect(tankX, tankY - 35, 60, 4);
             
             ctx.restore();
             
