@@ -3726,6 +3726,18 @@
                     obstacles.splice(idx, 1);
                 });
                 
+                // Destroy boss bullets in range
+                bossBullets = bossBullets.filter(bullet => {
+                    const dx = bullet.x - (player.x + 25);
+                    const dy = bullet.y - (player.y + 35);
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 80) {
+                        createParticle(bullet.x, bullet.y, '#87CEEB');
+                        return false;
+                    }
+                    return true;
+                });
+                
                 if (tornadoTimer === 0) tornadoActive = false;
             }
             
@@ -3763,6 +3775,16 @@
                         dropPowerUpFromEnemy(target.x, target.y);
                         createParticle(target.x + target.width / 2, target.y + target.height / 2, '#FFFF00');
                         obstacles.splice(idx, 1);
+                    });
+                    
+                    // Also zap nearby boss bullets
+                    bossBullets = bossBullets.filter(bullet => {
+                        const dist = Math.sqrt(Math.pow(bullet.x - player.x, 2) + Math.pow(bullet.y - player.y, 2));
+                        if (dist < 250) {
+                            createParticle(bullet.x, bullet.y, '#FFFF00');
+                            return false;
+                        }
+                        return true;
                     });
                 }
                 
@@ -3834,6 +3856,18 @@
                             createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#FFD700');
                             obstacles.splice(idx, 1);
                         });
+                        
+                        // Also destroy boss bullets in explosion radius
+                        bossBullets = bossBullets.filter(bullet => {
+                            const dx = bullet.x - proj.x;
+                            const dy = bullet.y - proj.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < 30) {
+                                createParticle(bullet.x, bullet.y, '#FFD700');
+                                return false;
+                            }
+                            return true;
+                        });
                         return false;
                     }
                     
@@ -3900,6 +3934,18 @@
                         obstacles.splice(idx, 1);
                     });
                     
+                    // Also destroy boss bullets in range
+                    bossBullets = bossBullets.filter(bullet => {
+                        const dx = bullet.x - pos.x;
+                        const dy = bullet.y - pos.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 40) {
+                            createParticle(bullet.x, bullet.y, '#FFD700');
+                            return false;
+                        }
+                        return true;
+                    });
+                    
                     return pos.life > 0;
                 });
                 
@@ -3940,6 +3986,18 @@
                         dropPowerUpFromEnemy(obs.x, obs.y);
                         createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#00CED1');
                         obstacles.splice(idx, 1);
+                    });
+                    
+                    // Destroy boss bullets that hit satellite
+                    bossBullets = bossBullets.filter(bullet => {
+                        const dx = bullet.x - satX;
+                        const dy = bullet.y - satY;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 30) {
+                            createParticle(bullet.x, bullet.y, '#00CED1');
+                            return false;
+                        }
+                        return true;
                     });
                 });
                 
@@ -3996,6 +4054,18 @@
                         dropPowerUpFromEnemy(obs.x, obs.y);
                         createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#00FFFF');
                         obstacles.splice(idx, 1);
+                    });
+                    
+                    // Destroy boss bullets that hit clones
+                    bossBullets = bossBullets.filter(bullet => {
+                        const cloneX = player.x + clone.offsetX;
+                        const cloneY = player.y + clone.offsetY;
+                        if (bullet.x > cloneX && bullet.x < cloneX + 50 &&
+                            bullet.y > cloneY && bullet.y < cloneY + 70) {
+                            createParticle(bullet.x, bullet.y, '#00FFFF');
+                            return false;
+                        }
+                        return true;
                     });
                 });
                 
