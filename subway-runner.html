@@ -682,15 +682,7 @@
             animation: screenShake 0.3s ease-out;
         }
         
-        @keyframes comboPopIn {
-            0% { transform: scale(0.5); opacity: 0; }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        
-        .combo-pop {
-            animation: comboPopIn 0.2s ease-out;
-        }
+
     </style>
 </head>
 <body>
@@ -703,7 +695,6 @@
             <div>DISTANCE: <span id="distance">0</span>m</div>
             <div id="livesDisplay">LIVES: <span id="lives">❤️❤️❤️</span></div>
             <div id="highScoreDisplay" style="color: #FFD700;">🏆 BEST: <span id="highScore">0</span></div>
-            <div id="comboDisplay" style="display: none; color: #00FF00;">🔥 COMBO: <span id="comboCount">0</span>x</div>
         </div>
 
         <div id="powerUpBar">
@@ -825,47 +816,7 @@
             }
         }
         
-        // Combo System (lightweight counter)
-        let comboCount = 0;
-        let comboTimer = 0;
-        const COMBO_TIMEOUT = 60; // frames (~1 second to maintain combo)
-        
-        function addCombo() {
-            comboCount++;
-            comboTimer = COMBO_TIMEOUT;
-            
-            const comboDisplay = document.getElementById('comboDisplay');
-            const comboCountEl = document.getElementById('comboCount');
-            
-            comboDisplay.style.display = 'block';
-            comboCountEl.textContent = comboCount;
-            comboDisplay.classList.remove('combo-pop');
-            void comboDisplay.offsetWidth; // Trigger reflow
-            comboDisplay.classList.add('combo-pop');
-            
-            // Bonus points for combos
-            if (comboCount >= 5) {
-                score += comboCount * 2;
-            }
-            
-            // Light haptic for combo
-            vibrate(10);
-        }
-        
-        function updateCombo() {
-            if (comboTimer > 0) {
-                comboTimer--;
-            } else if (comboCount > 0) {
-                comboCount = 0;
-                document.getElementById('comboDisplay').style.display = 'none';
-            }
-        }
-        
-        function resetCombo() {
-            comboCount = 0;
-            comboTimer = 0;
-            document.getElementById('comboDisplay').style.display = 'none';
-        }
+
         
         // Screen Shake (CSS-based, GPU accelerated)
         function screenShake() {
@@ -2742,7 +2693,6 @@
             
             // Screen shake and haptic feedback
             screenShake();
-            resetCombo(); // Reset combo on damage
             
             // Visual feedback
             createParticle(player.x + 25, player.y + 35, '#FF0000');
@@ -2796,7 +2746,6 @@
                     score += (10 * scoreMultiplier);
                     createParticle(coin.x + 15, coin.y + 15, '#FFD700');
                     playSound('coin');
-                    addCombo(); // Combo system
                     return false;
                 }
 
@@ -5351,7 +5300,6 @@
             if (!gameRunning) return;
 
             update();
-            updateCombo(); // Combo timer update
             draw();
 
             requestAnimationFrame(gameLoop);
@@ -5381,9 +5329,6 @@
             powerUps = [];
             particles = [];
             groundLines = [];
-            
-            // Reset combo
-            resetCombo();
             
             // Reset power-ups
             deactivatePowerUp();
@@ -5436,9 +5381,6 @@
             document.getElementById('bestScore').textContent = highScore;
             document.getElementById('gameOverScreen').classList.remove('hidden');
             playSound('gameover');
-            
-            // Reset combo
-            resetCombo();
         }
 
         function restartGame() {
