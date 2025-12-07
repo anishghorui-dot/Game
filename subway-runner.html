@@ -903,6 +903,37 @@
         let tankProjectiles = [];
         let tankShootTimer = 0;
         
+        // Advanced Power-ups (Level 3+)
+        let tornadoActive = false;
+        let tornadoTimer = 0;
+        let tornadoAngle = 0;
+        let lightningChainActive = false;
+        let lightningChainTimer = 0;
+        let lightningChainTargets = [];
+        let autoTurretActive = false;
+        let autoTurretTimer = 0;
+        let autoTurretProjectiles = [];
+        let autoTurretShootTimer = 0;
+        
+        // Elite Power-ups (Level 5+)
+        let timeBubbleActive = false;
+        let timeBubbleTimer = 0;
+        let starTrailActive = false;
+        let starTrailTimer = 0;
+        let starTrailPositions = [];
+        let satelliteActive = false;
+        let satelliteTimer = 0;
+        let satellites = [];
+        
+        // Legendary Power-ups (Level 7+)
+        let rainbowActive = false;
+        let rainbowTimer = 0;
+        let cloneActive = false;
+        let cloneTimer = 0;
+        let clones = [];
+        let phoenixActive = false;
+        let phoenixRevived = false;
+        
         // Helicopter Enemy
         let helicopters = [];
         let helicopterBombs = [];
@@ -1208,7 +1239,24 @@
             if (Math.random() < 0.2) {
                 type = 'heart';
             } else {
+                // Base power-ups (Level 1+)
                 const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb', 'tank'];
+                
+                // Level 3+: Advanced power-ups
+                if (difficultyLevel >= 3) {
+                    types.push('tornado', 'lightningchain', 'autoturret');
+                }
+                
+                // Level 5+: Elite power-ups
+                if (difficultyLevel >= 5) {
+                    types.push('timebubble', 'startrail', 'satellite');
+                }
+                
+                // Level 7+: Legendary power-ups
+                if (difficultyLevel >= 7) {
+                    types.push('rainbow', 'clone', 'phoenix');
+                }
+                
                 type = types[Math.floor(Math.random() * types.length)];
             }
             
@@ -1231,7 +1279,24 @@
                 if (Math.random() < 0.2) {
                     type = 'heart';
                 } else {
+                    // Base power-ups (Level 1+)
                     const types = ['shield', 'magnet', 'invincible', 'boost', 'fire', 'laser', 'bomb', 'tank'];
+                    
+                    // Level 3+: Advanced power-ups
+                    if (difficultyLevel >= 3) {
+                        types.push('tornado', 'lightningchain', 'autoturret');
+                    }
+                    
+                    // Level 5+: Elite power-ups
+                    if (difficultyLevel >= 5) {
+                        types.push('timebubble', 'startrail', 'satellite');
+                    }
+                    
+                    // Level 7+: Legendary power-ups
+                    if (difficultyLevel >= 7) {
+                        types.push('rainbow', 'clone', 'phoenix');
+                    }
+                    
                     type = types[Math.floor(Math.random() * types.length)];
                 }
                 
@@ -2443,6 +2508,201 @@
                         });
                     }
                     break;
+                    
+                // ADVANCED POWER-UPS (Level 3+)
+                case 'tornado':
+                    tornadoActive = true;
+                    tornadoTimer = 360; // 6 seconds
+                    tornadoAngle = 0;
+                    activePowerUp = 'tornado';
+                    powerUpTimer = 360;
+                    showMultiplier('🌪️ TORNADO SHIELD!');
+                    // Spinning wind particles
+                    for (let i = 0; i < 60; i++) {
+                        const angle = (Math.PI * 2 * i) / 60;
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: Math.cos(angle) * 8,
+                            vy: Math.sin(angle) * 8,
+                            color: ['#87CEEB', '#FFFFFF', '#B0E0E6'][Math.floor(Math.random() * 3)],
+                            life: 35
+                        });
+                    }
+                    break;
+                    
+                case 'lightningchain':
+                    lightningChainActive = true;
+                    lightningChainTimer = 300; // 5 seconds
+                    lightningChainTargets = [];
+                    activePowerUp = 'lightningchain';
+                    powerUpTimer = 300;
+                    showMultiplier('⚡ LIGHTNING CHAIN!');
+                    // Electric burst
+                    for (let i = 0; i < 40; i++) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: (Math.random() - 0.5) * 10,
+                            vy: (Math.random() - 0.5) * 10,
+                            color: ['#FFFF00', '#FFFFFF', '#FFD700'][Math.floor(Math.random() * 3)],
+                            life: 30
+                        });
+                    }
+                    break;
+                    
+                case 'autoturret':
+                    autoTurretActive = true;
+                    autoTurretTimer = 480; // 8 seconds
+                    autoTurretProjectiles = [];
+                    autoTurretShootTimer = 0;
+                    activePowerUp = 'autoturret';
+                    powerUpTimer = 480;
+                    showMultiplier('🔫 AUTO-TURRET!');
+                    // Mechanical activation particles
+                    for (let i = 0; i < 30; i++) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: (Math.random() - 0.5) * 6,
+                            color: ['#808080', '#C0C0C0', '#FFD700'][Math.floor(Math.random() * 3)],
+                            life: 30
+                        });
+                    }
+                    break;
+                    
+                // ELITE POWER-UPS (Level 5+)
+                case 'timebubble':
+                    timeBubbleActive = true;
+                    timeBubbleTimer = 300; // 5 seconds
+                    activePowerUp = 'timebubble';
+                    powerUpTimer = 300;
+                    showMultiplier('⏰ TIME BUBBLE!');
+                    // Time distortion particles
+                    for (let i = 0; i < 50; i++) {
+                        const angle = (Math.PI * 2 * i) / 50;
+                        const radius = 40 + Math.random() * 20;
+                        particles.push({
+                            x: player.x + 25 + Math.cos(angle) * radius,
+                            y: player.y + 35 + Math.sin(angle) * radius,
+                            vx: Math.cos(angle) * 2,
+                            vy: Math.sin(angle) * 2,
+                            color: ['#9370DB', '#BA55D3', '#DDA0DD'][Math.floor(Math.random() * 3)],
+                            life: 40
+                        });
+                    }
+                    break;
+                    
+                case 'startrail':
+                    starTrailActive = true;
+                    starTrailTimer = 360; // 6 seconds
+                    starTrailPositions = [];
+                    activePowerUp = 'startrail';
+                    powerUpTimer = 360;
+                    showMultiplier('⭐ STAR TRAIL!');
+                    // Stardust explosion
+                    for (let i = 0; i < 40; i++) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: (Math.random() - 0.5) * 8,
+                            vy: (Math.random() - 0.5) * 8,
+                            color: ['#FFD700', '#FFA500', '#FFFF00'][Math.floor(Math.random() * 3)],
+                            life: 35
+                        });
+                    }
+                    break;
+                    
+                case 'satellite':
+                    satelliteActive = true;
+                    satelliteTimer = 420; // 7 seconds
+                    satellites = [
+                        { angle: 0, distance: 60 },
+                        { angle: Math.PI * 2 / 3, distance: 60 },
+                        { angle: Math.PI * 4 / 3, distance: 60 }
+                    ];
+                    activePowerUp = 'satellite';
+                    powerUpTimer = 420;
+                    showMultiplier('🛰️ SATELLITE SHIELD!');
+                    // Orbital deployment particles
+                    for (let i = 0; i < 45; i++) {
+                        const angle = (Math.PI * 2 * i) / 45;
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: Math.cos(angle) * 5,
+                            vy: Math.sin(angle) * 5,
+                            color: ['#00CED1', '#40E0D0', '#48D1CC'][Math.floor(Math.random() * 3)],
+                            life: 35
+                        });
+                    }
+                    break;
+                    
+                // LEGENDARY POWER-UPS (Level 7+)
+                case 'rainbow':
+                    rainbowActive = true;
+                    rainbowTimer = 240; // 4 seconds
+                    isInvincible = true;
+                    speedBoostActive = true;
+                    gameSpeed *= 2.5;
+                    scoreMultiplier = 5;
+                    activePowerUp = 'rainbow';
+                    powerUpTimer = 240;
+                    showMultiplier('🌈 RAINBOW DASH!');
+                    // Rainbow explosion
+                    const rainbowColors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
+                    for (let i = 0; i < 70; i++) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: (Math.random() - 0.5) * 12,
+                            vy: (Math.random() - 0.5) * 12,
+                            color: rainbowColors[Math.floor(Math.random() * rainbowColors.length)],
+                            life: 45
+                        });
+                    }
+                    break;
+                    
+                case 'clone':
+                    cloneActive = true;
+                    cloneTimer = 360; // 6 seconds
+                    clones = [
+                        { offsetX: -80, offsetY: 0 },
+                        { offsetX: 80, offsetY: 0 }
+                    ];
+                    activePowerUp = 'clone';
+                    powerUpTimer = 360;
+                    showMultiplier('👥 CLONE ARMY!');
+                    // Clone materialization particles
+                    for (let i = 0; i < 60; i++) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: (Math.random() - 0.5) * 10,
+                            vy: (Math.random() - 0.5) * 10,
+                            color: ['#00FFFF', '#FF00FF', '#FFFF00'][Math.floor(Math.random() * 3)],
+                            life: 40
+                        });
+                    }
+                    break;
+                    
+                case 'phoenix':
+                    phoenixActive = true;
+                    phoenixRevived = false;
+                    showMultiplier('🔥 PHOENIX MODE!');
+                    // Eternal flame effect
+                    for (let i = 0; i < 80; i++) {
+                        particles.push({
+                            x: player.x + 25,
+                            y: player.y + 35,
+                            vx: (Math.random() - 0.5) * 8,
+                            vy: (Math.random() - 0.5) * 8 - 3,
+                            color: ['#FF4500', '#FF6347', '#FFD700', '#FFA500'][Math.floor(Math.random() * 4)],
+                            life: 50
+                        });
+                    }
+                    break;
             }
         }
 
@@ -2454,6 +2714,34 @@
             tankActive = false;
             tankProjectiles = [];
             tankTimer = 0;
+            
+            // Reset advanced power-ups
+            tornadoActive = false;
+            tornadoTimer = 0;
+            lightningChainActive = false;
+            lightningChainTimer = 0;
+            lightningChainTargets = [];
+            autoTurretActive = false;
+            autoTurretTimer = 0;
+            autoTurretProjectiles = [];
+            
+            // Reset elite power-ups
+            timeBubbleActive = false;
+            timeBubbleTimer = 0;
+            starTrailActive = false;
+            starTrailTimer = 0;
+            starTrailPositions = [];
+            satelliteActive = false;
+            satelliteTimer = 0;
+            satellites = [];
+            
+            // Reset legendary power-ups
+            rainbowActive = false;
+            rainbowTimer = 0;
+            cloneActive = false;
+            cloneTimer = 0;
+            clones = [];
+            // Note: phoenixActive is NOT reset here - it persists until used
             
             if (speedBoostActive) {
                 // Reset to base game speed (accounts for difficulty level)
@@ -2481,7 +2769,16 @@
                     'magnet': '🧲',
                     'invincible': '⭐',
                     'boost': '🚀',
-                    'tank': '⚡'
+                    'tank': '⚡',
+                    'tornado': '🌪️',
+                    'lightningchain': '⚡',
+                    'autoturret': '🔫',
+                    'timebubble': '⏰',
+                    'startrail': '⭐',
+                    'satellite': '🛰️',
+                    'rainbow': '🌈',
+                    'clone': '👥',
+                    'phoenix': '🔥'
                 };
                 
                 const names = {
@@ -2489,7 +2786,16 @@
                     'magnet': 'MAGNET',
                     'invincible': 'INVINCIBLE',
                     'boost': 'SPEED BOOST',
-                    'tank': 'THUNDER TANK'
+                    'tank': 'THUNDER TANK',
+                    'tornado': 'TORNADO SHIELD',
+                    'lightningchain': 'LIGHTNING CHAIN',
+                    'autoturret': 'AUTO-TURRET',
+                    'timebubble': 'TIME BUBBLE',
+                    'startrail': 'STAR TRAIL',
+                    'satellite': 'SATELLITE SHIELD',
+                    'rainbow': 'RAINBOW DASH',
+                    'clone': 'CLONE ARMY',
+                    'phoenix': 'PHOENIX MODE'
                 };
                 
                 icon.textContent = icons[activePowerUp];
@@ -2863,6 +3169,31 @@
         }
         
         function takeDamage() {
+            // Phoenix Mode - auto-revive once
+            if (phoenixActive && !phoenixRevived && player.lives <= 1) {
+                phoenixRevived = true;
+                phoenixActive = false;
+                player.lives = 3; // Fully restore
+                invincibilityFrames = 180; // 3 seconds of invincibility
+                
+                // Epic phoenix rebirth effect
+                showMultiplier('🔥 PHOENIX REBIRTH! 🔥');
+                playSound('powerup');
+                
+                for (let i = 0; i < 100; i++) {
+                    particles.push({
+                        x: player.x + 25,
+                        y: player.y + 35,
+                        vx: (Math.random() - 0.5) * 12,
+                        vy: (Math.random() - 0.5) * 12 - 5,
+                        color: ['#FF4500', '#FF6347', '#FFD700', '#FFA500'][Math.floor(Math.random() * 4)],
+                        life: 60
+                    });
+                }
+                
+                return; // Skip normal damage
+            }
+            
             player.lives--;
             invincibilityFrames = 120; // 2 seconds of invincibility
             
@@ -3365,6 +3696,273 @@
             });
         }
 
+        function updateAdvancedPowerUps() {
+            // Tornado Shield - spinning destruction
+            if (tornadoActive && tornadoTimer > 0) {
+                tornadoTimer--;
+                tornadoAngle += 0.2; // Rotation speed
+                
+                // Check for collisions with enemies/obstacles
+                obstacles.forEach(obs => {
+                    if (!obs.destroyed) {
+                        const dx = (obs.x + obs.width / 2) - (player.x + 25);
+                        const dy = (obs.y + obs.height / 2) - (player.y + 35);
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (dist < 80) { // Tornado radius
+                            obs.destroyed = true;
+                            score += 50;
+                            dropPowerUpFromEnemy(obs.x, obs.y);
+                            createExplosionParticles(obs.x + obs.width / 2, obs.y + obs.height / 2);
+                        }
+                    }
+                });
+                
+                if (tornadoTimer === 0) tornadoActive = false;
+            }
+            
+            // Lightning Chain - arcs between enemies
+            if (lightningChainActive && lightningChainTimer > 0) {
+                lightningChainTimer--;
+                
+                if (frameCount % 15 === 0) { // Zap every 15 frames
+                    // Find nearby enemies to chain
+                    lightningChainTargets = [];
+                    obstacles.forEach(obs => {
+                        if (!obs.destroyed && obs.y > 0 && obs.y < canvas.height) {
+                            const dist = Math.abs(obs.y - player.y);
+                            if (dist < 200) {
+                                lightningChainTargets.push({ x: obs.x + obs.width / 2, y: obs.y + obs.height / 2, ref: obs });
+                            }
+                        }
+                    });
+                    
+                    // Damage all targets in chain
+                    lightningChainTargets.forEach(target => {
+                        if (!target.ref.destroyed) {
+                            target.ref.destroyed = true;
+                            score += 50;
+                            dropPowerUpFromEnemy(target.ref.x, target.ref.y);
+                            createExplosionParticles(target.x, target.y);
+                        }
+                    });
+                }
+                
+                if (lightningChainTimer === 0) {
+                    lightningChainActive = false;
+                    lightningChainTargets = [];
+                }
+            }
+            
+            // Auto-Turret - shoots nearest enemy automatically
+            if (autoTurretActive && autoTurretTimer > 0) {
+                autoTurretTimer--;
+                autoTurretShootTimer++;
+                
+                // Shoot every 20 frames
+                if (autoTurretShootTimer >= 20) {
+                    autoTurretShootTimer = 0;
+                    
+                    // Find nearest enemy
+                    let nearestEnemy = null;
+                    let nearestDist = Infinity;
+                    obstacles.forEach(obs => {
+                        if (!obs.destroyed && obs.y > 0) {
+                            const dist = Math.abs(obs.y - player.y);
+                            if (dist < nearestDist) {
+                                nearestDist = dist;
+                                nearestEnemy = obs;
+                            }
+                        }
+                    });
+                    
+                    if (nearestEnemy) {
+                        autoTurretProjectiles.push({
+                            x: player.x + 25,
+                            y: player.y - 20,
+                            targetX: nearestEnemy.x + nearestEnemy.width / 2,
+                            targetY: nearestEnemy.y + nearestEnemy.height / 2,
+                            speed: 8
+                        });
+                    }
+                }
+                
+                // Update turret projectiles
+                autoTurretProjectiles = autoTurretProjectiles.filter(proj => {
+                    const dx = proj.targetX - proj.x;
+                    const dy = proj.targetY - proj.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < proj.speed) {
+                        // Hit target area - damage nearby enemies
+                        obstacles.forEach(obs => {
+                            if (!obs.destroyed) {
+                                const odx = (obs.x + obs.width / 2) - proj.x;
+                                const ody = (obs.y + obs.height / 2) - proj.y;
+                                const oDist = Math.sqrt(odx * odx + ody * ody);
+                                
+                                if (oDist < 30) {
+                                    obs.destroyed = true;
+                                    score += 50;
+                                    dropPowerUpFromEnemy(obs.x, obs.y);
+                                    createExplosionParticles(obs.x + obs.width / 2, obs.y + obs.height / 2);
+                                }
+                            }
+                        });
+                        return false;
+                    }
+                    
+                    proj.x += (dx / dist) * proj.speed;
+                    proj.y += (dy / dist) * proj.speed;
+                    return true;
+                });
+                
+                if (autoTurretTimer === 0) {
+                    autoTurretActive = false;
+                    autoTurretProjectiles = [];
+                }
+            }
+            
+            // Time Bubble - slows everything down
+            if (timeBubbleActive && timeBubbleTimer > 0) {
+                timeBubbleTimer--;
+                
+                // Slow down game speed (if not already)
+                if (frameCount % 2 === 0) { // Update on even frames only for half-speed effect
+                    // Enemies move at half speed - handled in draw function
+                }
+                
+                if (timeBubbleTimer === 0) timeBubbleActive = false;
+            }
+            
+            // Star Trail - leaves damaging trail
+            if (starTrailActive && starTrailTimer > 0) {
+                starTrailTimer--;
+                
+                // Add player position to trail
+                if (frameCount % 3 === 0) {
+                    starTrailPositions.push({
+                        x: player.x + 25,
+                        y: player.y + 35,
+                        life: 30
+                    });
+                }
+                
+                // Update trail and check collisions
+                starTrailPositions = starTrailPositions.filter(pos => {
+                    pos.life--;
+                    
+                    // Check collision with enemies
+                    obstacles.forEach(obs => {
+                        if (!obs.destroyed) {
+                            const dx = (obs.x + obs.width / 2) - pos.x;
+                            const dy = (obs.y + obs.height / 2) - pos.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (dist < 40) {
+                                obs.destroyed = true;
+                                score += 50;
+                                dropPowerUpFromEnemy(obs.x, obs.y);
+                                createExplosionParticles(obs.x + obs.width / 2, obs.y + obs.height / 2);
+                            }
+                        }
+                    });
+                    
+                    return pos.life > 0;
+                });
+                
+                if (starTrailTimer === 0) {
+                    starTrailActive = false;
+                    starTrailPositions = [];
+                }
+            }
+            
+            // Satellite Shield - orbiting defense
+            if (satelliteActive && satelliteTimer > 0) {
+                satelliteTimer--;
+                
+                // Update satellite positions (orbit)
+                satellites.forEach(sat => {
+                    sat.angle += 0.05;
+                    const satX = player.x + 25 + Math.cos(sat.angle) * sat.distance;
+                    const satY = player.y + 35 + Math.sin(sat.angle) * sat.distance;
+                    
+                    // Check collisions with enemies
+                    obstacles.forEach(obs => {
+                        if (!obs.destroyed) {
+                            const dx = (obs.x + obs.width / 2) - satX;
+                            const dy = (obs.y + obs.height / 2) - satY;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (dist < 30) {
+                                obs.destroyed = true;
+                                score += 50;
+                                dropPowerUpFromEnemy(obs.x, obs.y);
+                                createExplosionParticles(obs.x + obs.width / 2, obs.y + obs.height / 2);
+                            }
+                        }
+                    });
+                });
+                
+                if (satelliteTimer === 0) {
+                    satelliteActive = false;
+                    satellites = [];
+                }
+            }
+            
+            // Rainbow Dash - already handled in activatePowerUp (invincible + speed boost)
+            if (rainbowActive && rainbowTimer > 0) {
+                rainbowTimer--;
+                
+                // Create rainbow trail particles
+                if (frameCount % 2 === 0) {
+                    const colors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
+                    particles.push({
+                        x: player.x + 25,
+                        y: player.y + 35,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: Math.random() * 2 + 2,
+                        color: colors[frameCount % colors.length],
+                        life: 20
+                    });
+                }
+                
+                if (rainbowTimer === 0) rainbowActive = false;
+            }
+            
+            // Clone Army - clones mirror player
+            if (cloneActive && cloneTimer > 0) {
+                cloneTimer--;
+                
+                // Clones follow player lane (with offset)
+                clones.forEach((clone, i) => {
+                    // Check clone collisions with enemies
+                    obstacles.forEach(obs => {
+                        if (!obs.destroyed) {
+                            const cloneX = player.x + clone.offsetX;
+                            const cloneY = player.y + clone.offsetY;
+                            
+                            if (obs.x < cloneX + 50 && obs.x + obs.width > cloneX &&
+                                obs.y < cloneY + 70 && obs.y + obs.height > cloneY) {
+                                obs.destroyed = true;
+                                score += 50;
+                                dropPowerUpFromEnemy(obs.x, obs.y);
+                                createExplosionParticles(obs.x + obs.width / 2, obs.y + obs.height / 2);
+                            }
+                        }
+                    });
+                });
+                
+                if (cloneTimer === 0) {
+                    cloneActive = false;
+                    clones = [];
+                }
+            }
+            
+            // Phoenix Mode - revive on death (handled in takeDamage)
+            // No update needed here, just flag checking
+        }
+
         function update() {
             if (!gameRunning) return;
 
@@ -3376,22 +3974,24 @@
             const newDifficultyLevel = Math.floor(distance / 500) + 1;
             if (newDifficultyLevel > difficultyLevel) {
                 difficultyLevel = newDifficultyLevel;
-                // Gradually increase base speed (max 12)
-                baseGameSpeed = Math.min(12, 5 + (difficultyLevel - 1) * 0.7);
-                if (!speedBoostActive) {
-                    gameSpeed = baseGameSpeed;
-                }
+                // Speed increase disabled - keeps constant speed
+                // baseGameSpeed = Math.min(12, 5 + (difficultyLevel - 1) * 0.7);
+                // if (!speedBoostActive) {
+                //     gameSpeed = baseGameSpeed;
+                // }
                 
-                // Show level up with new enemy announcements
-                let levelMessage = `🔥 LEVEL ${difficultyLevel}! FASTER!`;
+                // Show level up with new enemy and power-up announcements
+                let levelMessage = `🔥 LEVEL ${difficultyLevel}!`;
                 if (difficultyLevel === 2) {
                     levelMessage = '🏍️ LEVEL 2! MOTORCYCLES INCOMING!';
                 } else if (difficultyLevel === 3) {
-                    levelMessage = '🚔 LEVEL 3! POLICE & SKATERS!';
+                    levelMessage = '🚔 LEVEL 3! POLICE & SKATERS! ⚡ ADVANCED POWER-UPS UNLOCKED!';
                 } else if (difficultyLevel === 4) {
                     levelMessage = '🦅 LEVEL 4! BIRDS & BARRELS!';
                 } else if (difficultyLevel === 5) {
-                    levelMessage = '🛸 LEVEL 5! UFO INVASION!';
+                    levelMessage = '🛸 LEVEL 5! UFO INVASION! 🌟 ELITE POWER-UPS UNLOCKED!';
+                } else if (difficultyLevel === 7) {
+                    levelMessage = '🔥 LEVEL 7! 💎 LEGENDARY POWER-UPS UNLOCKED!';
                 }
                 showMultiplier(levelMessage);
                 
@@ -3462,6 +4062,9 @@
             if (invincibilityFrames > 0) {
                 invincibilityFrames--;
             }
+            
+            // Update new power-ups
+            updateAdvancedPowerUps();
             
             // Update attack button visual
             updateAttackButton();
@@ -4842,6 +5445,69 @@
                         secondary: '#FFA500',
                         accent: '#FFFF00',
                         shine: '#FFFFFF'
+                    },
+                    'tornado': {
+                        glow: 'rgba(135, 206, 235, 0.9)',
+                        primary: '#87CEEB',
+                        secondary: '#B0E0E6',
+                        accent: '#FFFFFF',
+                        shine: '#F0FFFF'
+                    },
+                    'lightningchain': {
+                        glow: 'rgba(255, 255, 0, 0.9)',
+                        primary: '#FFFF00',
+                        secondary: '#FFD700',
+                        accent: '#FFA500',
+                        shine: '#FFFFFF'
+                    },
+                    'autoturret': {
+                        glow: 'rgba(192, 192, 192, 0.9)',
+                        primary: '#C0C0C0',
+                        secondary: '#808080',
+                        accent: '#FFD700',
+                        shine: '#FFFFFF'
+                    },
+                    'timebubble': {
+                        glow: 'rgba(147, 112, 219, 0.9)',
+                        primary: '#9370DB',
+                        secondary: '#BA55D3',
+                        accent: '#DDA0DD',
+                        shine: '#E6E6FA'
+                    },
+                    'startrail': {
+                        glow: 'rgba(255, 215, 0, 0.9)',
+                        primary: '#FFD700',
+                        secondary: '#FFA500',
+                        accent: '#FFFF00',
+                        shine: '#FFFACD'
+                    },
+                    'satellite': {
+                        glow: 'rgba(0, 206, 209, 0.9)',
+                        primary: '#00CED1',
+                        secondary: '#40E0D0',
+                        accent: '#48D1CC',
+                        shine: '#E0FFFF'
+                    },
+                    'rainbow': {
+                        glow: 'rgba(255, 0, 255, 0.9)',
+                        primary: '#FF00FF',
+                        secondary: '#FF1493',
+                        accent: '#FFD700',
+                        shine: '#FFFFFF'
+                    },
+                    'clone': {
+                        glow: 'rgba(0, 255, 255, 0.9)',
+                        primary: '#00FFFF',
+                        secondary: '#00CED1',
+                        accent: '#AFEEEE',
+                        shine: '#F0FFFF'
+                    },
+                    'phoenix': {
+                        glow: 'rgba(255, 69, 0, 0.9)',
+                        primary: '#FF4500',
+                        secondary: '#FF6347',
+                        accent: '#FFD700',
+                        shine: '#FFFFFF'
                     }
                 };
                 
@@ -5129,6 +5795,37 @@
                     ctx.beginPath();
                     ctx.arc(-8, -18, 3 + sparkIntensity * 2, 0, Math.PI * 2);
                     ctx.fill();
+                    
+                } else {
+                    // For new power-ups and tank, use emoji icons
+                    const powerUpEmojis = {
+                        'tank': '⚡',
+                        'tornado': '🌪️',
+                        'lightningchain': '⚡',
+                        'autoturret': '🔫',
+                        'timebubble': '⏰',
+                        'startrail': '⭐',
+                        'satellite': '🛰️',
+                        'rainbow': '🌈',
+                        'clone': '👥',
+                        'phoenix': '🔥'
+                    };
+                    
+                    if (powerUpEmojis[powerUp.type]) {
+                        // Simple circle background
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 18, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Emoji overlay
+                        ctx.font = 'bold 24px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.shadowColor = style.glow;
+                        ctx.shadowBlur = 15;
+                        ctx.fillText(powerUpEmojis[powerUp.type], 0, 0);
+                    }
                 }
                 
                 // Reset canvas state before restore
@@ -6459,6 +7156,252 @@
             });
         }
 
+        function drawAdvancedPowerUpEffects() {
+            // Tornado Shield - spinning wind effect
+            if (tornadoActive) {
+                ctx.save();
+                
+                // Draw 6 spinning wind blades
+                for (let i = 0; i < 6; i++) {
+                    const angle = tornadoAngle + (Math.PI * 2 * i) / 6;
+                    const radius = 70;
+                    const x = player.x + 25 + Math.cos(angle) * radius;
+                    const y = player.y + 35 + Math.sin(angle) * radius;
+                    
+                    ctx.fillStyle = 'rgba(135, 206, 235, 0.6)';
+                    ctx.shadowColor = '#87CEEB';
+                    ctx.shadowBlur = 15;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Wind trail
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(player.x + 25, player.y + 35);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                }
+                
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+            
+            // Lightning Chain - electric arcs
+            if (lightningChainActive && lightningChainTargets.length > 0) {
+                ctx.save();
+                ctx.strokeStyle = '#FFFF00';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#FFFF00';
+                ctx.shadowBlur = 10;
+                
+                // Draw lightning from player to each target
+                lightningChainTargets.forEach(target => {
+                    // Zigzag lightning effect
+                    ctx.beginPath();
+                    ctx.moveTo(player.x + 25, player.y + 35);
+                    
+                    const steps = 5;
+                    for (let i = 1; i <= steps; i++) {
+                        const t = i / steps;
+                        const x = player.x + 25 + (target.x - (player.x + 25)) * t + (Math.random() - 0.5) * 20;
+                        const y = player.y + 35 + (target.y - (player.y + 35)) * t + (Math.random() - 0.5) * 20;
+                        ctx.lineTo(x, y);
+                    }
+                    
+                    ctx.stroke();
+                });
+                
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+            
+            // Auto-Turret Projectiles
+            autoTurretProjectiles.forEach(proj => {
+                ctx.fillStyle = '#FFD700';
+                ctx.shadowColor = '#FFA500';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(proj.x, proj.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+            
+            // Time Bubble - purple bubble around player
+            if (timeBubbleActive) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(147, 112, 219, 0.6)';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#9370DB';
+                ctx.shadowBlur = 20;
+                
+                // Pulsing bubble
+                const pulseSize = 100 + Math.sin(frameCount * 0.1) * 10;
+                ctx.beginPath();
+                ctx.arc(player.x + 25, player.y + 35, pulseSize, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Inner rings
+                ctx.strokeStyle = 'rgba(186, 85, 211, 0.4)';
+                ctx.beginPath();
+                ctx.arc(player.x + 25, player.y + 35, pulseSize * 0.7, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+            
+            // Star Trail - golden trail behind player
+            starTrailPositions.forEach(pos => {
+                const alpha = pos.life / 30;
+                ctx.fillStyle = `rgba(255, 215, 0, ${alpha * 0.8})`;
+                ctx.shadowColor = '#FFD700';
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Inner bright star
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.shadowBlur = 0;
+            
+            // Satellite Shield - orbiting satellites
+            if (satelliteActive) {
+                ctx.save();
+                satellites.forEach(sat => {
+                    const satX = player.x + 25 + Math.cos(sat.angle) * sat.distance;
+                    const satY = player.y + 35 + Math.sin(sat.angle) * sat.distance;
+                    
+                    // Satellite body
+                    ctx.fillStyle = '#00CED1';
+                    ctx.shadowColor = '#40E0D0';
+                    ctx.shadowBlur = 10;
+                    ctx.fillRect(satX - 8, satY - 8, 16, 16);
+                    
+                    // Solar panels
+                    ctx.fillStyle = '#FFD700';
+                    ctx.fillRect(satX - 15, satY - 3, 6, 6);
+                    ctx.fillRect(satX + 9, satY - 3, 6, 6);
+                    
+                    // Antenna
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(satX, satY - 8);
+                    ctx.lineTo(satX, satY - 15);
+                    ctx.stroke();
+                    
+                    // Orbit line
+                    ctx.strokeStyle = 'rgba(64, 224, 208, 0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.arc(player.x + 25, player.y + 35, sat.distance, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                });
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+            
+            // Rainbow Dash - rainbow trail
+            if (rainbowActive) {
+                const colors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
+                ctx.save();
+                
+                // Draw rainbow rings around player
+                colors.forEach((color, i) => {
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 15;
+                    const radius = 40 + i * 8 + Math.sin(frameCount * 0.2 + i) * 5;
+                    ctx.beginPath();
+                    ctx.arc(player.x + 25, player.y + 35, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                });
+                
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+            
+            // Clone Army - draw clones
+            if (cloneActive) {
+                ctx.save();
+                clones.forEach(clone => {
+                    const cloneX = player.x + clone.offsetX;
+                    const cloneY = player.y + clone.offsetY;
+                    
+                    // Semi-transparent clone
+                    ctx.globalAlpha = 0.6;
+                    
+                    // Clone glow
+                    ctx.shadowColor = '#00FFFF';
+                    ctx.shadowBlur = 15;
+                    
+                    // Draw player shape for clone (simplified)
+                    ctx.fillStyle = '#00FFFF';
+                    ctx.fillRect(cloneX, cloneY, 50, 70);
+                    
+                    // Clone eyes
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(cloneX + 12, cloneY + 20, 8, 8);
+                    ctx.fillRect(cloneX + 30, cloneY + 20, 8, 8);
+                    
+                    ctx.globalAlpha = 1.0;
+                });
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+            
+            // Phoenix Mode - fiery aura
+            if (phoenixActive) {
+                ctx.save();
+                
+                // Fiery rings
+                const fireColors = ['#FF4500', '#FF6347', '#FFD700'];
+                fireColors.forEach((color, i) => {
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 4;
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 20;
+                    const radius = 50 + i * 12 + Math.sin(frameCount * 0.15 + i) * 8;
+                    ctx.beginPath();
+                    ctx.arc(player.x + 25, player.y + 35, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                });
+                
+                // Phoenix wings (flames)
+                ctx.fillStyle = 'rgba(255, 69, 0, 0.5)';
+                ctx.shadowColor = '#FF4500';
+                ctx.shadowBlur = 25;
+                
+                // Left wing
+                ctx.beginPath();
+                ctx.moveTo(player.x, player.y + 35);
+                ctx.lineTo(player.x - 30, player.y + 10);
+                ctx.lineTo(player.x - 20, player.y + 50);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Right wing
+                ctx.beginPath();
+                ctx.moveTo(player.x + 50, player.y + 35);
+                ctx.lineTo(player.x + 80, player.y + 10);
+                ctx.lineTo(player.x + 70, player.y + 50);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+        }
+
         function draw() {
             drawBackground();
             drawHelicopters();
@@ -6469,6 +7412,7 @@
             drawBossBullets();
             drawAttackProjectiles();
             drawTank();
+            drawAdvancedPowerUpEffects();
             drawParticles();
             drawPlayer();
             drawBossUI();
@@ -6524,6 +7468,37 @@
             tankTimer = 0;
             tankProjectiles = [];
             tankShootTimer = 0;
+            
+            // Reset advanced power-ups
+            tornadoActive = false;
+            tornadoTimer = 0;
+            tornadoAngle = 0;
+            lightningChainActive = false;
+            lightningChainTimer = 0;
+            lightningChainTargets = [];
+            autoTurretActive = false;
+            autoTurretTimer = 0;
+            autoTurretProjectiles = [];
+            autoTurretShootTimer = 0;
+            
+            // Reset elite power-ups
+            timeBubbleActive = false;
+            timeBubbleTimer = 0;
+            starTrailActive = false;
+            starTrailTimer = 0;
+            starTrailPositions = [];
+            satelliteActive = false;
+            satelliteTimer = 0;
+            satellites = [];
+            
+            // Reset legendary power-ups
+            rainbowActive = false;
+            rainbowTimer = 0;
+            cloneActive = false;
+            cloneTimer = 0;
+            clones = [];
+            phoenixActive = false;
+            phoenixRevived = false;
             
             // Reset helicopters
             helicopters = [];
