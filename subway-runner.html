@@ -7159,84 +7159,95 @@
         }
 
         function drawAdvancedPowerUpEffects() {
-            // Tornado Shield - spinning wind effect
+            // Tornado Shield - spinning wind effect (OPTIMIZED)
             if (tornadoActive) {
                 ctx.save();
+                ctx.globalAlpha = 0.8;
                 
-                // Draw 6 spinning wind blades
-                for (let i = 0; i < 6; i++) {
-                    const angle = tornadoAngle + (Math.PI * 2 * i) / 6;
+                // Draw spinning ring (simplified for performance)
+                const centerX = player.x + 25;
+                const centerY = player.y + 35;
+                
+                // Draw 4 blades instead of 6 (reduced for performance)
+                for (let i = 0; i < 4; i++) {
+                    const angle = tornadoAngle + (Math.PI * 2 * i) / 4;
                     const radius = 70;
-                    const x = player.x + 25 + Math.cos(angle) * radius;
-                    const y = player.y + 35 + Math.sin(angle) * radius;
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
                     
-                    ctx.fillStyle = 'rgba(135, 206, 235, 0.6)';
-                    ctx.shadowColor = '#87CEEB';
-                    ctx.shadowBlur = 15;
-                    ctx.beginPath();
-                    ctx.arc(x, y, 15, 0, Math.PI * 2);
-                    ctx.fill();
+                    // Use gradient instead of shadow blur (much faster)
+                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, 18);
+                    gradient.addColorStop(0, 'rgba(135, 206, 235, 0.8)');
+                    gradient.addColorStop(1, 'rgba(135, 206, 235, 0)');
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x - 18, y - 18, 36, 36);
                     
-                    // Wind trail
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-                    ctx.lineWidth = 3;
+                    // Simple line trail (no stroke, just rect for speed)
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    const dx = x - centerX;
+                    const dy = y - centerY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const steps = 3;
+                    for (let j = 0; j < steps; j++) {
+                        const t = j / steps;
+                        const trailX = centerX + dx * t;
+                        const trailY = centerY + dy * t;
+                        ctx.fillRect(trailX - 2, trailY - 2, 4, 4);
+                    }
+                }
+                
+                ctx.globalAlpha = 1;
+                ctx.restore();
+            }
+            
+            // Lightning Chain - electric arcs (OPTIMIZED)
+            if (lightningChainActive && lightningChainTargets.length > 0) {
+                ctx.save();
+                
+                // Limit targets for performance (max 5)
+                const maxTargets = Math.min(5, lightningChainTargets.length);
+                
+                // Draw lightning from player to each target
+                for (let t = 0; t < maxTargets; t++) {
+                    const target = lightningChainTargets[t];
+                    
+                    // Simplified lightning - direct line with glow effect
+                    ctx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
+                    ctx.lineWidth = 4;
                     ctx.beginPath();
                     ctx.moveTo(player.x + 25, player.y + 35);
-                    ctx.lineTo(x, y);
+                    ctx.lineTo(target.x, target.y);
+                    ctx.stroke();
+                    
+                    // Bright core
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(player.x + 25, player.y + 35);
+                    ctx.lineTo(target.x, target.y);
                     ctx.stroke();
                 }
                 
-                ctx.shadowBlur = 0;
                 ctx.restore();
             }
             
-            // Lightning Chain - electric arcs
-            if (lightningChainActive && lightningChainTargets.length > 0) {
-                ctx.save();
-                ctx.strokeStyle = '#FFFF00';
-                ctx.lineWidth = 3;
-                ctx.shadowColor = '#FFFF00';
-                ctx.shadowBlur = 10;
-                
-                // Draw lightning from player to each target
-                lightningChainTargets.forEach(target => {
-                    // Zigzag lightning effect
-                    ctx.beginPath();
-                    ctx.moveTo(player.x + 25, player.y + 35);
-                    
-                    const steps = 5;
-                    for (let i = 1; i <= steps; i++) {
-                        const t = i / steps;
-                        const x = player.x + 25 + (target.x - (player.x + 25)) * t + (Math.random() - 0.5) * 20;
-                        const y = player.y + 35 + (target.y - (player.y + 35)) * t + (Math.random() - 0.5) * 20;
-                        ctx.lineTo(x, y);
-                    }
-                    
-                    ctx.stroke();
-                });
-                
-                ctx.shadowBlur = 0;
-                ctx.restore();
-            }
-            
-            // Auto-Turret Projectiles
+            // Auto-Turret Projectiles (OPTIMIZED)
             autoTurretProjectiles.forEach(proj => {
-                ctx.fillStyle = '#FFD700';
-                ctx.shadowColor = '#FFA500';
-                ctx.shadowBlur = 10;
-                ctx.beginPath();
-                ctx.arc(proj.x, proj.y, 5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
+                // Use gradient instead of shadow
+                const gradient = ctx.createRadialGradient(proj.x, proj.y, 0, proj.x, proj.y, 8);
+                gradient.addColorStop(0, '#FFFFFF');
+                gradient.addColorStop(0.5, '#FFD700');
+                gradient.addColorStop(1, 'rgba(255, 165, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(proj.x - 8, proj.y - 8, 16, 16);
             });
             
-            // Time Bubble - purple bubble around player
+            // Time Bubble - purple bubble around player (OPTIMIZED)
             if (timeBubbleActive) {
                 ctx.save();
-                ctx.strokeStyle = 'rgba(147, 112, 219, 0.6)';
-                ctx.lineWidth = 3;
-                ctx.shadowColor = '#9370DB';
-                ctx.shadowBlur = 20;
+                ctx.strokeStyle = 'rgba(147, 112, 219, 0.7)';
+                ctx.lineWidth = 4;
+                ctx.globalAlpha = 0.8;
                 
                 // Pulsing bubble
                 const pulseSize = 100 + Math.sin(frameCount * 0.1) * 10;
@@ -7250,40 +7261,47 @@
                 ctx.arc(player.x + 25, player.y + 35, pulseSize * 0.7, 0, Math.PI * 2);
                 ctx.stroke();
                 
-                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
                 ctx.restore();
             }
             
-            // Star Trail - golden trail behind player
+            // Star Trail - golden trail behind player (OPTIMIZED)
             starTrailPositions.forEach(pos => {
                 const alpha = pos.life / 30;
-                ctx.fillStyle = `rgba(255, 215, 0, ${alpha * 0.8})`;
-                ctx.shadowColor = '#FFD700';
-                ctx.shadowBlur = 15;
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2);
-                ctx.fill();
                 
-                // Inner bright star
-                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
-                ctx.fill();
+                // Use gradient instead of shadow
+                const gradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 12);
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+                gradient.addColorStop(0.5, `rgba(255, 215, 0, ${alpha * 0.8})`);
+                gradient.addColorStop(1, `rgba(255, 215, 0, 0)`);
+                ctx.fillStyle = gradient;
+                ctx.fillRect(pos.x - 12, pos.y - 12, 24, 24);
             });
-            ctx.shadowBlur = 0;
             
-            // Satellite Shield - orbiting satellites
+            // Satellite Shield - orbiting satellites (OPTIMIZED)
             if (satelliteActive) {
                 ctx.save();
+                
+                // Draw orbit lines once (not per satellite)
+                ctx.strokeStyle = 'rgba(64, 224, 208, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.arc(player.x + 25, player.y + 35, 60, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
                 satellites.forEach(sat => {
                     const satX = player.x + 25 + Math.cos(sat.angle) * sat.distance;
                     const satY = player.y + 35 + Math.sin(sat.angle) * sat.distance;
                     
-                    // Satellite body
+                    // Satellite body with glow
                     ctx.fillStyle = '#00CED1';
-                    ctx.shadowColor = '#40E0D0';
-                    ctx.shadowBlur = 10;
                     ctx.fillRect(satX - 8, satY - 8, 16, 16);
+                    
+                    // Outer glow
+                    ctx.fillStyle = 'rgba(64, 224, 208, 0.3)';
+                    ctx.fillRect(satX - 10, satY - 10, 20, 20);
                     
                     // Solar panels
                     ctx.fillStyle = '#FFD700';
@@ -7297,38 +7315,28 @@
                     ctx.moveTo(satX, satY - 8);
                     ctx.lineTo(satX, satY - 15);
                     ctx.stroke();
-                    
-                    // Orbit line
-                    ctx.strokeStyle = 'rgba(64, 224, 208, 0.3)';
-                    ctx.lineWidth = 1;
-                    ctx.setLineDash([5, 5]);
-                    ctx.beginPath();
-                    ctx.arc(player.x + 25, player.y + 35, sat.distance, 0, Math.PI * 2);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
                 });
-                ctx.shadowBlur = 0;
+                
                 ctx.restore();
             }
             
-            // Rainbow Dash - rainbow trail
+            // Rainbow Dash - rainbow trail (OPTIMIZED)
             if (rainbowActive) {
                 const colors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#4B0082', '#9400D3'];
                 ctx.save();
+                ctx.globalAlpha = 0.7;
                 
-                // Draw rainbow rings around player
+                // Draw rainbow rings around player (simplified)
                 colors.forEach((color, i) => {
                     ctx.strokeStyle = color;
-                    ctx.lineWidth = 3;
-                    ctx.shadowColor = color;
-                    ctx.shadowBlur = 15;
+                    ctx.lineWidth = 4;
                     const radius = 40 + i * 8 + Math.sin(frameCount * 0.2 + i) * 5;
                     ctx.beginPath();
                     ctx.arc(player.x + 25, player.y + 35, radius, 0, Math.PI * 2);
                     ctx.stroke();
                 });
                 
-                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
                 ctx.restore();
             }
             
@@ -7342,9 +7350,15 @@
                     // Semi-transparent clone
                     ctx.globalAlpha = 0.6;
                     
-                    // Clone glow
-                    ctx.shadowColor = '#00FFFF';
-                    ctx.shadowBlur = 15;
+                    // Clone glow (gradient instead of shadowBlur)
+                    const cloneGradient = ctx.createRadialGradient(cloneX + 25, cloneY + 35, 0, cloneX + 25, cloneY + 35, 60);
+                    cloneGradient.addColorStop(0, 'rgba(0, 255, 255, 0.8)');
+                    cloneGradient.addColorStop(0.5, 'rgba(0, 255, 255, 0.4)');
+                    cloneGradient.addColorStop(1, 'rgba(0, 255, 255, 0)');
+                    
+                    // Draw clone glow background
+                    ctx.fillStyle = cloneGradient;
+                    ctx.fillRect(cloneX - 10, cloneY - 10, 70, 90);
                     
                     // Draw player shape for clone (simplified)
                     ctx.fillStyle = '#00FFFF';
@@ -7357,7 +7371,6 @@
                     
                     ctx.globalAlpha = 1.0;
                 });
-                ctx.shadowBlur = 0;
                 ctx.restore();
             }
             
@@ -7365,23 +7378,29 @@
             if (phoenixActive) {
                 ctx.save();
                 
-                // Fiery rings
-                const fireColors = ['#FF4500', '#FF6347', '#FFD700'];
-                fireColors.forEach((color, i) => {
-                    ctx.strokeStyle = color;
-                    ctx.lineWidth = 4;
-                    ctx.shadowColor = color;
-                    ctx.shadowBlur = 20;
+                // Fiery rings with gradient glow (no shadowBlur)
+                const fireColors = [
+                    {base: '#FF4500', alpha: 0.8},
+                    {base: '#FF6347', alpha: 0.6},
+                    {base: '#FFD700', alpha: 0.5}
+                ];
+                fireColors.forEach((colorInfo, i) => {
                     const radius = 50 + i * 12 + Math.sin(frameCount * 0.15 + i) * 8;
+                    
+                    // Use alpha for glow effect
+                    ctx.strokeStyle = colorInfo.base.replace(')', `, ${colorInfo.alpha})`).replace('#', 'rgba(').replace(/(.{2})(.{2})(.{2})/, (_, r, g, b) => `${parseInt(r, 16)}, ${parseInt(g, 16)}, ${parseInt(b, 16)}`);
+                    ctx.lineWidth = 6;
                     ctx.beginPath();
                     ctx.arc(player.x + 25, player.y + 35, radius, 0, Math.PI * 2);
                     ctx.stroke();
                 });
                 
-                // Phoenix wings (flames)
-                ctx.fillStyle = 'rgba(255, 69, 0, 0.5)';
-                ctx.shadowColor = '#FF4500';
-                ctx.shadowBlur = 25;
+                // Phoenix wings (flames) with gradient
+                const wingGradient = ctx.createRadialGradient(player.x + 25, player.y + 35, 0, player.x + 25, player.y + 35, 60);
+                wingGradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
+                wingGradient.addColorStop(0.5, 'rgba(255, 99, 71, 0.6)');
+                wingGradient.addColorStop(1, 'rgba(255, 69, 0, 0.3)');
+                ctx.fillStyle = wingGradient;
                 
                 // Left wing
                 ctx.beginPath();
@@ -7399,7 +7418,6 @@
                 ctx.closePath();
                 ctx.fill();
                 
-                ctx.shadowBlur = 0;
                 ctx.restore();
             }
         }
