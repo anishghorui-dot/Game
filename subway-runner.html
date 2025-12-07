@@ -2963,13 +2963,17 @@
                 let targetType = null; // 'bullet', 'obstacle', or 'boss'
                 let targetRef = null;
                 
-                // Check for boss bullets first (priority)
+                // Minimum Y position for targets to be visible (at least 100px into screen)
+                const minVisibleY = 100;
+                
+                // Check for boss bullets first (priority) - must be visible on screen
                 if (bossActive && bossBullets.length > 0) {
                     let nearestBullet = null;
                     let nearestDist = Infinity;
                     bossBullets.forEach(bullet => {
                         const dist = Math.abs(bullet.y - player.y);
-                        if (dist < nearestDist && bullet.y < player.y) {
+                        // Only target if bullet is visible (y > minVisibleY) and above player
+                        if (dist < nearestDist && bullet.y < player.y && bullet.y > minVisibleY) {
                             nearestDist = dist;
                             nearestBullet = bullet;
                         }
@@ -2983,13 +2987,14 @@
                     }
                 }
                 
-                // Check for obstacles
+                // Check for obstacles - must be visible on screen
                 if (!hasTarget && obstacles.length > 0) {
                     let nearestObs = null;
                     let nearestDist = Infinity;
                     obstacles.forEach(obs => {
                         const dist = Math.abs(obs.y - player.y);
-                        if (dist < nearestDist && obs.y < player.y) {
+                        // Only target if obstacle is visible (y > minVisibleY) and above player
+                        if (dist < nearestDist && obs.y < player.y && obs.y > minVisibleY) {
                             nearestDist = dist;
                             nearestObs = obs;
                         }
@@ -3003,8 +3008,8 @@
                     }
                 }
                 
-                // Check for boss (only damages, doesn't one-shot)
-                if (!hasTarget && bossActive && boss && !bossDefeated) {
+                // Check for boss (only damages, doesn't one-shot) - boss is always visible when active
+                if (!hasTarget && bossActive && boss && !bossDefeated && boss.y > 0) {
                     targetX = boss.x + boss.width / 2;
                     targetY = boss.y + boss.height / 2;
                     hasTarget = true;
