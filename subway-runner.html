@@ -1111,18 +1111,24 @@
         function spawnObstacle() {
             const lane = Math.floor(Math.random() * 3);
             
-            // Enemy types based on difficulty level
+            // Enemy types based on difficulty level - Progressive introduction
             let types = ['box', 'barrier', 'cone'];
             
             // Add new enemy types as difficulty increases
             if (difficultyLevel >= 2) {
-                types.push('spike', 'bouncer'); // Level 2+: Spiky obstacles and bouncers
+                types.push('spike', 'bouncer');
+                types.push('motorcycle'); // Level 2+: Fast motorcycle racer!
             }
             if (difficultyLevel >= 3) {
-                types.push('zigzag', 'chaser'); // Level 3+: Zigzag movers and chasers
+                types.push('zigzag', 'chaser');
+                types.push('police', 'skateboarder'); // Level 3+: Police chase and skateboarders!
             }
             if (difficultyLevel >= 4) {
-                types.push('splitter', 'teleporter'); // Level 4+: Obstacles that split or teleport
+                types.push('splitter', 'teleporter');
+                types.push('bird', 'barrel'); // Level 4+: Dive-bombing birds and rolling barrels!
+            }
+            if (difficultyLevel >= 5) {
+                types.push('ufo', 'ufo'); // Level 5+: UFOs appear more frequently!
             }
             
             const type = types[Math.floor(Math.random() * types.length)];
@@ -1135,21 +1141,33 @@
             
             obstacles.push({
                 x: lanes[lane],
-                y: -100,
-                width: 50,
-                height: type === 'barrier' ? 70 : 60,
+                y: type === 'police' ? canvas.height + 100 : (type === 'bird' ? -150 : -100), // Police spawns from behind, birds from higher
+                width: type === 'skateboarder' ? 35 : (type === 'motorcycle' ? 45 : 50),
+                height: type === 'barrier' ? 70 : (type === 'bird' ? 40 : 60),
                 type: type,
                 lane: lane,
-                isMoving: isMoving,
+                isMoving: isMoving || ['motorcycle', 'police', 'skateboarder', 'barrel', 'ufo'].includes(type),
                 moveDirection: moveDirection,
-                moveSpeed: moveSpeed,
+                moveSpeed: type === 'motorcycle' ? 3 : (type === 'police' ? 2 : moveSpeed),
                 targetLane: lane,
                 // Special properties for new enemy types
                 bounceTimer: 0,
                 zigzagTimer: 0,
-                chaserActive: type === 'chaser',
+                chaserActive: type === 'chaser' || type === 'police',
                 hasSplit: false,
-                teleportTimer: type === 'teleporter' ? 180 : 0 // 3 seconds
+                teleportTimer: type === 'teleporter' ? 180 : 0,
+                // Cool enemy properties
+                motorcycleTimer: 0,
+                honkTimer: 0,
+                policeFlashTimer: 0,
+                skateboardAngle: 0,
+                birdDiveActive: type === 'bird',
+                birdShadowY: -100,
+                barrelBouncePhase: 0,
+                barrelRotation: 0,
+                ufoHoverTimer: 0,
+                ufoBeamActive: false,
+                ufoBombTimer: 0
             });
         }
 
@@ -2671,6 +2689,135 @@
                     }
                 }
                 
+                // ========== COOL ENEMY BEHAVIORS ==========
+                
+                if (obs.type === 'motorcycle') {
+                    // Motorcycle zigzags fast between lanes
+                    obs.motorcycleTimer++;
+                    
+                    // Honk warning before lane change
+                    if (obs.motorcycleTimer % 90 === 85) {
+                        obs.honkTimer = 30;
+                        playSound('swipe'); // Honk sound
+                    }
+                    
+                    if (obs.honkTimer > 0) obs.honkTimer--;
+                    
+                    // Rapid lane changes
+                    if (obs.motorcycleTimer % 90 === 0) {
+                        const newLane = Math.floor(Math.random() * 3);
+                        const targetX = lanes[newLane];
+                        obs.moveDirection = targetX > obs.x ? 1 : -1;
+                        obs.lane = newLane;
+                    }
+                    
+                    // Smooth movement to target lane
+                    const targetX = lanes[obs.lane];
+                    if (Math.abs(obs.x - targetX) > 2) {
+                        obs.x += (targetX - obs.x) * 0.15;
+                    }
+                }
+                
+                if (obs.type === 'police' && obs.chaserActive) {
+                    // Police car chases player aggressively
+                    const targetX = lanes[player.lane];
+                    obs.y -= gameSpeed * 0.3; // Move faster than normal (chase from behind)
+                    
+                    if (Math.abs(obs.x - targetX) > 5) {
+                        obs.x += (targetX - obs.x) * 0.08;
+                        // Update lane
+                        if (obs.x < lanes[1] - 40) obs.lane = 0;
+                        else if (obs.x > lanes[1] + 40) obs.lane = 2;
+                        else obs.lane = 1;
+                    }
+                }
+                
+                if (obs.type === 'skateboarder') {
+                    // Unpredictable diagonal movement
+                    obs.x += Math.sin(obs.skateboardAngle) * 2.5;
+                    
+                    // Keep within lanes but erratic
+                    if (obs.x < lanes[0]) obs.x = lanes[0];
+                    if (obs.x > lanes[2]) obs.x = lanes[2];
+                    
+                    // Update lane
+                    if (obs.x < lanes[1] - 40) obs.lane = 0;
+                    else if (obs.x > lanes[1] + 40) obs.lane = 2;
+                    else obs.lane = 1;
+                }
+                
+                if (obs.type === 'bird' && obs.birdDiveActive) {
+                    // Bird dives diagonally toward player
+                    const targetX = lanes[player.lane];
+                    obs.x += (targetX - obs.x) * 0.06;
+                    obs.y += gameSpeed * 1.5; // Dive faster
+                    
+                    // Update lane
+                    if (obs.x < lanes[1] - 40) obs.lane = 0;
+                    else if (obs.x > lanes[1] + 40) obs.lane = 2;
+                    else obs.lane = 1;
+                }
+                
+                if (obs.type === 'barrel') {
+                    // Barrel bounces between lanes
+                    if (frameCount % 120 === 0) {
+                        obs.moveDirection *= -1; // Change direction
+                    }
+                    obs.x += obs.moveDirection * 1.5;
+                    
+                    // Bounce off edges
+                    if (obs.x <= lanes[0]) {
+                        obs.moveDirection = 1;
+                        obs.x = lanes[0];
+                    } else if (obs.x >= lanes[2]) {
+                        obs.moveDirection = -1;
+                        obs.x = lanes[2];
+                    }
+                    
+                    // Update lane
+                    if (obs.x < lanes[1] - 40) obs.lane = 0;
+                    else if (obs.x > lanes[1] + 40) obs.lane = 2;
+                    else obs.lane = 1;
+                }
+                
+                if (obs.type === 'ufo') {
+                    // UFO hovers and activates tractor beam periodically
+                    obs.ufoBombTimer++;
+                    
+                    // Slow movement between lanes
+                    if (obs.ufoBombTimer % 180 === 0) {
+                        const newLane = Math.floor(Math.random() * 3);
+                        obs.lane = newLane;
+                    }
+                    
+                    const targetX = lanes[obs.lane];
+                    if (Math.abs(obs.x - targetX) > 2) {
+                        obs.x += (targetX - obs.x) * 0.03;
+                    }
+                    
+                    // Activate tractor beam to pull coins
+                    obs.ufoBeamActive = obs.ufoBombTimer % 120 < 60;
+                    
+                    if (obs.ufoBeamActive) {
+                        // Pull nearby coins toward UFO
+                        coinItems.forEach(coin => {
+                            const dx = obs.x + 25 - (coin.x + 15);
+                            const dy = obs.y + 60 - (coin.y + 15);
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (dist < 100 && dy < 0) {
+                                coin.x += dx * 0.08;
+                                coin.y += dy * 0.08;
+                                
+                                // Coin gets stolen if reaches UFO
+                                if (dist < 30) {
+                                    coin.collected = true;
+                                }
+                            }
+                        });
+                    }
+                }
+                
                 // Laser continuously destroys obstacles in its lane (follows player)
                 if (laserActive && obs.lane === player.lane) {
                     createParticle(obs.x + 25, obs.y + 30, '#00FFFF');
@@ -3234,7 +3381,19 @@
                 if (!speedBoostActive) {
                     gameSpeed = baseGameSpeed;
                 }
-                showMultiplier(`🔥 LEVEL ${difficultyLevel}! FASTER!`);
+                
+                // Show level up with new enemy announcements
+                let levelMessage = `🔥 LEVEL ${difficultyLevel}! FASTER!`;
+                if (difficultyLevel === 2) {
+                    levelMessage = '🏍️ LEVEL 2! MOTORCYCLES INCOMING!';
+                } else if (difficultyLevel === 3) {
+                    levelMessage = '🚔 LEVEL 3! POLICE & SKATERS!';
+                } else if (difficultyLevel === 4) {
+                    levelMessage = '🦅 LEVEL 4! BIRDS & BARRELS!';
+                } else if (difficultyLevel === 5) {
+                    levelMessage = '🛸 LEVEL 5! UFO INVASION!';
+                }
+                showMultiplier(levelMessage);
                 
                 // Trigger boss every 2nd level (levels 2, 4, 6, 8...)
                 if (difficultyLevel % 2 === 0 && !bossActive) {
@@ -4116,6 +4275,379 @@
                         ctx.arc(px, py, 2, 0, Math.PI * 2);
                         ctx.fill();
                     }
+                    
+                } else if (obs.type === 'motorcycle') {
+                    // Sleek racing motorcycle with rider
+                    // Exhaust trail particles
+                    if (frameCount % 3 === 0) {
+                        particles.push({
+                            x: obs.x + 25,
+                            y: obs.y + obs.height,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: 2 + Math.random() * 2,
+                            color: '#888',
+                            life: 15
+                        });
+                    }
+                    
+                    // Speed lines behind motorcycle
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.lineWidth = 2;
+                    for (let i = 0; i < 3; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x - 10 - i * 8, obs.y + 20 + i * 10);
+                        ctx.lineTo(obs.x - 25 - i * 8, obs.y + 20 + i * 10);
+                        ctx.stroke();
+                    }
+                    
+                    // Motorcycle body - sleek red racing bike
+                    ctx.fillStyle = '#FF0000';
+                    ctx.fillRect(obs.x + 10, obs.y + 30, 30, 15);
+                    
+                    // Wheels
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 15, obs.y + 50, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 35, obs.y + 50, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Wheel spokes (spinning)
+                    const spokeAngle = (frameCount * 0.3) % (Math.PI * 2);
+                    ctx.strokeStyle = '#666';
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < 3; i++) {
+                        const angle = spokeAngle + (i * Math.PI * 2 / 3);
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x + 15, obs.y + 50);
+                        ctx.lineTo(obs.x + 15 + Math.cos(angle) * 6, obs.y + 50 + Math.sin(angle) * 6);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x + 35, obs.y + 50);
+                        ctx.lineTo(obs.x + 35 + Math.cos(angle) * 6, obs.y + 50 + Math.sin(angle) * 6);
+                        ctx.stroke();
+                    }
+                    
+                    // Rider helmet
+                    ctx.fillStyle = '#FFD700';
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 25, obs.y + 20, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Visor
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(obs.x + 20, obs.y + 18, 10, 5);
+                    
+                    // Body leaning forward
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(obs.x + 18, obs.y + 28, 14, 15);
+                    
+                    // Honk warning indicator
+                    if (obs.honkTimer > 0) {
+                        ctx.fillStyle = 'rgba(255, 255, 0, 0.8)';
+                        ctx.font = 'bold 16px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('!', obs.x + 25, obs.y - 10);
+                    }
+                    
+                    // Glow effect
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#FF0000';
+                    ctx.strokeStyle = '#FF0000';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(obs.x + 10, obs.y + 30, 30, 15);
+                    ctx.shadowBlur = 0;
+                    
+                } else if (obs.type === 'police') {
+                    // Police car chasing from behind
+                    obs.policeFlashTimer++;
+                    const flashOn = Math.floor(obs.policeFlashTimer / 10) % 2 === 0;
+                    
+                    // Car body
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(obs.x + 5, obs.y + 20, 40, 35);
+                    ctx.fillStyle = '#FFF';
+                    ctx.fillRect(obs.x + 5, obs.y + 25, 40, 15);
+                    
+                    // Windows
+                    ctx.fillStyle = '#4169E1';
+                    ctx.fillRect(obs.x + 10, obs.y + 15, 30, 8);
+                    
+                    // Wheels
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(obs.x + 8, obs.y + 52, 10, 8);
+                    ctx.fillRect(obs.x + 32, obs.y + 52, 10, 8);
+                    
+                    // Flashing lights on top
+                    if (flashOn) {
+                        ctx.fillStyle = '#FF0000';
+                        ctx.fillRect(obs.x + 15, obs.y + 12, 8, 4);
+                        ctx.fillStyle = '#0000FF';
+                        ctx.fillRect(obs.x + 27, obs.y + 12, 8, 4);
+                        
+                        // Light beams
+                        ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x + 19, obs.y + 12);
+                        ctx.lineTo(obs.x + 15, obs.y - 20);
+                        ctx.lineTo(obs.x + 23, obs.y - 20);
+                        ctx.fill();
+                        
+                        ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x + 31, obs.y + 12);
+                        ctx.lineTo(obs.x + 27, obs.y - 20);
+                        ctx.lineTo(obs.x + 35, obs.y - 20);
+                        ctx.fill();
+                    }
+                    
+                    // "POLICE" text
+                    ctx.fillStyle = '#000';
+                    ctx.font = 'bold 8px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('POLICE', obs.x + 25, obs.y + 35);
+                    
+                } else if (obs.type === 'skateboarder') {
+                    // Skateboarder with diagonal movement animation
+                    obs.skateboardAngle += 0.1;
+                    const tilt = Math.sin(obs.skateboardAngle) * 15;
+                    
+                    ctx.save();
+                    ctx.translate(obs.x + obs.width / 2, obs.y + obs.height / 2);
+                    ctx.rotate(tilt * Math.PI / 180);
+                    
+                    // Skateboard
+                    ctx.fillStyle = '#FF6B9D';
+                    ctx.fillRect(-15, 15, 30, 5);
+                    
+                    // Wheels
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.arc(-10, 20, 3, 0, Math.PI * 2);
+                    ctx.arc(10, 20, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Person head
+                    ctx.fillStyle = '#FFD700';
+                    ctx.beginPath();
+                    ctx.arc(0, -5, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Body
+                    ctx.fillStyle = '#4169E1';
+                    ctx.fillRect(-6, 3, 12, 15);
+                    
+                    // Arms in dynamic pose
+                    ctx.strokeStyle = '#FFD700';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(-6, 8);
+                    ctx.lineTo(-12, 5);
+                    ctx.moveTo(6, 8);
+                    ctx.lineTo(12, 12);
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                    
+                    // Trail effect
+                    if (frameCount % 5 === 0) {
+                        particles.push({
+                            x: obs.x + obs.width / 2,
+                            y: obs.y + obs.height,
+                            vx: (Math.random() - 0.5) * 3,
+                            vy: 1 + Math.random(),
+                            color: '#FF6B9D',
+                            life: 20
+                        });
+                    }
+                    
+                } else if (obs.type === 'bird') {
+                    // Dive-bombing bird from above
+                    const wingFlap = Math.sin(frameCount * 0.3) * 10;
+                    
+                    // Shadow on ground (warning)
+                    if (obs.birdShadowY < canvas.height - 100) {
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                        ctx.beginPath();
+                        ctx.ellipse(obs.x + 25, obs.birdShadowY, 20, 10, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        obs.birdShadowY += 5;
+                    }
+                    
+                    // Bird body
+                    ctx.fillStyle = '#8B4513';
+                    ctx.beginPath();
+                    ctx.ellipse(obs.x + 25, obs.y + 20, 12, 15, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Head
+                    ctx.fillStyle = '#A0522D';
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 25, obs.y + 10, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Beak
+                    ctx.fillStyle = '#FF8C00';
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + 25, obs.y + 12);
+                    ctx.lineTo(obs.x + 32, obs.y + 10);
+                    ctx.lineTo(obs.x + 25, obs.y + 8);
+                    ctx.fill();
+                    
+                    // Eyes
+                    ctx.fillStyle = '#FFF';
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 28, obs.y + 8, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 29, obs.y + 8, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Wings (animated)
+                    ctx.fillStyle = '#8B4513';
+                    ctx.beginPath();
+                    ctx.ellipse(obs.x + 10, obs.y + 20 + wingFlap, 12, 8, -0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(obs.x + 40, obs.y + 20 + wingFlap, 12, 8, 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Talons
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x + 22, obs.y + 35);
+                    ctx.lineTo(obs.x + 20, obs.y + 40);
+                    ctx.moveTo(obs.x + 28, obs.y + 35);
+                    ctx.lineTo(obs.x + 30, obs.y + 40);
+                    ctx.stroke();
+                    
+                } else if (obs.type === 'barrel') {
+                    // Rolling barrel that bounces between lanes
+                    obs.barrelRotation += 0.2;
+                    obs.barrelBouncePhase += 0.15;
+                    const bounceY = Math.sin(obs.barrelBouncePhase) * 8;
+                    
+                    ctx.save();
+                    ctx.translate(obs.x + 25, obs.y + 30 + bounceY);
+                    ctx.rotate(obs.barrelRotation);
+                    
+                    // Barrel body
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(-20, -20, 40, 40);
+                    
+                    // Metal bands
+                    ctx.fillStyle = '#696969';
+                    ctx.fillRect(-20, -18, 40, 4);
+                    ctx.fillRect(-20, -2, 40, 4);
+                    ctx.fillRect(-20, 14, 40, 4);
+                    
+                    // Wood grain lines
+                    ctx.strokeStyle = '#654321';
+                    ctx.lineWidth = 2;
+                    for (let i = -15; i < 20; i += 8) {
+                        ctx.beginPath();
+                        ctx.moveTo(i, -20);
+                        ctx.lineTo(i, 20);
+                        ctx.stroke();
+                    }
+                    
+                    // Warning symbol
+                    ctx.fillStyle = '#FF0000';
+                    ctx.font = 'bold 20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('!', 0, 7);
+                    
+                    ctx.restore();
+                    
+                    // Impact particles when bouncing
+                    if (Math.abs(Math.sin(obs.barrelBouncePhase)) > 0.95 && frameCount % 10 === 0) {
+                        for (let i = 0; i < 5; i++) {
+                            particles.push({
+                                x: obs.x + 25,
+                                y: obs.y + 60,
+                                vx: (Math.random() - 0.5) * 4,
+                                vy: -2 - Math.random() * 3,
+                                color: '#8B4513',
+                                life: 15
+                            });
+                        }
+                    }
+                    
+                } else if (obs.type === 'ufo') {
+                    // Hovering UFO with tractor beam
+                    obs.ufoHoverTimer += 0.1;
+                    const hoverOffset = Math.sin(obs.ufoHoverTimer) * 5;
+                    
+                    // Tractor beam (pulls coins)
+                    if (obs.ufoBeamActive) {
+                        ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+                        ctx.beginPath();
+                        ctx.moveTo(obs.x + 15, obs.y + 35);
+                        ctx.lineTo(obs.x + 5, obs.y + 100);
+                        ctx.lineTo(obs.x + 45, obs.y + 100);
+                        ctx.lineTo(obs.x + 35, obs.y + 35);
+                        ctx.fill();
+                        
+                        // Beam particles
+                        if (frameCount % 5 === 0) {
+                            particles.push({
+                                x: obs.x + 25,
+                                y: obs.y + 60,
+                                vx: (Math.random() - 0.5) * 2,
+                                vy: -2,
+                                color: '#00FF00',
+                                life: 20
+                            });
+                        }
+                    }
+                    
+                    // UFO saucer body
+                    ctx.fillStyle = '#C0C0C0';
+                    ctx.beginPath();
+                    ctx.ellipse(obs.x + 25, obs.y + 20 + hoverOffset, 25, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Dome
+                    ctx.fillStyle = 'rgba(0, 255, 255, 0.5)';
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 25, obs.y + 15 + hoverOffset, 12, 0, Math.PI, true);
+                    ctx.fill();
+                    
+                    // Alien silhouette in dome
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 25, obs.y + 12 + hoverOffset, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 22, obs.y + 10 + hoverOffset, 2, 0, Math.PI * 2);
+                    ctx.arc(obs.x + 28, obs.y + 10 + hoverOffset, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Lights around edge
+                    const numLights = 6;
+                    for (let i = 0; i < numLights; i++) {
+                        const angle = (i / numLights) * Math.PI * 2 + frameCount * 0.1;
+                        const lightX = obs.x + 25 + Math.cos(angle) * 22;
+                        const lightY = obs.y + 20 + hoverOffset + Math.sin(angle) * 8;
+                        const lightColor = Math.floor((frameCount / 10 + i) % 3);
+                        ctx.fillStyle = ['#FF0000', '#00FF00', '#0000FF'][lightColor];
+                        ctx.beginPath();
+                        ctx.arc(lightX, lightY, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    // Glow effect
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#00FFFF';
+                    ctx.strokeStyle = '#00FFFF';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.ellipse(obs.x + 25, obs.y + 20 + hoverOffset, 25, 10, 0, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
                 }
 
                 ctx.restore();
