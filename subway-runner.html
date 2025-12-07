@@ -2415,15 +2415,16 @@
                     tankProjectiles = [];
                     activePowerUp = 'tank';
                     powerUpTimer = 300;
-                    showMultiplier('🛡️ MILITARY TANK!');
-                    // Tank arrival effect - green military particles
-                    for (let i = 0; i < 40; i++) {
+                    showMultiplier('⚡ THUNDER TANK!');
+                    // Thunder arrival effect - electric blue particles
+                    for (let i = 0; i < 50; i++) {
+                        const angle = (Math.PI * 2 * i) / 50;
                         particles.push({
                             x: player.x + 25,
-                            y: player.y + 80,
-                            vx: (Math.random() - 0.5) * 8,
-                            vy: (Math.random() - 0.5) * 4,
-                            color: ['#2E7D32', '#4CAF50', '#81C784', '#FFD700'][Math.floor(Math.random() * 4)],
+                            y: player.y - 25,
+                            vx: Math.cos(angle) * (3 + Math.random() * 5),
+                            vy: Math.sin(angle) * (3 + Math.random() * 5),
+                            color: ['#00FFFF', '#FFFFFF', '#87CEEB', '#FFD700', '#00BFFF'][Math.floor(Math.random() * 5)],
                             life: 40
                         });
                     }
@@ -2466,7 +2467,7 @@
                     'magnet': '🧲',
                     'invincible': '⭐',
                     'boost': '🚀',
-                    'tank': '🛡️'
+                    'tank': '⚡'
                 };
                 
                 const names = {
@@ -2474,7 +2475,7 @@
                     'magnet': 'MAGNET',
                     'invincible': 'INVINCIBLE',
                     'boost': 'SPEED BOOST',
-                    'tank': 'TANK ESCORT'
+                    'tank': 'THUNDER TANK'
                 };
                 
                 icon.textContent = icons[activePowerUp];
@@ -2959,6 +2960,8 @@
                 let targetX = player.x + 25;
                 let targetY = 0;
                 let hasTarget = false;
+                let targetType = null; // 'bullet', 'obstacle', or 'boss'
+                let targetRef = null;
                 
                 // Check for boss bullets first (priority)
                 if (bossActive && bossBullets.length > 0) {
@@ -2975,6 +2978,8 @@
                         targetX = nearestBullet.x;
                         targetY = nearestBullet.y;
                         hasTarget = true;
+                        targetType = 'bullet';
+                        targetRef = nearestBullet;
                     }
                 }
                 
@@ -2991,110 +2996,96 @@
                     });
                     if (nearestObs) {
                         targetX = nearestObs.x + nearestObs.width / 2;
-                        targetY = nearestObs.y;
+                        targetY = nearestObs.y + nearestObs.height / 2;
                         hasTarget = true;
+                        targetType = 'obstacle';
+                        targetRef = nearestObs;
                     }
                 }
                 
-                // Check for boss
+                // Check for boss (only damages, doesn't one-shot)
                 if (!hasTarget && bossActive && boss && !bossDefeated) {
                     targetX = boss.x + boss.width / 2;
                     targetY = boss.y + boss.height / 2;
                     hasTarget = true;
+                    targetType = 'boss';
+                    targetRef = boss;
                 }
                 
-                // Shoot at target (or straight up if no target)
-                const tankX = player.x + 25;
-                const tankY = player.y - 75; // Above player (cannon tip position)
-                const angle = hasTarget ? Math.atan2(targetY - tankY, targetX - tankX) : -Math.PI / 2;
-                
-                tankProjectiles.push({
-                    x: tankX,
-                    y: tankY,
-                    vx: Math.cos(angle) * 12,
-                    vy: Math.sin(angle) * 12,
-                    width: 8,
-                    height: 8
-                });
-                
-                // Muzzle flash particles
-                for (let i = 0; i < 5; i++) {
-                    particles.push({
+                if (hasTarget) {
+                    // Create Thunder Spike - instant lightning strike!
+                    const tankX = player.x + 25;
+                    const tankY = player.y - 75;
+                    
+                    tankProjectiles.push({
                         x: tankX,
                         y: tankY,
-                        vx: Math.cos(angle) * (3 + Math.random() * 2) + (Math.random() - 0.5) * 2,
-                        vy: Math.sin(angle) * (3 + Math.random() * 2) + (Math.random() - 0.5) * 2,
-                        color: ['#FFD700', '#FFA500', '#FF4500'][Math.floor(Math.random() * 3)],
-                        life: 15
+                        targetX: targetX,
+                        targetY: targetY,
+                        targetType: targetType,
+                        targetRef: targetRef,
+                        life: 20, // Visual duration
+                        struck: false
                     });
+                    
+                    // Thunder sound/effect - electric particles at source
+                    for (let i = 0; i < 10; i++) {
+                        particles.push({
+                            x: tankX,
+                            y: tankY,
+                            vx: (Math.random() - 0.5) * 8,
+                            vy: (Math.random() - 0.5) * 8,
+                            color: ['#00FFFF', '#FFFFFF', '#87CEEB', '#00BFFF'][Math.floor(Math.random() * 4)],
+                            life: 20
+                        });
+                    }
+                    
+                    playSound('destroy');
                 }
             }
             
-            // Update tank projectiles
+            // Update Thunder Spikes
             tankProjectiles = tankProjectiles.filter(proj => {
-                proj.x += proj.vx;
-                proj.y += proj.vy;
+                proj.life--;
                 
-                // Check collision with boss bullets
-                if (bossActive && bossBullets.length > 0) {
-                    let bulletHit = false;
-                    bossBullets = bossBullets.filter(bullet => {
-                        if (!bulletHit &&
-                            proj.x > bullet.x - bullet.width &&
-                            proj.x < bullet.x + bullet.width &&
-                            proj.y > bullet.y - bullet.height &&
-                            proj.y < bullet.y + bullet.height) {
-                            
-                            // Destruction effect
-                            for (let i = 0; i < 15; i++) {
-                                particles.push({
-                                    x: bullet.x,
-                                    y: bullet.y,
-                                    vx: (Math.random() - 0.5) * 6,
-                                    vy: (Math.random() - 0.5) * 6,
-                                    color: ['#00FF00', '#32CD32', '#ADFF2F'][Math.floor(Math.random() * 3)],
-                                    life: 25
-                                });
-                            }
-                            playSound('destroy');
-                            bulletHit = true;
-                            return false;
+                // Apply instant damage on first frame
+                if (!proj.struck) {
+                    proj.struck = true;
+                    
+                    // Epic thunder strike effect at target
+                    for (let i = 0; i < 25; i++) {
+                        const angle = (Math.PI * 2 * i) / 25;
+                        particles.push({
+                            x: proj.targetX,
+                            y: proj.targetY,
+                            vx: Math.cos(angle) * (4 + Math.random() * 4),
+                            vy: Math.sin(angle) * (4 + Math.random() * 4),
+                            color: ['#00FFFF', '#FFFFFF', '#FFD700', '#87CEEB'][Math.floor(Math.random() * 4)],
+                            life: 30
+                        });
+                    }
+                    
+                    // Handle damage based on target type
+                    if (proj.targetType === 'bullet') {
+                        // Instantly destroy boss bullet
+                        bossBullets = bossBullets.filter(b => b !== proj.targetRef);
+                    } else if (proj.targetType === 'obstacle') {
+                        // Instantly destroy obstacle
+                        const obsIndex = obstacles.indexOf(proj.targetRef);
+                        if (obsIndex > -1) {
+                            dropPowerUpFromEnemy(proj.targetRef.x, proj.targetRef.y);
+                            obstacles.splice(obsIndex, 1);
+                            score += 100;
                         }
-                        return true;
-                    });
-                    if (bulletHit) return false;
-                }
-                
-                // Check collision with boss
-                if (bossActive && boss && !bossDefeated && bossIntroTimer === 0) {
-                    if (proj.x > boss.x && proj.x < boss.x + boss.width &&
-                        proj.y > boss.y && proj.y < boss.y + boss.height) {
-                        damageBoss(1);
-                        return false;
+                    } else if (proj.targetType === 'boss') {
+                        // Damage boss (not one-shot)
+                        if (bossActive && boss && !bossDefeated && bossIntroTimer === 0) {
+                            damageBoss(2); // Double damage to boss
+                        }
                     }
                 }
                 
-                // Check collision with obstacles
-                let hitObstacle = false;
-                obstacles = obstacles.filter((obs, index) => {
-                    if (!hitObstacle &&
-                        proj.x < obs.x + obs.width &&
-                        proj.x > obs.x &&
-                        proj.y < obs.y + obs.height &&
-                        proj.y > obs.y) {
-                        
-                        createParticle(obs.x + 25, obs.y + 30, '#00FF00');
-                        dropPowerUpFromEnemy(obs.x, obs.y);
-                        score += 100;
-                        hitObstacle = true;
-                        return false;
-                    }
-                    return true;
-                });
-                if (hitObstacle) return false;
-                
-                // Remove if out of bounds
-                return proj.x > 0 && proj.x < canvas.width && proj.y > -50 && proj.y < canvas.height + 50;
+                return proj.life > 0;
             });
         }
 
@@ -5481,13 +5472,21 @@
             ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.fillRect(tankX + 3, tankY + 3, 60, 30);
             
-            // Tank body - military green
+            // Tank body - dark blue/purple for thunder theme
             const bodyGradient = ctx.createLinearGradient(tankX, tankY, tankX, tankY + 30);
-            bodyGradient.addColorStop(0, '#4a7c23');
-            bodyGradient.addColorStop(0.5, '#3d6b1c');
-            bodyGradient.addColorStop(1, '#2d5015');
+            bodyGradient.addColorStop(0, '#1a237e');
+            bodyGradient.addColorStop(0.5, '#283593');
+            bodyGradient.addColorStop(1, '#1a1a4e');
             ctx.fillStyle = bodyGradient;
             ctx.fillRect(tankX, tankY, 60, 30);
+            
+            // Electric glow around tank
+            ctx.shadowColor = '#00FFFF';
+            ctx.shadowBlur = 10;
+            ctx.strokeStyle = '#00FFFF';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(tankX, tankY, 60, 30);
+            ctx.shadowBlur = 0;
             
             // Tank tracks
             ctx.fillStyle = '#1a1a1a';
@@ -5499,65 +5498,164 @@
                 ctx.fillRect(tankX + i * 10, tankY + 27, 6, 6);
             }
             
-            // Tank turret
-            ctx.fillStyle = '#3d6b1c';
+            // Tank turret - Tesla coil style
+            ctx.fillStyle = '#3949ab';
             ctx.beginPath();
             ctx.arc(tankX + 30, tankY + 10, 15, 0, Math.PI * 2);
             ctx.fill();
             
-            // Tank cannon - pointing up
-            ctx.fillStyle = '#2d5015';
-            ctx.fillRect(tankX + 27, tankY - 20, 6, 30);
+            // Electric ring around turret
+            ctx.strokeStyle = '#00FFFF';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(tankX + 30, tankY + 10, 17, 0, Math.PI * 2);
+            ctx.stroke();
             
-            // Cannon tip
-            ctx.fillStyle = '#1a1a1a';
-            ctx.fillRect(tankX + 25, tankY - 25, 10, 8);
+            // Tesla coil / Lightning rod
+            ctx.fillStyle = '#5c6bc0';
+            ctx.fillRect(tankX + 27, tankY - 25, 6, 35);
             
-            // Muzzle flash when shooting
-            if (tankShootTimer < 3) {
-                ctx.fillStyle = 'rgba(255, 200, 0, 0.8)';
+            // Coil rings
+            ctx.strokeStyle = '#00FFFF';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 3; i++) {
                 ctx.beginPath();
-                ctx.arc(tankX + 30, tankY - 28, 8, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.arc(tankX + 30, tankY - 5 - i * 8, 8, 0, Math.PI * 2);
+                ctx.stroke();
             }
             
-            // Tank star emblem
-            ctx.fillStyle = '#FFD700';
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('★', tankX + 30, tankY + 15);
+            // Lightning tip - glowing orb
+            const time = Date.now() / 100;
+            const pulseSize = 6 + Math.sin(time) * 2;
             
-            // Timer indicator - above the tank
+            ctx.shadowColor = '#00FFFF';
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = '#00FFFF';
+            ctx.beginPath();
+            ctx.arc(tankX + 30, tankY - 28, pulseSize, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Inner bright core
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(tankX + 30, tankY - 28, pulseSize * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Electric sparks when shooting
+            if (tankShootTimer < 5) {
+                for (let i = 0; i < 4; i++) {
+                    const angle = (Math.PI * 2 * i) / 4 + time;
+                    const sparkX = tankX + 30 + Math.cos(angle) * 15;
+                    const sparkY = tankY - 28 + Math.sin(angle) * 15;
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(tankX + 30, tankY - 28);
+                    ctx.lineTo(sparkX, sparkY);
+                    ctx.stroke();
+                }
+            }
+            
+            // Thunder emblem ⚡
+            ctx.fillStyle = '#FFD700';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('⚡', tankX + 30, tankY + 15);
+            
+            // Timer indicator - cyan theme
             const timerPercent = tankTimer / 300;
-            ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
-            ctx.fillRect(tankX, tankY - 35, 60 * timerPercent, 4);
-            ctx.strokeStyle = '#00FF00';
-            ctx.strokeRect(tankX, tankY - 35, 60, 4);
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+            ctx.fillRect(tankX, tankY - 40, 60 * timerPercent, 4);
+            ctx.strokeStyle = '#00FFFF';
+            ctx.strokeRect(tankX, tankY - 40, 60, 4);
             
             ctx.restore();
             
-            // Draw tank projectiles
+            // Draw Thunder Spikes - epic lightning bolts!
             tankProjectiles.forEach(proj => {
                 ctx.save();
                 
-                // Green tracer bullet
-                const bulletGradient = ctx.createRadialGradient(
-                    proj.x, proj.y, 0,
-                    proj.x, proj.y, 8
-                );
-                bulletGradient.addColorStop(0, '#ADFF2F');
-                bulletGradient.addColorStop(0.5, '#32CD32');
-                bulletGradient.addColorStop(1, 'rgba(0, 100, 0, 0)');
-                ctx.fillStyle = bulletGradient;
-                ctx.beginPath();
-                ctx.arc(proj.x, proj.y, 8, 0, Math.PI * 2);
-                ctx.fill();
+                const opacity = proj.life / 20;
                 
-                // Core
-                ctx.fillStyle = '#FFFFFF';
+                // Draw jagged lightning bolt from tank to target
+                ctx.strokeStyle = `rgba(0, 255, 255, ${opacity})`;
+                ctx.lineWidth = 4;
+                ctx.shadowColor = '#00FFFF';
+                ctx.shadowBlur = 20;
+                
+                // Main lightning bolt with zigzag pattern
                 ctx.beginPath();
-                ctx.arc(proj.x, proj.y, 3, 0, Math.PI * 2);
-                ctx.fill();
+                let currentX = proj.x;
+                let currentY = proj.y;
+                const dx = proj.targetX - proj.x;
+                const dy = proj.targetY - proj.y;
+                const segments = 8;
+                
+                ctx.moveTo(currentX, currentY);
+                
+                for (let i = 1; i <= segments; i++) {
+                    const progress = i / segments;
+                    const baseX = proj.x + dx * progress;
+                    const baseY = proj.y + dy * progress;
+                    
+                    // Add zigzag offset (less on last segment)
+                    const offsetMag = i === segments ? 0 : (15 - Math.abs(i - segments/2) * 2);
+                    const perpX = -dy / Math.sqrt(dx*dx + dy*dy) * offsetMag * (Math.random() > 0.5 ? 1 : -1);
+                    const perpY = dx / Math.sqrt(dx*dx + dy*dy) * offsetMag * (Math.random() > 0.5 ? 1 : -1);
+                    
+                    currentX = baseX + perpX;
+                    currentY = baseY + perpY;
+                    ctx.lineTo(currentX, currentY);
+                }
+                
+                ctx.stroke();
+                
+                // Bright core bolt
+                ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 30;
+                ctx.stroke();
+                
+                // Electric sparks along the bolt
+                for (let i = 0; i < 5; i++) {
+                    const t = Math.random();
+                    const sparkX = proj.x + dx * t + (Math.random() - 0.5) * 20;
+                    const sparkY = proj.y + dy * t + (Math.random() - 0.5) * 20;
+                    
+                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                    ctx.beginPath();
+                    ctx.arc(sparkX, sparkY, 2 + Math.random() * 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Impact flash at target
+                if (proj.life > 15) {
+                    const flashSize = (20 - proj.life) * 8;
+                    const flashGradient = ctx.createRadialGradient(
+                        proj.targetX, proj.targetY, 0,
+                        proj.targetX, proj.targetY, flashSize
+                    );
+                    flashGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                    flashGradient.addColorStop(0.3, 'rgba(0, 255, 255, 0.6)');
+                    flashGradient.addColorStop(0.6, 'rgba(100, 200, 255, 0.3)');
+                    flashGradient.addColorStop(1, 'rgba(0, 100, 255, 0)');
+                    ctx.fillStyle = flashGradient;
+                    ctx.beginPath();
+                    ctx.arc(proj.targetX, proj.targetY, flashSize, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Thunder symbol at impact ⚡
+                if (proj.life > 10) {
+                    ctx.font = 'bold 24px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = `rgba(255, 255, 0, ${opacity})`;
+                    ctx.shadowColor = '#FFFF00';
+                    ctx.shadowBlur = 15;
+                    ctx.fillText('⚡', proj.targetX, proj.targetY);
+                }
                 
                 ctx.restore();
             });
