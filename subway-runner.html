@@ -3164,8 +3164,8 @@
                     }
                 }
 
-                // Remove destroyed obstacles (from power-ups) and off-screen obstacles
-                return obs.y < canvas.height + 100 && !obs.destroyed;
+                // Remove off-screen obstacles (destroyed obstacles are removed immediately via splice)
+                return obs.y < canvas.height + 100;
             });
         }
         
@@ -3703,20 +3703,27 @@
                 tornadoTimer--;
                 tornadoAngle += 0.2; // Rotation speed
                 
-                // Check for collisions with enemies/obstacles
-                obstacles.forEach(obs => {
+                // Check for collisions with enemies/obstacles - destroy immediately
+                const indicesToRemove = [];
+                obstacles.forEach((obs, idx) => {
                     if (!obs.destroyed) {
                         const dx = (obs.x + obs.width / 2) - (player.x + 25);
                         const dy = (obs.y + obs.height / 2) - (player.y + 35);
                         const dist = Math.sqrt(dx * dx + dy * dy);
                         
                         if (dist < 80) { // Tornado radius
-                            obs.destroyed = true;
-                            score += 50;
-                            dropPowerUpFromEnemy(obs.x, obs.y);
-                            createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#87CEEB');
+                            indicesToRemove.push(idx);
                         }
                     }
+                });
+                
+                // Remove in reverse order to avoid index issues
+                indicesToRemove.sort((a, b) => b - a).forEach(idx => {
+                    const obs = obstacles[idx];
+                    score += 50;
+                    dropPowerUpFromEnemy(obs.x, obs.y);
+                    createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#87CEEB');
+                    obstacles.splice(idx, 1);
                 });
                 
                 if (tornadoTimer === 0) tornadoActive = false;
@@ -3729,7 +3736,7 @@
                 if (frameCount % 15 === 0) { // Zap every 15 frames
                     // Find nearby enemies to chain (LIMIT TO 5 FOR PERFORMANCE)
                     const potentialTargets = [];
-                    obstacles.forEach(obs => {
+                    obstacles.forEach((obs, idx) => {
                         if (!obs.destroyed && obs.y > 0 && obs.y < canvas.height) {
                             const dist = Math.sqrt(Math.pow(obs.x - player.x, 2) + Math.pow(obs.y - player.y, 2));
                             if (dist < 250) {
@@ -3737,6 +3744,7 @@
                                     x: obs.x + obs.width / 2, 
                                     y: obs.y + obs.height / 2, 
                                     ref: obs,
+                                    index: idx,
                                     dist: dist
                                 });
                             }
@@ -3747,14 +3755,14 @@
                     potentialTargets.sort((a, b) => a.dist - b.dist);
                     lightningChainTargets = potentialTargets.slice(0, 5);
                     
-                    // Damage all targets in chain
-                    lightningChainTargets.forEach(target => {
-                        if (!target.ref.destroyed) {
-                            target.ref.destroyed = true;
-                            score += 50;
-                            dropPowerUpFromEnemy(target.ref.x, target.ref.y);
-                            createParticle(target.x, target.y, '#FFFF00');
-                        }
+                    // Destroy all targets in chain - remove in reverse order to avoid index issues
+                    const indicesToRemove = lightningChainTargets.map(t => t.index).sort((a, b) => b - a);
+                    indicesToRemove.forEach(idx => {
+                        const target = obstacles[idx];
+                        score += 50;
+                        dropPowerUpFromEnemy(target.x, target.y);
+                        createParticle(target.x + target.width / 2, target.y + target.height / 2, '#FFFF00');
+                        obstacles.splice(idx, 1);
                     });
                 }
                 
@@ -3804,20 +3812,27 @@
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     
                     if (dist < proj.speed) {
-                        // Hit target area - damage nearby enemies
-                        obstacles.forEach(obs => {
+                        // Hit target area - destroy nearby enemies immediately
+                        const indicesToRemove = [];
+                        obstacles.forEach((obs, idx) => {
                             if (!obs.destroyed) {
                                 const odx = (obs.x + obs.width / 2) - proj.x;
                                 const ody = (obs.y + obs.height / 2) - proj.y;
                                 const oDist = Math.sqrt(odx * odx + ody * ody);
                                 
                                 if (oDist < 30) {
-                                    obs.destroyed = true;
-                                    score += 50;
-                                    dropPowerUpFromEnemy(obs.x, obs.y);
-                                    createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#FFD700');
+                                    indicesToRemove.push(idx);
                                 }
                             }
+                        });
+                        
+                        // Remove in reverse order to avoid index issues
+                        indicesToRemove.sort((a, b) => b - a).forEach(idx => {
+                            const obs = obstacles[idx];
+                            score += 50;
+                            dropPowerUpFromEnemy(obs.x, obs.y);
+                            createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#FFD700');
+                            obstacles.splice(idx, 1);
                         });
                         return false;
                     }
@@ -3862,20 +3877,27 @@
                 starTrailPositions = starTrailPositions.filter(pos => {
                     pos.life--;
                     
-                    // Check collision with enemies
-                    obstacles.forEach(obs => {
+                    // Check collision with enemies - destroy immediately
+                    const indicesToRemove = [];
+                    obstacles.forEach((obs, idx) => {
                         if (!obs.destroyed) {
                             const dx = (obs.x + obs.width / 2) - pos.x;
                             const dy = (obs.y + obs.height / 2) - pos.y;
                             const dist = Math.sqrt(dx * dx + dy * dy);
                             
                             if (dist < 40) {
-                                obs.destroyed = true;
-                                score += 50;
-                                dropPowerUpFromEnemy(obs.x, obs.y);
-                                createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#FFD700');
+                                indicesToRemove.push(idx);
                             }
                         }
+                    });
+                    
+                    // Remove in reverse order to avoid index issues
+                    indicesToRemove.sort((a, b) => b - a).forEach(idx => {
+                        const obs = obstacles[idx];
+                        score += 50;
+                        dropPowerUpFromEnemy(obs.x, obs.y);
+                        createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#FFD700');
+                        obstacles.splice(idx, 1);
                     });
                     
                     return pos.life > 0;
@@ -3897,20 +3919,27 @@
                     const satX = player.x + 25 + Math.cos(sat.angle) * sat.distance;
                     const satY = player.y + 35 + Math.sin(sat.angle) * sat.distance;
                     
-                    // Check collisions with enemies
-                    obstacles.forEach(obs => {
+                    // Check collisions with enemies - destroy immediately
+                    const indicesToRemove = [];
+                    obstacles.forEach((obs, idx) => {
                         if (!obs.destroyed) {
                             const dx = (obs.x + obs.width / 2) - satX;
                             const dy = (obs.y + obs.height / 2) - satY;
                             const dist = Math.sqrt(dx * dx + dy * dy);
                             
                             if (dist < 30) {
-                                obs.destroyed = true;
-                                score += 50;
-                                dropPowerUpFromEnemy(obs.x, obs.y);
-                                createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#00CED1');
+                                indicesToRemove.push(idx);
                             }
                         }
+                    });
+                    
+                    // Remove in reverse order to avoid index issues
+                    indicesToRemove.sort((a, b) => b - a).forEach(idx => {
+                        const obs = obstacles[idx];
+                        score += 50;
+                        dropPowerUpFromEnemy(obs.x, obs.y);
+                        createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#00CED1');
+                        obstacles.splice(idx, 1);
                     });
                 });
                 
@@ -3946,20 +3975,27 @@
                 
                 // Clones follow player lane (with offset)
                 clones.forEach((clone, i) => {
-                    // Check clone collisions with enemies
-                    obstacles.forEach(obs => {
+                    // Check clone collisions with enemies - destroy immediately
+                    const indicesToRemove = [];
+                    obstacles.forEach((obs, idx) => {
                         if (!obs.destroyed) {
                             const cloneX = player.x + clone.offsetX;
                             const cloneY = player.y + clone.offsetY;
                             
                             if (obs.x < cloneX + 50 && obs.x + obs.width > cloneX &&
                                 obs.y < cloneY + 70 && obs.y + obs.height > cloneY) {
-                                obs.destroyed = true;
-                                score += 50;
-                                dropPowerUpFromEnemy(obs.x, obs.y);
-                                createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#00FFFF');
+                                indicesToRemove.push(idx);
                             }
                         }
+                    });
+                    
+                    // Remove in reverse order to avoid index issues
+                    indicesToRemove.sort((a, b) => b - a).forEach(idx => {
+                        const obs = obstacles[idx];
+                        score += 50;
+                        dropPowerUpFromEnemy(obs.x, obs.y);
+                        createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#00FFFF');
+                        obstacles.splice(idx, 1);
                     });
                 });
                 
