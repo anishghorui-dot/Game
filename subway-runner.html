@@ -922,6 +922,8 @@
         let satelliteActive = false;
         let satelliteTimer = 0;
         let satellites = [];
+        let satelliteFireballTimer = 0;
+        let satelliteFireballs = [];
         
         // Legendary Power-ups (Level 7+)
         let rainbowActive = false;
@@ -1364,9 +1366,16 @@
                     attackCooldown = 120; // 2 second cooldown
                     laserActive = true;
                     laserLane = player.lane; // Store which lane
+                    
+                    // Track clone lasers if clones are active
+                    if (cloneActive) {
+                        window.cloneLaserLanes = clones.map(c => c.lane);
+                    }
+                    
                     setTimeout(() => { 
                         laserActive = false;
                         laserLane = -1;
+                        window.cloneLaserLanes = [];
                     }, 3000); // 3 seconds duration
                     destroyObstaclesInLane(player.lane);
                     
@@ -1387,17 +1396,37 @@
                     bombExplosionEffect();
                     destroyAllVisibleObstacles();
                     
-                    // Clones create explosion particles
+                    // Clones create massive explosion particles
                     if (cloneActive) {
                         clones.forEach(clone => {
-                            for (let i = 0; i < 20; i++) {
+                            // Flash effect for each clone
+                            const flash = document.createElement('div');
+                            flash.style.position = 'absolute';
+                            flash.style.left = `${((player.x + clone.offsetX + 25) / canvas.width) * 100}%`;
+                            flash.style.top = `${((player.y + clone.offsetY + 35) / canvas.height) * 100}%`;
+                            flash.style.width = '120px';
+                            flash.style.height = '120px';
+                            flash.style.marginLeft = '-60px';
+                            flash.style.marginTop = '-60px';
+                            flash.style.borderRadius = '50%';
+                            flash.style.background = 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,140,0,0.6) 50%, transparent 100%)';
+                            flash.style.pointerEvents = 'none';
+                            flash.style.zIndex = '999';
+                            flash.style.animation = 'flashPulse 0.5s ease-out';
+                            document.getElementById('gameContainer').appendChild(flash);
+                            setTimeout(() => flash.remove(), 500);
+                            
+                            // Explosion particles from clones
+                            for (let i = 0; i < 40; i++) {
+                                const angle = (Math.PI * 2 * i) / 40;
+                                const speed = 3 + Math.random() * 8;
                                 particles.push({
                                     x: player.x + clone.offsetX + 25,
                                     y: player.y + clone.offsetY + 35,
-                                    vx: (Math.random() - 0.5) * 12,
-                                    vy: (Math.random() - 0.5) * 12,
-                                    color: ['#FF4500', '#FFA500', '#FFD700'][Math.floor(Math.random() * 3)],
-                                    life: 35
+                                    vx: Math.cos(angle) * speed,
+                                    vy: Math.sin(angle) * speed,
+                                    color: ['#FF4500', '#FFA500', '#FFD700', '#FF6347'][Math.floor(Math.random() * 4)],
+                                    life: 40
                                 });
                             }
                         });
@@ -2636,6 +2665,8 @@
                 case 'satellite':
                     satelliteActive = true;
                     satelliteTimer = 420; // 7 seconds
+                    satelliteFireballTimer = 0;
+                    satelliteFireballs = [];
                     satellites = [
                         { angle: 0, distance: 60, rotations: 0 },
                         { angle: Math.PI * 2 / 3, distance: 60, rotations: 0 },
@@ -2643,7 +2674,7 @@
                     ];
                     activePowerUp = 'satellite';
                     powerUpTimer = 420;
-                    showMultiplier('🛰️ SATELLITE SHIELD!');
+                    showMultiplier('🛰️ SATELLITE BLAST!');
                     // Orbital deployment particles
                     for (let i = 0; i < 45; i++) {
                         const angle = (Math.PI * 2 * i) / 45;
@@ -3946,28 +3977,27 @@
                     }
                 }
                 
-                // Update turret projectiles
+                // Update turret projectiles with collision checking each frame
                 autoTurretProjectiles = autoTurretProjectiles.filter(proj => {
-                    const dx = proj.targetX - proj.x;
-                    const dy = proj.targetY - proj.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (dist < proj.speed) {
-                        // Hit target area - destroy nearby enemies immediately
-                        const indicesToRemove = [];
-                        obstacles.forEach((obs, idx) => {
-                            if (!obs.destroyed) {
-                                const odx = (obs.x + obs.width / 2) - proj.x;
-                                const ody = (obs.y + obs.height / 2) - proj.y;
-                                const oDist = Math.sqrt(odx * odx + ody * ody);
-                                
-                                if (oDist < 30) {
-                                    indicesToRemove.push(idx);
-                                }
+                    // Check collision with enemies BEFORE moving
+                    let hitEnemy = false;
+                    const indicesToRemove = [];
+                    obstacles.forEach((obs, idx) => {
+                        if (!obs.destroyed) {
+                            const odx = (obs.x + obs.width / 2) - proj.x;
+                            const ody = (obs.y + obs.height / 2) - proj.y;
+                            const oDist = Math.sqrt(odx * odx + ody * ody);
+                            
+                            // Larger collision radius (80px) for guaranteed hit
+                            if (oDist < 80) {
+                                indicesToRemove.push(idx);
+                                hitEnemy = true;
                             }
-                        });
-                        
-                        // Remove in reverse order to avoid index issues
+                        }
+                    });
+                    
+                    // Destroy hit enemies
+                    if (indicesToRemove.length > 0) {
                         indicesToRemove.sort((a, b) => b - a).forEach(idx => {
                             const obs = obstacles[idx];
                             score += 50;
@@ -3975,19 +4005,31 @@
                             createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#FFD700');
                             obstacles.splice(idx, 1);
                         });
-                        
-                        // Also destroy boss bullets in explosion radius
-                        bossBullets = bossBullets.filter(bullet => {
-                            const dx = bullet.x - proj.x;
-                            const dy = bullet.y - proj.y;
-                            const dist = Math.sqrt(dx * dx + dy * dy);
-                            if (dist < 30) {
-                                createParticle(bullet.x, bullet.y, '#FFD700');
-                                return false;
-                            }
-                            return true;
-                        });
-                        return false;
+                    }
+                    
+                    // Check collision with boss bullets
+                    bossBullets = bossBullets.filter(bullet => {
+                        const dx = bullet.x - proj.x;
+                        const dy = bullet.y - proj.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 80) {
+                            createParticle(bullet.x, bullet.y, '#FFD700');
+                            hitEnemy = true;
+                            return false;
+                        }
+                        return true;
+                    });
+                    
+                    // Remove projectile if it hit something
+                    if (hitEnemy) return false;
+                    
+                    // Move towards target
+                    const dx = proj.targetX - proj.x;
+                    const dy = proj.targetY - proj.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < proj.speed) {
+                        return false; // Reached target without hitting
                     }
                     
                     proj.x += (dx / dist) * proj.speed;
@@ -4016,6 +4058,99 @@
             // Satellite Shield - orbiting defense
             if (satelliteActive && satelliteTimer > 0) {
                 satelliteTimer--;
+                satelliteFireballTimer++;
+                
+                // Shoot fireball every 60 frames (1 second)
+                if (satelliteFireballTimer >= 60) {
+                    satelliteFireballTimer = 0;
+                    
+                    // Find nearest enemy
+                    let nearestEnemy = null;
+                    let nearestDist = Infinity;
+                    obstacles.forEach(obs => {
+                        if (!obs.destroyed && obs.y > 0) {
+                            const dist = Math.sqrt(Math.pow(obs.x - player.x, 2) + Math.pow(obs.y - player.y, 2));
+                            if (dist < nearestDist) {
+                                nearestDist = dist;
+                                nearestEnemy = obs;
+                            }
+                        }
+                    });
+                    
+                    // Shoot fireball from first satellite towards enemy or downward
+                    if (satellites.length > 0) {
+                        const sat = satellites[0];
+                        const satX = player.x + 25 + Math.cos(sat.angle) * sat.distance;
+                        const satY = player.y + 35 + Math.sin(sat.angle) * sat.distance;
+                        
+                        satelliteFireballs.push({
+                            x: satX,
+                            y: satY,
+                            targetX: nearestEnemy ? nearestEnemy.x + nearestEnemy.width / 2 : satX,
+                            targetY: nearestEnemy ? nearestEnemy.y + nearestEnemy.height / 2 : canvas.height,
+                            speed: 10,
+                            width: 30,
+                            height: 30
+                        });
+                    }
+                }
+                
+                // Update satellite fireballs
+                satelliteFireballs = satelliteFireballs.filter(fireball => {
+                    // Check collision with enemies
+                    let hitSomething = false;
+                    const indicesToRemove = [];
+                    obstacles.forEach((obs, idx) => {
+                        if (!obs.destroyed) {
+                            const dx = (obs.x + obs.width / 2) - fireball.x;
+                            const dy = (obs.y + obs.height / 2) - fireball.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (dist < 70) {
+                                indicesToRemove.push(idx);
+                                hitSomething = true;
+                            }
+                        }
+                    });
+                    
+                    // Destroy hit enemies
+                    indicesToRemove.sort((a, b) => b - a).forEach(idx => {
+                        const obs = obstacles[idx];
+                        score += 50;
+                        dropPowerUpFromEnemy(obs.x, obs.y);
+                        createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#FF4500');
+                        obstacles.splice(idx, 1);
+                    });
+                    
+                    // Check collision with boss bullets
+                    bossBullets = bossBullets.filter(bullet => {
+                        const dx = bullet.x - fireball.x;
+                        const dy = bullet.y - fireball.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 70) {
+                            createParticle(bullet.x, bullet.y, '#FF4500');
+                            hitSomething = true;
+                            return false;
+                        }
+                        return true;
+                    });
+                    
+                    if (hitSomething) return false;
+                    
+                    // Move towards target
+                    const dx = fireball.targetX - fireball.x;
+                    const dy = fireball.targetY - fireball.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < fireball.speed) {
+                        return false;
+                    }
+                    
+                    fireball.x += (dx / dist) * fireball.speed;
+                    fireball.y += (dy / dist) * fireball.speed;
+                    
+                    return fireball.y < canvas.height;
+                });
                 
                 // Update satellite positions (orbit)
                 satellites.forEach(sat => {
@@ -4118,6 +4253,8 @@
                 if (satelliteTimer === 0) {
                     satelliteActive = false;
                     satellites = [];
+                    satelliteFireballs = [];
+                    satelliteFireballTimer = 0;
                 }
             }
             
@@ -7063,6 +7200,35 @@
                 
                 ctx.restore();
             }
+            
+            // Draw clone lasers
+            if (laserActive && window.cloneLaserLanes && cloneActive) {
+                ctx.save();
+                window.cloneLaserLanes.forEach((cloneLane, idx) => {
+                    const clone = clones[idx];
+                    if (!clone) return;
+                    
+                    const cloneLaserX = player.x + clone.offsetX;
+                    const time = Date.now() / 50;
+                    const opacity = 0.6 + Math.sin(time) * 0.2;
+                    
+                    // Simplified clone laser (less intensive)
+                    ctx.fillStyle = `rgba(0, 255, 255, ${opacity * 0.3})`;
+                    ctx.fillRect(cloneLaserX, 0, 50, canvas.height);
+                    
+                    const beamGradient = ctx.createLinearGradient(cloneLaserX, 0, cloneLaserX + 50, 0);
+                    beamGradient.addColorStop(0, `rgba(0, 200, 255, ${opacity * 0.2})`);
+                    beamGradient.addColorStop(0.5, `rgba(0, 255, 255, ${opacity * 0.7})`);
+                    beamGradient.addColorStop(1, `rgba(0, 200, 255, ${opacity * 0.2})`);
+                    ctx.fillStyle = beamGradient;
+                    ctx.fillRect(cloneLaserX + 5, 0, 40, canvas.height);
+                    
+                    // Core
+                    ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.7})`;
+                    ctx.fillRect(cloneLaserX + 20, 0, 10, canvas.height);
+                });
+                ctx.restore();
+            }
         }
         
         // Draw Military Tank - positioned above player as shield
@@ -7534,6 +7700,26 @@
                     ctx.moveTo(satX, satY - 8);
                     ctx.lineTo(satX, satY - 15);
                     ctx.stroke();
+                });
+                
+                // Draw satellite fireballs
+                satelliteFireballs.forEach(fireball => {
+                    ctx.fillStyle = '#FF4500';
+                    ctx.beginPath();
+                    ctx.arc(fireball.x, fireball.y, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Inner core
+                    ctx.fillStyle = '#FFD700';
+                    ctx.beginPath();
+                    ctx.arc(fireball.x, fireball.y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Glow
+                    ctx.fillStyle = 'rgba(255, 69, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(fireball.x, fireball.y, 20, 0, Math.PI * 2);
+                    ctx.fill();
                 });
                 
                 ctx.restore();
