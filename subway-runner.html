@@ -3961,8 +3961,9 @@
                     const indicesToRemove = [];
                     obstacles.forEach((obs, idx) => {
                         if (obs.lane === laser.lane) {
-                            const dx = Math.abs((obs.x + obs.width / 2) - laser.x);
-                            if (dx < 35) {
+                            const obsCenter = obs.x + obs.width / 2;
+                            const dx = Math.abs(obsCenter - laser.x);
+                            if (dx < 45) {
                                 indicesToRemove.push(idx);
                             }
                         }
@@ -3972,15 +3973,15 @@
                         const obs = obstacles[idx];
                         score += 100;
                         dropPowerUpFromEnemy(obs.x, obs.y);
-                        createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#00FFFF');
+                        createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#FFFFFF');
                         obstacles.splice(idx, 1);
                     });
                     
                     // Destroy bullets in laser path
                     bossBullets = bossBullets.filter(bullet => {
                         const dx = Math.abs(bullet.x - laser.x);
-                        if (dx < 35) {
-                            createParticle(bullet.x, bullet.y, '#00FFFF');
+                        if (dx < 45) {
+                            createParticle(bullet.x, bullet.y, '#FFFFFF');
                             return false;
                         }
                         return true;
@@ -7430,8 +7431,8 @@
             starTrailLasers.forEach(laser => {
                 const alpha = laser.life / 60;
                 
-                // Single white line
-                ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.8})`;
+                // Single white line with proper fade
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
                 ctx.fillRect(laser.x - 4, 0, 8, canvas.height);
             });
             
