@@ -3987,6 +3987,16 @@
                         return true;
                     });
                     
+                    // Damage boss if laser hits it
+                    if (bossActive && boss && !bossDefeated && bossIntroTimer === 0) {
+                        const bossCenter = boss.x + boss.width / 2;
+                        const dx = Math.abs(bossCenter - laser.x);
+                        if (dx < 60) { // Boss is larger, use bigger tolerance
+                            damageBoss(1);
+                            createParticle(boss.x + boss.width/2, boss.y + boss.height/2, '#FFFFFF');
+                        }
+                    }
+                    
                     return laser.life > 0;
                 });
                 
@@ -7427,14 +7437,16 @@
                 ctx.restore();
             }
             
-            // Star Lasers - simple white beams
-            starTrailLasers.forEach(laser => {
-                const alpha = laser.life / 60;
-                
-                // Single white line with proper fade
-                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-                ctx.fillRect(laser.x - 4, 0, 8, canvas.height);
-            });
+            // Star Lasers - simple white beams (only render if active or lasers still exist)
+            if (starTrailLasers.length > 0) {
+                starTrailLasers.forEach(laser => {
+                    const alpha = laser.life / 60;
+                    
+                    // Single white line with proper fade
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                    ctx.fillRect(laser.x - 4, 0, 8, canvas.height);
+                });
+            }
             
             // Satellite Shield - orbiting satellites (OPTIMIZED)
             if (satelliteActive) {
