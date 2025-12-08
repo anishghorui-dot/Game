@@ -920,7 +920,8 @@
         let timeBubbleTimer = 0;
         let starTrailActive = false;
         let starTrailTimer = 0;
-        let starTrailPositions = [];
+        let starTrailLasers = [];
+        let starTrailLastLane = 1;
         let satelliteActive = false;
         let satelliteTimer = 0;
         let satellites = [];
@@ -2596,20 +2597,21 @@
                     
                 case 'startrail':
                     starTrailActive = true;
-                    starTrailTimer = 360; // 6 seconds
-                    starTrailPositions = [];
+                    starTrailTimer = 300; // 5 seconds
+                    starTrailLasers = [];
+                    starTrailLastLane = player.lane;
                     activePowerUp = 'startrail';
-                    powerUpTimer = 360;
-                    showMultiplier('⭐ STAR TRAIL!');
-                    // Stardust explosion
-                    for (let i = 0; i < 40; i++) {
+                    powerUpTimer = 300;
+                    showMultiplier('⚡ STAR LASER!');
+                    // Simple particle burst
+                    for (let i = 0; i < 30; i++) {
                         particles.push({
                             x: player.x + 25,
                             y: player.y + 35,
-                            vx: (Math.random() - 0.5) * 8,
-                            vy: (Math.random() - 0.5) * 8,
-                            color: ['#FFD700', '#FFA500', '#FFFF00'][Math.floor(Math.random() * 3)],
-                            life: 35
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: (Math.random() - 0.5) * 6,
+                            color: ['#00FFFF', '#FFFFFF'][Math.floor(Math.random() * 2)],
+                            life: 25
                         });
                     }
                     break;
@@ -3894,64 +3896,61 @@
                 if (timeBubbleTimer === 0) timeBubbleActive = false;
             }
             
-            // Star Trail - leaves damaging trail
+            // Star Trail - lane-clearing lasers
             if (starTrailActive && starTrailTimer > 0) {
                 starTrailTimer--;
                 
-                // Add player position to trail
-                if (frameCount % 3 === 0) {
-                    starTrailPositions.push({
-                        x: player.x + 25,
-                        y: player.y + 35,
-                        life: 30
+                // Spawn laser on lane change
+                if (player.lane !== starTrailLastLane) {
+                    const launchLane = starTrailLastLane;
+                    starTrailLasers.push({
+                        lane: launchLane,
+                        x: lanes[launchLane] + 25,
+                        life: 60 // 1 second
                     });
+                    starTrailLastLane = player.lane;
+                    playSound('powerup');
                 }
                 
-                // Update trail and check collisions
-                starTrailPositions = starTrailPositions.filter(pos => {
-                    pos.life--;
+                // Update lasers
+                starTrailLasers = starTrailLasers.filter(laser => {
+                    laser.life--;
                     
-                    // Check collision with enemies - destroy immediately
+                    // Destroy enemies in laser lane
                     const indicesToRemove = [];
                     obstacles.forEach((obs, idx) => {
-                        if (!obs.destroyed) {
-                            const dx = (obs.x + obs.width / 2) - pos.x;
-                            const dy = (obs.y + obs.height / 2) - pos.y;
-                            const dist = Math.sqrt(dx * dx + dy * dy);
-                            
-                            if (dist < 40) {
+                        if (obs.lane === laser.lane) {
+                            const dx = Math.abs((obs.x + obs.width / 2) - laser.x);
+                            if (dx < 35) {
                                 indicesToRemove.push(idx);
                             }
                         }
                     });
                     
-                    // Remove in reverse order to avoid index issues
                     indicesToRemove.sort((a, b) => b - a).forEach(idx => {
                         const obs = obstacles[idx];
-                        score += 50;
+                        score += 100;
                         dropPowerUpFromEnemy(obs.x, obs.y);
-                        createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#FFD700');
+                        createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#00FFFF');
                         obstacles.splice(idx, 1);
                     });
                     
-                    // Also destroy boss bullets in range
+                    // Destroy bullets in laser path
                     bossBullets = bossBullets.filter(bullet => {
-                        const dx = bullet.x - pos.x;
-                        const dy = bullet.y - pos.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < 40) {
-                            createParticle(bullet.x, bullet.y, '#FFD700');
+                        const dx = Math.abs(bullet.x - laser.x);
+                        if (dx < 35) {
+                            createParticle(bullet.x, bullet.y, '#00FFFF');
                             return false;
                         }
                         return true;
                     });
                     
-                    return pos.life > 0;
+                    return laser.life > 0;
                 });
                 
                 if (starTrailTimer === 0) {
                     starTrailActive = false;
-                    starTrailPositions = [];
+                    starTrailLasers = [];
                 }
             }
             
@@ -7369,17 +7368,16 @@
                 ctx.restore();
             }
             
-            // Star Trail - golden trail behind player (OPTIMIZED)
-            starTrailPositions.forEach(pos => {
-                const alpha = pos.life / 30;
+            // Star Lasers - simple vertical beams
+            starTrailLasers.forEach(laser => {
+                const alpha = laser.life / 60;
                 
-                // Use gradient instead of shadow
-                const gradient = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 12);
-                gradient.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
-                gradient.addColorStop(0.5, `rgba(255, 215, 0, ${alpha * 0.8})`);
-                gradient.addColorStop(1, `rgba(255, 215, 0, 0)`);
-                ctx.fillStyle = gradient;
-                ctx.fillRect(pos.x - 12, pos.y - 12, 24, 24);
+                // Simple vertical beam - no gradients
+                ctx.fillStyle = `rgba(0, 255, 255, ${alpha * 0.3})`;
+                ctx.fillRect(laser.x - 20, 0, 40, canvas.height);
+                
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.6})`;
+                ctx.fillRect(laser.x - 4, 0, 8, canvas.height);
             });
             
             // Satellite Shield - orbiting satellites (OPTIMIZED)
@@ -7610,7 +7608,8 @@
             timeBubbleTimer = 0;
             starTrailActive = false;
             starTrailTimer = 0;
-            starTrailPositions = [];
+            starTrailLasers = [];
+            starTrailLastLane = 1;
             satelliteActive = false;
             satelliteTimer = 0;
             satellites = [];
