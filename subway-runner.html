@@ -1342,6 +1342,22 @@
                         height: 30,
                         speed: -10
                     });
+                    
+                    // Clones also shoot
+                    if (cloneActive) {
+                        clones.forEach(clone => {
+                            attackProjectiles.push({
+                                type: 'fire',
+                                x: player.x + clone.offsetX + 15,
+                                y: player.y + clone.offsetY - 20,
+                                lane: clone.lane,
+                                width: 30,
+                                height: 30,
+                                speed: -10
+                            });
+                        });
+                    }
+                    
                     playSound('attack');
                     // Don't remove power-up - it lasts 10 seconds
                     break;
@@ -1356,6 +1372,14 @@
                         laserLane = -1;
                     }, 3000); // 3 seconds duration
                     destroyObstaclesInLane(player.lane);
+                    
+                    // Clones also shoot lasers
+                    if (cloneActive) {
+                        clones.forEach(clone => {
+                            destroyObstaclesInLane(clone.lane);
+                        });
+                    }
+                    
                     playSound('laser');
                     attackPowerUp = null; // One-time use
                     break;
@@ -1365,6 +1389,23 @@
                     attackCooldown = 120; // 2 second cooldown
                     bombExplosionEffect();
                     destroyAllVisibleObstacles();
+                    
+                    // Clones create explosion particles
+                    if (cloneActive) {
+                        clones.forEach(clone => {
+                            for (let i = 0; i < 20; i++) {
+                                particles.push({
+                                    x: player.x + clone.offsetX + 25,
+                                    y: player.y + clone.offsetY + 35,
+                                    vx: (Math.random() - 0.5) * 12,
+                                    vy: (Math.random() - 0.5) * 12,
+                                    color: ['#FF4500', '#FFA500', '#FFD700'][Math.floor(Math.random() * 3)],
+                                    life: 35
+                                });
+                            }
+                        });
+                    }
+                    
                     playSound('bomb');
                     attackPowerUp = null; // One-time use
                     break;
@@ -2670,8 +2711,8 @@
                     cloneActive = true;
                     cloneTimer = 360; // 6 seconds
                     clones = [
-                        { offsetX: -80, offsetY: 0 },
-                        { offsetX: 80, offsetY: 0 }
+                        { offsetX: -80, offsetY: 0, lane: 0 },
+                        { offsetX: 80, offsetY: 0, lane: 2 }
                     ];
                     activePowerUp = 'clone';
                     powerUpTimer = 360;
