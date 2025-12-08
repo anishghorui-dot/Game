@@ -2620,9 +2620,9 @@
                     satelliteActive = true;
                     satelliteTimer = 420; // 7 seconds
                     satellites = [
-                        { angle: 0, distance: 60 },
-                        { angle: Math.PI * 2 / 3, distance: 60 },
-                        { angle: Math.PI * 4 / 3, distance: 60 }
+                        { angle: 0, distance: 60, rotations: 0 },
+                        { angle: Math.PI * 2 / 3, distance: 60, rotations: 0 },
+                        { angle: Math.PI * 4 / 3, distance: 60, rotations: 0 }
                     ];
                     activePowerUp = 'satellite';
                     powerUpTimer = 420;
@@ -3960,7 +3960,24 @@
                 
                 // Update satellite positions (orbit)
                 satellites.forEach(sat => {
+                    const prevAngle = sat.angle;
                     sat.angle += 0.05;
+                    
+                    // Check if completed rotation (crossed 2π)
+                    if (prevAngle < Math.PI * 2 && sat.angle >= Math.PI * 2) {
+                        sat.angle -= Math.PI * 2;
+                        sat.rotations++;
+                        
+                        // Launch laser in random lane
+                        const launchLane = Math.floor(Math.random() * 3);
+                        starTrailLasers.push({
+                            lane: launchLane,
+                            x: lanes[launchLane] + 25,
+                            life: 60
+                        });
+                        playSound('powerup');
+                    }
+                    
                     const satX = player.x + 25 + Math.cos(sat.angle) * sat.distance;
                     const satY = player.y + 35 + Math.sin(sat.angle) * sat.distance;
                     
@@ -7368,15 +7385,20 @@
                 ctx.restore();
             }
             
-            // Star Lasers - simple vertical beams
+            // Star Lasers - simple vertical beams with glow
             starTrailLasers.forEach(laser => {
                 const alpha = laser.life / 60;
                 
-                // Simple vertical beam - no gradients
-                ctx.fillStyle = `rgba(0, 255, 255, ${alpha * 0.3})`;
+                // Outer glow
+                ctx.fillStyle = `rgba(0, 255, 255, ${alpha * 0.2})`;
+                ctx.fillRect(laser.x - 30, 0, 60, canvas.height);
+                
+                // Middle layer
+                ctx.fillStyle = `rgba(0, 255, 255, ${alpha * 0.4})`;
                 ctx.fillRect(laser.x - 20, 0, 40, canvas.height);
                 
-                ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.6})`;
+                // Bright core
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.7})`;
                 ctx.fillRect(laser.x - 4, 0, 8, canvas.height);
             });
             
