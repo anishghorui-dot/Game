@@ -918,10 +918,7 @@
         // Elite Power-ups (Level 5+)
         let timeBubbleActive = false;
         let timeBubbleTimer = 0;
-        let starTrailActive = false;
-        let starTrailTimer = 0;
-        let starTrailLasers = [];
-        let starTrailLastLane = 1;
+
         let satelliteActive = false;
         let satelliteTimer = 0;
         let satellites = [];
@@ -1290,7 +1287,7 @@
                     
                     // Level 5+: Elite power-ups
                     if (difficultyLevel >= 5) {
-                        types.push('timebubble', 'startrail', 'satellite');
+                        types.push('timebubble', 'satellite');
                     }
                     
                     // Level 7+: Legendary power-ups
@@ -2636,27 +2633,6 @@
                     }
                     break;
                     
-                case 'startrail':
-                    starTrailActive = true;
-                    starTrailTimer = 300; // 5 seconds
-                    starTrailLasers = [];
-                    starTrailLastLane = player.lane;
-                    activePowerUp = 'startrail';
-                    powerUpTimer = 300;
-                    showMultiplier('⚡ STAR LASER!');
-                    // Simple particle burst
-                    for (let i = 0; i < 30; i++) {
-                        particles.push({
-                            x: player.x + 25,
-                            y: player.y + 35,
-                            vx: (Math.random() - 0.5) * 6,
-                            vy: (Math.random() - 0.5) * 6,
-                            color: ['#00FFFF', '#FFFFFF'][Math.floor(Math.random() * 2)],
-                            life: 25
-                        });
-                    }
-                    break;
-                    
                 case 'satellite':
                     satelliteActive = true;
                     satelliteTimer = 420; // 7 seconds
@@ -2771,9 +2747,7 @@
             // Reset elite power-ups
             timeBubbleActive = false;
             timeBubbleTimer = 0;
-            starTrailActive = false;
-            starTrailTimer = 0;
-            starTrailPositions = [];
+
             satelliteActive = false;
             satelliteTimer = 0;
             satellites = [];
@@ -2834,7 +2808,7 @@
                     'lightningchain': 'LIGHTNING CHAIN',
                     'autoturret': 'AUTO-TURRET',
                     'timebubble': 'TIME BUBBLE',
-                    'startrail': 'STAR TRAIL',
+
                     'satellite': 'SATELLITE SHIELD',
                     'rainbow': 'RAINBOW DASH',
                     'clone': 'CLONE ARMY',
@@ -4010,87 +3984,6 @@
                 if (timeBubbleTimer === 0) timeBubbleActive = false;
             }
             
-            // Star Trail - lane-clearing lasers
-            if (starTrailActive && starTrailTimer > 0) {
-                starTrailTimer--;
-                
-                // Spawn laser on lane change
-                if (player.lane !== starTrailLastLane) {
-                    const launchLane = starTrailLastLane;
-                    starTrailLasers.push({
-                        lane: launchLane,
-                        x: lanes[launchLane] + 25,
-                        life: 60 // 1 second
-                    });
-                    
-                    // Clones also spawn lasers in their lanes
-                    if (cloneActive) {
-                        clones.forEach(clone => {
-                            starTrailLasers.push({
-                                lane: clone.lane,
-                                x: lanes[clone.lane] + 25,
-                                life: 60
-                            });
-                        });
-                    }
-                    
-                    starTrailLastLane = player.lane;
-                    playSound('powerup');
-                }
-                
-                // Update lasers
-                starTrailLasers = starTrailLasers.filter(laser => {
-                    laser.life--;
-                    
-                    // Destroy enemies in laser lane
-                    const indicesToRemove = [];
-                    obstacles.forEach((obs, idx) => {
-                        if (obs.lane === laser.lane) {
-                            const obsCenter = obs.x + obs.width / 2;
-                            const dx = Math.abs(obsCenter - laser.x);
-                            if (dx < 45) {
-                                indicesToRemove.push(idx);
-                            }
-                        }
-                    });
-                    
-                    indicesToRemove.sort((a, b) => b - a).forEach(idx => {
-                        const obs = obstacles[idx];
-                        score += 100;
-                        dropPowerUpFromEnemy(obs.x, obs.y);
-                        createParticle(obs.x + obs.width / 2, obs.y + obs.height / 2, '#FFFFFF');
-                        obstacles.splice(idx, 1);
-                    });
-                    
-                    // Destroy bullets in laser path
-                    bossBullets = bossBullets.filter(bullet => {
-                        const dx = Math.abs(bullet.x - laser.x);
-                        if (dx < 45) {
-                            createParticle(bullet.x, bullet.y, '#FFFFFF');
-                            return false;
-                        }
-                        return true;
-                    });
-                    
-                    // Damage boss if laser hits it
-                    if (bossActive && boss && !bossDefeated && bossIntroTimer === 0) {
-                        const bossCenter = boss.x + boss.width / 2;
-                        const dx = Math.abs(bossCenter - laser.x);
-                        if (dx < 60) { // Boss is larger, use bigger tolerance
-                            damageBoss(1);
-                            createParticle(boss.x + boss.width/2, boss.y + boss.height/2, '#FFFFFF');
-                        }
-                    }
-                    
-                    return laser.life > 0;
-                });
-                
-                if (starTrailTimer === 0) {
-                    starTrailActive = false;
-                    starTrailLasers = [];
-                }
-            }
-            
             // Satellite Shield - orbiting defense
             if (satelliteActive && satelliteTimer > 0) {
                 satelliteTimer--;
@@ -4104,15 +3997,6 @@
                     if (prevAngle < Math.PI * 2 && sat.angle >= Math.PI * 2) {
                         sat.angle -= Math.PI * 2;
                         sat.rotations++;
-                        
-                        // Launch laser in random lane
-                        const launchLane = Math.floor(Math.random() * 3);
-                        starTrailLasers.push({
-                            lane: launchLane,
-                            x: lanes[launchLane] + 25,
-                            life: 60
-                        });
-                        playSound('powerup');
                     }
                     
                     const satX = player.x + 25 + Math.cos(sat.angle) * sat.distance;
@@ -5811,13 +5695,7 @@
                         accent: '#DDA0DD',
                         shine: '#E6E6FA'
                     },
-                    'startrail': {
-                        glow: 'rgba(255, 215, 0, 0.9)',
-                        primary: '#FFD700',
-                        secondary: '#FFA500',
-                        accent: '#FFFF00',
-                        shine: '#FFFACD'
-                    },
+
                     'satellite': {
                         glow: 'rgba(0, 206, 209, 0.9)',
                         primary: '#00CED1',
@@ -6141,7 +6019,7 @@
                         'lightningchain': '⚡',
                         'autoturret': '🔫',
                         'timebubble': '⏰',
-                        'startrail': '⭐',
+
                         'satellite': '🛰️',
                         'rainbow': '🌈',
                         'clone': '👥',
@@ -7588,16 +7466,7 @@
                 ctx.restore();
             }
             
-            // Star Lasers - simple white beams (only render if active or lasers still exist)
-            if (starTrailLasers.length > 0) {
-                starTrailLasers.forEach(laser => {
-                    const alpha = laser.life / 60;
-                    
-                    // Single white line with proper fade
-                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-                    ctx.fillRect(laser.x - 4, 0, 8, canvas.height);
-                });
-            }
+
             
             // Satellite Shield - orbiting satellites (OPTIMIZED)
             if (satelliteActive) {
@@ -7825,10 +7694,7 @@
             // Reset elite power-ups
             timeBubbleActive = false;
             timeBubbleTimer = 0;
-            starTrailActive = false;
-            starTrailTimer = 0;
-            starTrailLasers = [];
-            starTrailLastLane = 1;
+
             satelliteActive = false;
             satelliteTimer = 0;
             satellites = [];
