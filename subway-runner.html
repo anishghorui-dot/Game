@@ -3400,30 +3400,59 @@
                     }
                 }
                 
-                // Check collision with boss
+                // Check collision with boss (expanded hitbox for better detection)
                 if (bossActive && boss && !bossDefeated && bossIntroTimer === 0) {
-                    if (proj.x > boss.x && proj.x < boss.x + boss.width &&
-                        proj.y > boss.y && proj.y < boss.y + boss.height) {
+                    const projCenterX = proj.x + (proj.width ? proj.width / 2 : 15);
+                    const projCenterY = proj.y + (proj.height ? proj.height / 2 : 15);
+                    
+                    if (projCenterX > boss.x - 10 && projCenterX < boss.x + boss.width + 10 &&
+                        projCenterY > boss.y - 10 && projCenterY < boss.y + boss.height + 10) {
                         damageBoss(1);
+                        
+                        // Visual feedback for boss hit
+                        for (let i = 0; i < 8; i++) {
+                            particles.push({
+                                x: projCenterX,
+                                y: projCenterY,
+                                vx: (Math.random() - 0.5) * 6,
+                                vy: (Math.random() - 0.5) * 6,
+                                color: ['#FF0000', '#FFA500', '#FFD700'][Math.floor(Math.random() * 3)],
+                                life: 25
+                            });
+                        }
+                        
                         proj.hit = true;
                         return false;
                     }
                 }
                 
-                // Check collision with obstacles
+                // Check collision with obstacles (improved hitbox detection)
+                const indicesToRemove = [];
                 obstacles.forEach((obs, index) => {
-                    if (obs.lane === proj.lane &&
-                        proj.x < obs.x + obs.width &&
-                        proj.x + proj.width > obs.x &&
-                        proj.y < obs.y + obs.height &&
-                        proj.y + proj.height > obs.y) {
+                    if (!obs.destroyed) {
+                        const projCenterX = proj.x + (proj.width ? proj.width / 2 : 15);
+                        const projCenterY = proj.y + (proj.height ? proj.height / 2 : 15);
                         
-                        createParticle(obs.x + 25, obs.y + 30, '#FF4500');
-                        dropPowerUpFromEnemy(obs.x, obs.y); // Drop power-up from destroyed enemy
-                        obstacles.splice(index, 1);
-                        score += 100;
-                        proj.hit = true;
+                        // Check if projectile is in the same lane or close enough
+                        const obsCenter = obs.x + obs.width / 2;
+                        const dx = Math.abs(projCenterX - obsCenter);
+                        
+                        if (dx < 60 && // Wider horizontal tolerance
+                            projCenterY > obs.y && 
+                            projCenterY < obs.y + obs.height) {
+                            
+                            indicesToRemove.push(index);
+                            createParticle(obs.x + 25, obs.y + 30, '#FF4500');
+                            dropPowerUpFromEnemy(obs.x, obs.y);
+                            score += 100;
+                            proj.hit = true;
+                        }
                     }
+                });
+                
+                // Remove hit obstacles in reverse order
+                indicesToRemove.sort((a, b) => b - a).forEach(idx => {
+                    obstacles.splice(idx, 1);
                 });
                 
                 return proj.y > -50 && !proj.hit;
