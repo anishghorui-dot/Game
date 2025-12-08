@@ -7426,20 +7426,12 @@
                 ctx.restore();
             }
             
-            // Star Lasers - simple vertical beams with glow
+            // Star Lasers - simple white beams
             starTrailLasers.forEach(laser => {
                 const alpha = laser.life / 60;
                 
-                // Outer glow
-                ctx.fillStyle = `rgba(0, 255, 255, ${alpha * 0.2})`;
-                ctx.fillRect(laser.x - 30, 0, 60, canvas.height);
-                
-                // Middle layer
-                ctx.fillStyle = `rgba(0, 255, 255, ${alpha * 0.4})`;
-                ctx.fillRect(laser.x - 20, 0, 40, canvas.height);
-                
-                // Bright core
-                ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.7})`;
+                // Single white line
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.8})`;
                 ctx.fillRect(laser.x - 4, 0, 8, canvas.height);
             });
             
