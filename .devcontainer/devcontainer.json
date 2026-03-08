@@ -38,5 +38,16 @@
       }
     }
   },
-  "remoteUser": "node"
+  "remoteUser": "node",
+  "github": {
+    "codespaces": {
+      "token": {
+        "permissions": {
+          "contents": "write",
+          "pull-requests": "write",
+          "workflows": "write"
+        }
+      }
+    }
+  }
 }
